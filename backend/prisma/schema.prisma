@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Usuario {
+  id            String     @id @default(uuid())
+  correo        String     @unique
+  contrasena    String
+  nombre        String?
+  objetivos     Objetivo[]
+  tareas        Tarea[]
+  creadoEn      DateTime   @default(now())
+  actualizadoEn DateTime   @updatedAt
+
+  @@map("usuarios")
+}
+
+model Objetivo {
+  id            String   @id @default(uuid())
+  titulo        String
+  descripcion   String?
+  usuarioId     String
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tareas        Tarea[]
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("objetivos")
+}
+
+model Tarea {
+  id            String    @id @default(uuid())
+  titulo        String
+  descripcion   String?
+  completada    Boolean   @default(false)
+  usuarioId     String
+  usuario       Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  objetivoId    String?
+  objetivo      Objetivo? @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  @@map("tareas")
+}

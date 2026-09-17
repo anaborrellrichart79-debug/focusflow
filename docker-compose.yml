@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: focusflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: focusflow
+      POSTGRES_PASSWORD: focusflow
+      POSTGRES_DB: focusflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - focusflow_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  focusflow_postgres_data:

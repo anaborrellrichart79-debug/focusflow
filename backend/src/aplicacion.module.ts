@@ -1,0 +1,23 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { AplicacionController } from './aplicacion.controller.js';
+import { AplicacionService } from './aplicacion.service.js';
+import { ModuloAutenticacion } from './autenticacion/autenticacion.module.js';
+import { ModuloObjetivos } from './objetivos/objetivos.module.js';
+import { ModuloPrisma } from './prisma/prisma.module.js';
+import { ModuloTareas } from './tareas/tareas.module.js';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    ModuloPrisma,
+    ModuloAutenticacion,
+    ModuloObjetivos,
+    ModuloTareas,
+  ],
+  controllers: [AplicacionController],
+  providers: [AplicacionService],
+})
+export class AplicacionModule {}

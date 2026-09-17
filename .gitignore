@@ -1,0 +1,15 @@
+# Notas personales de aprendizaje (no se sube al repositorio)
+comandos.md
+
+# Dependencias (por si se instala algo en la raíz)
+node_modules/
+
+# Variables de entorno
+.env
+.env.local
+
+# Sistema operativo / editores
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
