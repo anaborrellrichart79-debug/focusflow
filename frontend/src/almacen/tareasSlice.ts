@@ -5,6 +5,7 @@ import {
   crearTarea as crearTareaApi,
   eliminarTarea as eliminarTareaApi,
   listarTareas as listarTareasApi,
+  type EstadoTarea,
   type Tarea,
 } from '@/servicios/tareas';
 import type { EstadoRaiz } from './store';
@@ -57,13 +58,44 @@ export const crearTarea = createAsyncThunk<
   }
 });
 
-export const alternarCompletadaTarea = createAsyncThunk<
+export const cambiarEstadoTarea = createAsyncThunk<
   Tarea,
-  { id: string; completada: boolean },
+  { id: string; estado: EstadoTarea },
   { state: EstadoRaiz; rejectValue: string }
->('tareas/alternarCompletada', async ({ id, completada }, { getState, rejectWithValue }) => {
+>('tareas/cambiarEstado', async ({ id, estado }, { getState, rejectWithValue }) => {
   try {
-    return await actualizarTareaApi(tokenOError(getState()), id, { completada });
+    return await actualizarTareaApi(tokenOError(getState()), id, { estado });
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+    );
+  }
+});
+
+export const cambiarPrioridadTarea = createAsyncThunk<
+  Tarea,
+  { id: string; urgente: boolean; importante: boolean },
+  { state: EstadoRaiz; rejectValue: string }
+>(
+  'tareas/cambiarPrioridad',
+  async ({ id, urgente, importante }, { getState, rejectWithValue }) => {
+    try {
+      return await actualizarTareaApi(tokenOError(getState()), id, { urgente, importante });
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+      );
+    }
+  },
+);
+
+export const marcarAltoImpactoTarea = createAsyncThunk<
+  Tarea,
+  { id: string; esAltoImpacto: boolean },
+  { state: EstadoRaiz; rejectValue: string }
+>('tareas/marcarAltoImpacto', async ({ id, esAltoImpacto }, { getState, rejectWithValue }) => {
+  try {
+    return await actualizarTareaApi(tokenOError(getState()), id, { esAltoImpacto });
   } catch (error) {
     return rejectWithValue(
       error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
@@ -107,15 +139,21 @@ const tareasSlice = createSlice({
       .addCase(crearTarea.fulfilled, (estado, accion) => {
         estado.lista.unshift(accion.payload);
       })
-      .addCase(alternarCompletadaTarea.fulfilled, (estado, accion) => {
-        const indice = estado.lista.findIndex((tarea) => tarea.id === accion.payload.id);
-        if (indice !== -1) {
-          estado.lista[indice] = accion.payload;
-        }
-      })
       .addCase(eliminarTarea.fulfilled, (estado, accion) => {
         estado.lista = estado.lista.filter((tarea) => tarea.id !== accion.payload);
-      });
+      })
+      .addMatcher(
+        (accion): accion is { type: string; payload: Tarea } =>
+          [cambiarEstadoTarea, cambiarPrioridadTarea, marcarAltoImpactoTarea].some(
+            (thunk) => thunk.fulfilled.match(accion),
+          ),
+        (estado, accion) => {
+          const indice = estado.lista.findIndex((tarea) => tarea.id === accion.payload.id);
+          if (indice !== -1) {
+            estado.lista[indice] = accion.payload;
+          }
+        },
+      );
   },
 });
 

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { EstadoTarea } from '../generated/prisma/enums.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import type { ActualizarObjetivoDto } from './dto/actualizar-objetivo.dto.js';
 import type { CrearObjetivoDto } from './dto/crear-objetivo.dto.js';
@@ -20,14 +21,14 @@ export class ObjetivosService {
   async listarPorUsuario(usuarioId: string) {
     const objetivos = await this.prisma.objetivo.findMany({
       where: { usuarioId },
-      include: { tareas: { select: { completada: true } } },
+      include: { tareas: { select: { estado: true } } },
       orderBy: { creadoEn: 'desc' },
     });
 
     return objetivos.map(({ tareas, ...objetivo }) => ({
       ...objetivo,
       totalTareas: tareas.length,
-      tareasCompletadas: tareas.filter((tarea) => tarea.completada).length,
+      tareasCompletadas: tareas.filter((tarea) => tarea.estado === EstadoTarea.HECHA).length,
     }));
   }
 

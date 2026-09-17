@@ -2,11 +2,7 @@ import { useState } from 'react';
 import { useIntl } from 'react-intl';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { eliminarObjetivo } from '@/almacen/objetivosSlice';
-import {
-  alternarCompletadaTarea,
-  crearTarea,
-  eliminarTarea,
-} from '@/almacen/tareasSlice';
+import { cambiarEstadoTarea, crearTarea, eliminarTarea } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,7 +19,7 @@ export function ObjetivoTarjeta({ objetivo }: { objetivo: Objetivo }) {
   const [tituloTarea, setTituloTarea] = useState('');
 
   const totalTareas = tareas.length;
-  const tareasCompletadas = tareas.filter((tarea) => tarea.completada).length;
+  const tareasCompletadas = tareas.filter((tarea) => tarea.estado === 'HECHA').length;
   const progreso = totalTareas === 0 ? 0 : Math.round((tareasCompletadas / totalTareas) * 100);
 
   function alAnadirTarea(evento: React.FormEvent) {
@@ -66,16 +62,21 @@ export function ObjetivoTarjeta({ objetivo }: { objetivo: Objetivo }) {
           {tareas.map((tarea) => (
             <li key={tarea.id} className="flex items-center gap-2">
               <Checkbox
-                checked={tarea.completada}
+                checked={tarea.estado === 'HECHA'}
                 onCheckedChange={(marcada) =>
                   despachar(
-                    alternarCompletadaTarea({ id: tarea.id, completada: marcada === true }),
+                    cambiarEstadoTarea({
+                      id: tarea.id,
+                      estado: marcada === true ? 'HECHA' : 'POR_HACER',
+                    }),
                   )
                 }
               />
               <span
                 className={
-                  tarea.completada ? 'flex-1 text-sm line-through text-muted-foreground' : 'flex-1 text-sm'
+                  tarea.estado === 'HECHA'
+                    ? 'flex-1 text-sm line-through text-muted-foreground'
+                    : 'flex-1 text-sm'
                 }
               >
                 {tarea.titulo}

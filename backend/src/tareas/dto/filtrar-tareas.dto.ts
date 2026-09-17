@@ -1,5 +1,5 @@
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsOptional, IsUUID } from 'class-validator';
+import { IsEnum, IsOptional, IsUUID } from 'class-validator';
+import { EstadoTarea } from '../../generated/prisma/enums.js';
 
 export class FiltrarTareasDto {
   @IsOptional()
@@ -7,7 +7,6 @@ export class FiltrarTareasDto {
   objetivoId?: string;
 
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
-  @IsBoolean()
-  completada?: boolean;
+  @IsEnum(EstadoTarea)
+  estado?: EstadoTarea;
 }

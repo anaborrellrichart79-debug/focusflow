@@ -38,17 +38,26 @@ model Objetivo {
   @@map("objetivos")
 }
 
+enum EstadoTarea {
+  POR_HACER
+  EN_PROCESO
+  HECHA
+}
+
 model Tarea {
-  id            String    @id @default(uuid())
+  id            String      @id @default(uuid())
   titulo        String
   descripcion   String?
-  completada    Boolean   @default(false)
+  estado        EstadoTarea @default(POR_HACER)
+  urgente       Boolean     @default(false)
+  importante    Boolean     @default(false)
+  esAltoImpacto Boolean     @default(false)
   usuarioId     String
-  usuario       Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario       Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   objetivoId    String?
-  objetivo      Objetivo? @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
-  creadoEn      DateTime  @default(now())
-  actualizadoEn DateTime  @updatedAt
+  objetivo      Objetivo?   @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  creadoEn      DateTime    @default(now())
+  actualizadoEn DateTime    @updatedAt
 
   @@map("tareas")
 }

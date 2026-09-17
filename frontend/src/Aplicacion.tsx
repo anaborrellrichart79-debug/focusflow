@@ -5,7 +5,10 @@ import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { restaurarSesion } from '@/almacen/sesionSlice';
 import { RutaProtegida } from '@/componentes/RutaProtegida';
 import { mensajesPorIdioma } from '@/idiomas';
+import { PaginaEisenhower } from '@/paginas/PaginaEisenhower';
+import { PaginaEstadisticas } from '@/paginas/PaginaEstadisticas';
 import { PaginaInicio } from '@/paginas/PaginaInicio';
+import { PaginaKanban } from '@/paginas/PaginaKanban';
 import { PaginaLogin } from '@/paginas/PaginaLogin';
 import { PaginaObjetivos } from '@/paginas/PaginaObjetivos';
 import { PaginaPomodoro } from '@/paginas/PaginaPomodoro';
@@ -41,6 +44,30 @@ export function Aplicacion() {
               element={
                 <RutaProtegida>
                   <PaginaPomodoro />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/kanban"
+              element={
+                <RutaProtegida>
+                  <PaginaKanban />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/eisenhower"
+              element={
+                <RutaProtegida>
+                  <PaginaEisenhower />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/estadisticas"
+              element={
+                <RutaProtegida>
+                  <PaginaEstadisticas />
                 </RutaProtegida>
               }
             />

@@ -41,6 +41,19 @@ export function PaginaInicio() {
                 {intl.formatMessage({ id: 'inicio.irAPomodoro' })}
               </Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link to="/kanban">{intl.formatMessage({ id: 'inicio.irAKanban' })}</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/eisenhower">
+                {intl.formatMessage({ id: 'inicio.irAEisenhower' })}
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/estadisticas">
+                {intl.formatMessage({ id: 'inicio.irAEstadisticas' })}
+              </Link>
+            </Button>
             <Button variant="outline" onClick={() => despachar(cerrarSesion())}>
               {intl.formatMessage({ id: 'auth.cerrarSesion' })}
             </Button>

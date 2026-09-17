@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cargarObjetivos, crearObjetivo } from '@/almacen/objetivosSlice';
 import {
-  alternarCompletadaTarea,
+  cambiarEstadoTarea,
   cargarTareas,
   crearTarea,
   eliminarTarea,
@@ -109,19 +109,19 @@ export function PaginaObjetivos() {
             {tareasSueltas.map((tarea) => (
               <li key={tarea.id} className="flex items-center gap-2">
                 <Checkbox
-                  checked={tarea.completada}
+                  checked={tarea.estado === 'HECHA'}
                   onCheckedChange={(marcada) =>
                     despachar(
-                      alternarCompletadaTarea({
+                      cambiarEstadoTarea({
                         id: tarea.id,
-                        completada: marcada === true,
+                        estado: marcada === true ? 'HECHA' : 'POR_HACER',
                       }),
                     )
                   }
                 />
                 <span
                   className={
-                    tarea.completada
+                    tarea.estado === 'HECHA'
                       ? 'flex-1 text-sm line-through text-muted-foreground'
                       : 'flex-1 text-sm'
                   }

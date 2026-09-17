@@ -1,10 +1,15 @@
 import { peticionApi } from './api';
 
+export type EstadoTarea = 'POR_HACER' | 'EN_PROCESO' | 'HECHA';
+
 export interface Tarea {
   id: string;
   titulo: string;
   descripcion: string | null;
-  completada: boolean;
+  estado: EstadoTarea;
+  urgente: boolean;
+  importante: boolean;
+  esAltoImpacto: boolean;
   objetivoId: string | null;
   usuarioId: string;
   creadoEn: string;
@@ -33,7 +38,14 @@ export function crearTarea(
 export function actualizarTarea(
   token: string,
   id: string,
-  datos: Partial<{ titulo: string; descripcion: string; completada: boolean }>,
+  datos: Partial<{
+    titulo: string;
+    descripcion: string;
+    estado: EstadoTarea;
+    urgente: boolean;
+    importante: boolean;
+    esAltoImpacto: boolean;
+  }>,
 ) {
   return peticionApi<Tarea>(`/tareas/${id}`, {
     method: 'PATCH',

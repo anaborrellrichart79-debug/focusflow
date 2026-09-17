@@ -28,7 +28,7 @@ export class TareasService {
       where: {
         usuarioId,
         objetivoId: filtros.objetivoId,
-        completada: filtros.completada,
+        estado: filtros.estado,
       },
       orderBy: { creadoEn: 'desc' },
     });
