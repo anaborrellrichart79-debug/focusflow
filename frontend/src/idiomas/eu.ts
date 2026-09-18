@@ -71,6 +71,11 @@ export const eu = {
   'estadisticas.pareto.vacio':
     'Oraindik ez duzu eragin handiko zereginik markatu. Markatu ★ erabiliz Kanban taulatik.',
   'pareto.marcar': 'Eragin handikoa den markatu',
+  'estadisticas.pomodoro.titulo': 'Pomodoro',
+  'estadisticas.pomodoro.hoy': 'Gaur osatutakoak',
+  'estadisticas.pomodoro.semana': 'Aste honetan osatutakoak',
+  'estadisticas.pomodoro.minutosSemana': 'Aste honetako lan-minutuak',
+  'estadisticas.pomodoro.vacio': 'Oraindik ez duzu lan-saiorik osatu.',
   'tema.activarOscuro': 'Modu iluna aktibatu',
   'tema.activarClaro': 'Modu argia aktibatu',
 };

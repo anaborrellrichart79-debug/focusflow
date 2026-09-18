@@ -151,7 +151,7 @@ export function PaginaPomodoro() {
             </p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {historial.map((sesion) => (
+              {historial.slice(0, 5).map((sesion) => (
                 <li
                   key={sesion.id}
                   className="flex items-center justify-between gap-2 text-sm"

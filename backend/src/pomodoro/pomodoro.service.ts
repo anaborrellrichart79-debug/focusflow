@@ -2,7 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import type { CrearSesionPomodoroDto } from './dto/crear-sesion-pomodoro.dto.js';
 
-const LIMITE_HISTORIAL = 20;
+// 100 en vez de un número más pequeño para que las estadísticas de "hoy"/"esta
+// semana" de PaginaEstadisticas tengan margen suficiente sin necesitar un
+// endpoint de agregación propio (se calculan en el frontend, igual que el
+// resto de Estadísticas).
+const LIMITE_HISTORIAL = 100;
 
 @Injectable()
 export class PomodoroService {

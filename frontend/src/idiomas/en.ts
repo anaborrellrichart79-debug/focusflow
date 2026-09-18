@@ -71,6 +71,11 @@ export const en = {
   'estadisticas.pareto.vacio':
     "You haven't marked any task as high impact yet. Mark them with ★ from the Kanban board.",
   'pareto.marcar': 'Mark as high impact',
+  'estadisticas.pomodoro.titulo': 'Pomodoro',
+  'estadisticas.pomodoro.hoy': 'Completed today',
+  'estadisticas.pomodoro.semana': 'Completed this week',
+  'estadisticas.pomodoro.minutosSemana': 'Work minutes this week',
+  'estadisticas.pomodoro.vacio': "You haven't completed any work session yet.",
   'tema.activarOscuro': 'Turn on dark mode',
   'tema.activarClaro': 'Turn on light mode',
 };

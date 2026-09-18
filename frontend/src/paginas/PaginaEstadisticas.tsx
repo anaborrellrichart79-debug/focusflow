@@ -1,13 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cargarObjetivos } from '@/almacen/objetivosSlice';
+import { cargarHistorialPomodoro } from '@/almacen/pomodoroSlice';
 import { cargarTareas } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import type { EstadoTarea } from '@/servicios/tareas';
+
+const MILISEGUNDOS_POR_DIA = 24 * 60 * 60 * 1000;
 
 const COLUMNAS_ESTADO: { estado: EstadoTarea; clave: string; color: string }[] = [
   { estado: 'POR_HACER', clave: 'kanban.columna.porHacer', color: 'var(--chart-1)' },
@@ -20,10 +23,12 @@ export function PaginaEstadisticas() {
   const despachar = usarDespachador();
   const tareas = usarSelector((estado) => estado.tareas.lista);
   const objetivos = usarSelector((estado) => estado.objetivos.lista);
+  const historialPomodoro = usarSelector((estado) => estado.pomodoro.historial);
 
   useEffect(() => {
     despachar(cargarTareas());
     despachar(cargarObjetivos());
+    despachar(cargarHistorialPomodoro());
   }, [despachar]);
 
   const totalTareas = tareas.length;
@@ -34,6 +39,24 @@ export function PaginaEstadisticas() {
   const tareasAltoImpacto = tareas.filter((tarea) => tarea.esAltoImpacto);
   const porcentajeAltoImpacto =
     totalTareas === 0 ? 0 : Math.round((tareasAltoImpacto.length / totalTareas) * 100);
+
+  const { inicioHoy, inicioSemana } = useMemo(() => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return { inicioHoy: hoy, inicioSemana: new Date(Date.now() - 7 * MILISEGUNDOS_POR_DIA) };
+  }, []);
+
+  const sesionesTrabajo = historialPomodoro.filter((sesion) => sesion.fase === 'TRABAJO');
+  const sesionesTrabajoSemana = sesionesTrabajo.filter(
+    (sesion) => new Date(sesion.completadaEn) >= inicioSemana,
+  );
+  const pomodorosHoy = sesionesTrabajo.filter(
+    (sesion) => new Date(sesion.completadaEn) >= inicioHoy,
+  ).length;
+  const pomodorosSemana = sesionesTrabajoSemana.length;
+  const minutosTrabajoSemana = Math.round(
+    sesionesTrabajoSemana.reduce((total, sesion) => total + sesion.duracionSegundos, 0) / 60,
+  );
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-10">
@@ -60,6 +83,46 @@ export function PaginaEstadisticas() {
               { completadas: tareasCompletadas, total: totalTareas },
             )}
           </span>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{intl.formatMessage({ id: 'estadisticas.pomodoro.titulo' })}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {sesionesTrabajo.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {intl.formatMessage({ id: 'estadisticas.pomodoro.vacio' })}
+            </p>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-3xl font-semibold tabular-nums tracking-tight">
+                  {pomodorosHoy}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {intl.formatMessage({ id: 'estadisticas.pomodoro.hoy' })}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-3xl font-semibold tabular-nums tracking-tight">
+                  {pomodorosSemana}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {intl.formatMessage({ id: 'estadisticas.pomodoro.semana' })}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-3xl font-semibold tabular-nums tracking-tight">
+                  {minutosTrabajoSemana}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {intl.formatMessage({ id: 'estadisticas.pomodoro.minutosSemana' })}
+                </span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

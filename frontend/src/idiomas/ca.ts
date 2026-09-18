@@ -71,6 +71,11 @@ export const ca = {
   'estadisticas.pareto.vacio':
     'Encara no has marcat cap tasca com d\'alt impacte. Marca-les amb ★ des del tauler Kanban.',
   'pareto.marcar': 'Marcar com d\'alt impacte',
+  'estadisticas.pomodoro.titulo': 'Pomodoro',
+  'estadisticas.pomodoro.hoy': 'Completats avui',
+  'estadisticas.pomodoro.semana': 'Completats aquesta setmana',
+  'estadisticas.pomodoro.minutosSemana': 'Minuts de treball aquesta setmana',
+  'estadisticas.pomodoro.vacio': 'Encara no has completat cap sessió de treball.',
   'tema.activarOscuro': 'Activar mode fosc',
   'tema.activarClaro': 'Activar mode clar',
 };

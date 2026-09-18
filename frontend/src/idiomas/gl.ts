@@ -71,6 +71,11 @@ export const gl = {
   'estadisticas.pareto.vacio':
     'Aínda non marcaches ningunha tarefa como de alto impacto. Márcaas con ★ desde o taboleiro Kanban.',
   'pareto.marcar': 'Marcar como alto impacto',
+  'estadisticas.pomodoro.titulo': 'Pomodoro',
+  'estadisticas.pomodoro.hoy': 'Completados hoxe',
+  'estadisticas.pomodoro.semana': 'Completados esta semana',
+  'estadisticas.pomodoro.minutosSemana': 'Minutos de traballo esta semana',
+  'estadisticas.pomodoro.vacio': 'Aínda non completaches ningunha sesión de traballo.',
   'tema.activarOscuro': 'Activar modo escuro',
   'tema.activarClaro': 'Activar modo claro',
 };

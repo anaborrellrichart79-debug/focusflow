@@ -71,6 +71,11 @@ export const es = {
   'estadisticas.pareto.vacio':
     'Aún no has marcado ninguna tarea como de alto impacto. Márcalas con ★ desde el tablero Kanban.',
   'pareto.marcar': 'Marcar como alto impacto',
+  'estadisticas.pomodoro.titulo': 'Pomodoro',
+  'estadisticas.pomodoro.hoy': 'Completados hoy',
+  'estadisticas.pomodoro.semana': 'Completados esta semana',
+  'estadisticas.pomodoro.minutosSemana': 'Minutos de trabajo esta semana',
+  'estadisticas.pomodoro.vacio': 'Todavía no has completado ninguna sesión de trabajo.',
   'tema.activarOscuro': 'Activar modo oscuro',
   'tema.activarClaro': 'Activar modo claro',
 };
