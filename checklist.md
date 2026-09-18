@@ -4,10 +4,10 @@ Este fichero recoge en todo momento qué está hecho y qué queda pendiente en e
 
 ## 👉 Empezar aquí la próxima sesión
 
-Las Fases 1, 2, 3 y 4 están completas y con commit/push hecho a `main`, con una primera batería de tests automatizados en frontend y backend, con el historial de sesiones de Pomodoro implementado y probado de punta a punta, con estadísticas de Pomodoro (hoy/esta semana) en `PaginaEstadisticas`, y con iconos PNG dedicados para la PWA (192x192/512x512).
+Las Fases 1, 2, 3 y 4 están completas y con commit/push hecho a `main`, con el historial y las estadísticas de Pomodoro, con iconos PNG para la PWA, y con una batería de tests bastante completa: **backend 42 tests / frontend 56 tests**, cubriendo ya las 8 páginas de React y `EstrategiaJwt`.
 
-No queda ningún punto abierto del roadmap original. Próximo paso posible (a decidir con el usuario, no hay nada obligatorio):
-- Seguir ampliando los tests: quedan sin cubrir las páginas completas de React (`Pagina*.tsx`, incluidas `PaginaPomodoro` y la nueva tarjeta de `PaginaEstadisticas`) y `EstrategiaJwt`/los guards de autenticación del backend. El e2e real (`pnpm test:e2e` en `backend/`) sigue sin probarse en esta máquina.
+No queda ningún punto abierto del roadmap original ni de la lista de tests pendientes de la sesión anterior. Único hueco conocido que queda (no urgente, documentado por si se retoma):
+- El e2e real (`pnpm test:e2e` en `backend/`, usa `test/app.e2e-spec.ts`) sigue sin poderse ejecutar en esta máquina — requiere Docker/Postgres levantado y las variables de entorno (`DATABASE_URL`/`JWT_SECRET`) configuradas al lanzar el test runner, cosa que no se ha probado todavía (los tests unitarios sí se ejecutaron con Docker/Postgres arrancados en esta sesión, pero mockeando Prisma, no a través del e2e).
 
 Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz del proyecto) — Postgres no arranca solo.
 
@@ -32,7 +32,8 @@ Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz
   - `sesionSlice.test.ts`: login/registro guardan el token en `localStorage`, `cerrarSesion` y un `restaurarSesion.rejected` (token caducado) lo borran, y un caso con `vi.resetModules()` + import dinámico para comprobar que si ya había un token guardado *antes* de arrancar la app, el estado inicial empieza en modo "restaurando sesión".
   - `SelectorTema.test.tsx`: test de componente con Redux Toolkit + react-intl reales; simula el clic del usuario y comprueba que cambia el estado y el `aria-pressed`.
   - Al escribir estos tests se detectó y arregló un bug real en `interfazSlice.ts`: si `window.matchMedia` no existe (algunos entornos), el código original (`window.matchMedia?.(...).matches`) lanzaba un `TypeError` porque el `?.` solo protegía la llamada, no el `.matches` posterior.
-  - Pendiente de test: `objetivosSlice`, `sesionSlice` y las páginas completas (`Pagina*.tsx`).
+- [x] Backend, ronda 2: `jwt.strategy.spec.ts` (`EstrategiaJwt` lee `JWT_SECRET` del `ConfigService` al construirse — falla rápido si falta — y `validate()` mapea `sub`→`id` sin filtrar más campos de la carga útil). Se extrajo la fábrica del decorador `@UsuarioActual()` a una función exportada aparte (`obtenerUsuarioActual` en `usuario-actual.decorator.ts`) siguiendo el patrón que documenta NestJS para poder probarla sin un `ExecutionContext` real (`usuario-actual.decorator.spec.ts`): comprueba que devuelve exactamente lo que `EstrategiaJwt` dejó en `request.user`. No se tocaron `AuthGuard('jwt')` ni `PassportStrategy` en sí (son de Passport/Nest, no código propio que probar).
+- [x] Frontend, ronda 2: se creó un helper compartido `src/pruebas/render.tsx` (`renderizarPagina`) que monta cualquier página con una tienda Redux nueva + `IntlProvider` + `MemoryRouter`, aceptando un `estadoPrecargado` parcial. Truco usado en casi todos los tests de páginas: **sin token de sesión**, los thunks que se despachan al montar (`cargarTareas`, `cargarObjetivos`, `cargarHistorialPomodoro`...) se rechazan al instante con "No autenticado" sin tocar la red, así que se puede precargar directamente el estado que se quiere comprobar sin mockear `fetch` — solo hace falta mockear `fetch` de verdad en los tests que comprueban una acción de escritura (login, registro, crear un objetivo). Con esto, **las 8 páginas ya tienen test**: `PaginaInicio`, `PaginaLogin`, `PaginaRegistro`, `PaginaObjetivos`, `PaginaKanban`, `PaginaEisenhower`, `PaginaPomodoro`, `PaginaEstadisticas` (esta última valida de verdad, a través del componente real, el cálculo de pomodoros "hoy"/"esta semana"/minutos escrito en la ronda anterior).
 
 ## Fase 1 — MVP
 
