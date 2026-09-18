@@ -8,7 +8,7 @@ const CLAVE_TEMA_LOCALSTORAGE = 'focusflow.tema';
 function obtenerTemaInicial(): Tema {
   const guardado = localStorage.getItem(CLAVE_TEMA_LOCALSTORAGE);
   if (guardado === 'claro' || guardado === 'oscuro') return guardado;
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro';
+  return window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ? 'oscuro' : 'claro';
 }
 
 interface EstadoInterfaz {

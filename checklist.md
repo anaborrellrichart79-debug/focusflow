@@ -4,12 +4,12 @@ Este fichero recoge en todo momento qué está hecho y qué queda pendiente en e
 
 ## 👉 Empezar aquí la próxima sesión
 
-Las Fases 1, 2, 3 y 4 están completas (auth, CRUD objetivos/tareas, Pomodoro, Kanban, Eisenhower, captura rápida GTD, estadísticas + Pareto, modo oscuro, accesibilidad, PWA básica). Pendiente de revisión del usuario y de hacer commit/push a `main`.
+Las Fases 1, 2, 3 y 4 están completas y con commit/push hecho a `main`. Además, ya hay una primera batería de tests automatizados en frontend y backend (ver más abajo).
 
 No queda ningún punto abierto del roadmap original. Próximos pasos posibles (a decidir con el usuario, no hay nada obligatorio):
 - Generar iconos PNG dedicados (192x192/512x512) para el manifest de la PWA en vez de reutilizar `favicon.svg` (funciona, pero unos iconos maskable a medida quedarían mejor en Android).
 - Historial de sesiones de Pomodoro asociado a tareas (mencionado como posible ampliación en las decisiones ya tomadas).
-- Tests automatizados (no hay ninguno todavía, ni en frontend ni en backend).
+- Ampliar los tests: falta cobertura de los controladores HTTP (`AutenticacionController`, `ObjetivosController`, `TareasController`) y de los slices/páginas de frontend que todavía no tienen test (`objetivosSlice`, `sesionSlice`, páginas completas). El e2e real (`pnpm test:e2e` en `backend/`) no se ha podido ejecutar en esta máquina porque necesita Docker/Postgres levantado.
 
 Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz del proyecto) — Postgres no arranca solo.
 
@@ -18,6 +18,21 @@ Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz
 - [x] README.md inicial con visión, características, stack tecnológico, estructura de carpetas y roadmap.
 - [x] checklist.md de seguimiento (este fichero).
 - [x] comandos.md con explicación de los comandos usados (no se sube a GitHub).
+
+## Tests automatizados
+
+- [x] Backend: `vitest` ya venía configurado en el scaffold de NestJS (`pnpm test`, `pnpm test:watch`, `pnpm test:cov`) pero no había ningún test real, solo el de ejemplo (`aplicacion.controller.spec.ts`). Se añadieron tests unitarios para los tres servicios con lógica de negocio, mockeando `ServicioPrisma` por completo (no necesitan Postgres/Docker):
+  - `autenticacion.service.spec.ts`: rechaza registro con correo duplicado, la contraseña guardada nunca es la de texto plano (se comprueba con `bcrypt.compare`), login rechaza correo inexistente y contraseña incorrecta, `obtenerUsuarioPorId` nunca devuelve el hash.
+  - `objetivos.service.spec.ts`: cálculo de `totalTareas`/`tareasCompletadas` al listar, y que `actualizar`/`eliminar` **no llegan a tocar la base de datos** si el objetivo pertenece a otro usuario (aislamiento por usuario).
+  - `tareas.service.spec.ts`: mismo aislamiento por usuario para tareas, y que no se puede crear/mover una tarea a un objetivo que no es del usuario.
+  - Se corrigió además `backend/test/app.e2e-spec.ts`: era el test e2e de ejemplo del scaffold de Nest, sin adaptar nunca al proyecto real (importaba un `AppModule` inexistente desde `src/app.module.js` y un tipo `supertest/types` que no existe en la versión instalada de `supertest`). Ahora importa `AplicacionModule` y comprueba el mensaje real de la API. Sigue necesitando Docker/Postgres levantado para ejecutarse (`pnpm test:e2e`), no se ha podido probar en esta máquina.
+- [x] Frontend: no había ninguna herramienta de test instalada. Se añadió `vitest` + `@testing-library/react` (config en `vite.config.ts`, fichero de setup en `src/pruebas/configuracion.ts`, scripts `pnpm test`/`pnpm test:watch`):
+  - `pomodoroSlice.test.ts`: lógica pura del temporizador (tick, cambio de fase trabajo↔descanso, y el caso más delicado — cada 4º ciclo pasa a descanso *largo* en vez de corto).
+  - `interfazSlice.test.ts`: cambio de idioma, alternar tema claro/oscuro y su persistencia en `localStorage`.
+  - `tareasSlice.test.ts`: los `extraReducers` de los thunks (cargar/crear/eliminar/cambiar estado) probados sin red real, despachando directamente las acciones `.fulfilled`/`.rejected` que exponen los thunks de Redux Toolkit.
+  - `SelectorTema.test.tsx`: test de componente con Redux Toolkit + react-intl reales; simula el clic del usuario y comprueba que cambia el estado y el `aria-pressed`.
+  - Al escribir estos tests se detectó y arregló un bug real en `interfazSlice.ts`: si `window.matchMedia` no existe (algunos entornos), el código original (`window.matchMedia?.(...).matches`) lanzaba un `TypeError` porque el `?.` solo protegía la llamada, no el `.matches` posterior.
+  - Pendiente de test: `objetivosSlice`, `sesionSlice` y las páginas completas (`Pagina*.tsx`).
 
 ## Fase 1 — MVP
 
