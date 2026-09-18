@@ -9,7 +9,7 @@ Las Fases 1, 2, 3 y 4 están completas y con commit/push hecho a `main`. Además
 No queda ningún punto abierto del roadmap original. Próximos pasos posibles (a decidir con el usuario, no hay nada obligatorio):
 - Generar iconos PNG dedicados (192x192/512x512) para el manifest de la PWA en vez de reutilizar `favicon.svg` (funciona, pero unos iconos maskable a medida quedarían mejor en Android).
 - Historial de sesiones de Pomodoro asociado a tareas (mencionado como posible ampliación en las decisiones ya tomadas).
-- Ampliar los tests: falta cobertura de los controladores HTTP (`AutenticacionController`, `ObjetivosController`, `TareasController`) y de los slices/páginas de frontend que todavía no tienen test (`objetivosSlice`, `sesionSlice`, páginas completas). El e2e real (`pnpm test:e2e` en `backend/`) no se ha podido ejecutar en esta máquina porque necesita Docker/Postgres levantado.
+- Seguir ampliando los tests: quedan sin cubrir las páginas completas de React (`Pagina*.tsx`) y `EstrategiaJwt`/los guards de autenticación del backend. El e2e real (`pnpm test:e2e` en `backend/`) no se ha podido ejecutar en esta máquina porque necesita Docker/Postgres levantado.
 
 Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz del proyecto) — Postgres no arranca solo.
 
@@ -25,11 +25,13 @@ Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz
   - `autenticacion.service.spec.ts`: rechaza registro con correo duplicado, la contraseña guardada nunca es la de texto plano (se comprueba con `bcrypt.compare`), login rechaza correo inexistente y contraseña incorrecta, `obtenerUsuarioPorId` nunca devuelve el hash.
   - `objetivos.service.spec.ts`: cálculo de `totalTareas`/`tareasCompletadas` al listar, y que `actualizar`/`eliminar` **no llegan a tocar la base de datos** si el objetivo pertenece a otro usuario (aislamiento por usuario).
   - `tareas.service.spec.ts`: mismo aislamiento por usuario para tareas, y que no se puede crear/mover una tarea a un objetivo que no es del usuario.
+  - `autenticacion.controller.spec.ts`, `objetivos.controller.spec.ts`, `tareas.controller.spec.ts`: comprueban que cada controlador delega en su servicio pasando el `usuario.id` que llega del decorador `@UsuarioActual()` (el de la petición autenticada), nunca uno que pudiera venir en el body o en la query.
   - Se corrigió además `backend/test/app.e2e-spec.ts`: era el test e2e de ejemplo del scaffold de Nest, sin adaptar nunca al proyecto real (importaba un `AppModule` inexistente desde `src/app.module.js` y un tipo `supertest/types` que no existe en la versión instalada de `supertest`). Ahora importa `AplicacionModule` y comprueba el mensaje real de la API. Sigue necesitando Docker/Postgres levantado para ejecutarse (`pnpm test:e2e`), no se ha podido probar en esta máquina.
 - [x] Frontend: no había ninguna herramienta de test instalada. Se añadió `vitest` + `@testing-library/react` (config en `vite.config.ts`, fichero de setup en `src/pruebas/configuracion.ts`, scripts `pnpm test`/`pnpm test:watch`):
   - `pomodoroSlice.test.ts`: lógica pura del temporizador (tick, cambio de fase trabajo↔descanso, y el caso más delicado — cada 4º ciclo pasa a descanso *largo* en vez de corto).
   - `interfazSlice.test.ts`: cambio de idioma, alternar tema claro/oscuro y su persistencia en `localStorage`.
-  - `tareasSlice.test.ts`: los `extraReducers` de los thunks (cargar/crear/eliminar/cambiar estado) probados sin red real, despachando directamente las acciones `.fulfilled`/`.rejected` que exponen los thunks de Redux Toolkit.
+  - `tareasSlice.test.ts` / `objetivosSlice.test.ts`: los `extraReducers` de los thunks (cargar/crear/eliminar/cambiar estado) probados sin red real, despachando directamente las acciones `.fulfilled`/`.rejected` que exponen los thunks de Redux Toolkit.
+  - `sesionSlice.test.ts`: login/registro guardan el token en `localStorage`, `cerrarSesion` y un `restaurarSesion.rejected` (token caducado) lo borran, y un caso con `vi.resetModules()` + import dinámico para comprobar que si ya había un token guardado *antes* de arrancar la app, el estado inicial empieza en modo "restaurando sesión".
   - `SelectorTema.test.tsx`: test de componente con Redux Toolkit + react-intl reales; simula el clic del usuario y comprueba que cambia el estado y el `aria-pressed`.
   - Al escribir estos tests se detectó y arregló un bug real en `interfazSlice.ts`: si `window.matchMedia` no existe (algunos entornos), el código original (`window.matchMedia?.(...).matches`) lanzaba un `TypeError` porque el `?.` solo protegía la llamada, no el `.matches` posterior.
   - Pendiente de test: `objetivosSlice`, `sesionSlice` y las páginas completas (`Pagina*.tsx`).
