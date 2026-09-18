@@ -1,14 +1,30 @@
 import { describe, expect, it } from 'vitest';
+import type { SesionPomodoro } from '@/servicios/pomodoro';
 import reductor, {
   DURACION_DESCANSO_CORTO_SEGUNDOS,
   DURACION_DESCANSO_LARGO_SEGUNDOS,
   DURACION_TRABAJO_SEGUNDOS,
+  cargarHistorialPomodoro,
   iniciar,
   notificacionMostrada,
   pausar,
+  registrarSesionCompletada,
   reiniciarFase,
   tick,
 } from './pomodoroSlice';
+
+function crearSesionFalsa(datos: Partial<SesionPomodoro>): SesionPomodoro {
+  return {
+    id: 'sesion-1',
+    fase: 'TRABAJO',
+    duracionSegundos: DURACION_TRABAJO_SEGUNDOS,
+    usuarioId: 'usuario-1',
+    tareaId: null,
+    tarea: null,
+    completadaEn: '2026-01-01T00:00:00.000Z',
+    ...datos,
+  };
+}
 
 describe('pomodoroSlice', () => {
   it('empieza en fase de trabajo, inactivo y sin ciclos completados', () => {
@@ -19,6 +35,8 @@ describe('pomodoroSlice', () => {
       activo: false,
       ciclosCompletados: 0,
       notificacionPendiente: false,
+      ultimaFaseCompletada: null,
+      historial: [],
     });
   });
 
@@ -51,6 +69,10 @@ describe('pomodoroSlice', () => {
     expect(estado.segundosRestantes).toBe(DURACION_DESCANSO_CORTO_SEGUNDOS);
     expect(estado.ciclosCompletados).toBe(1);
     expect(estado.notificacionPendiente).toBe(true);
+    expect(estado.ultimaFaseCompletada).toEqual({
+      fase: 'trabajo',
+      duracionSegundos: DURACION_TRABAJO_SEGUNDOS,
+    });
   });
 
   it('cada 4º ciclo de trabajo pasa a descanso largo en vez de corto', () => {
@@ -91,5 +113,31 @@ describe('pomodoroSlice', () => {
     estado = reductor(estado, notificacionMostrada());
 
     expect(estado.notificacionPendiente).toBe(false);
+  });
+
+  it('registrarSesionCompletada.fulfilled añade la sesión guardada al principio del historial', () => {
+    const previo = reductor(undefined, { type: '@@INIT' });
+    const sesion = crearSesionFalsa({ id: 'nueva' });
+
+    const estado = reductor(
+      previo,
+      registrarSesionCompletada.fulfilled(sesion, 'peticion-1', {
+        fase: 'trabajo',
+        duracionSegundos: DURACION_TRABAJO_SEGUNDOS,
+      }),
+    );
+
+    expect(estado.historial).toEqual([sesion]);
+  });
+
+  it('cargarHistorialPomodoro.fulfilled reemplaza el historial', () => {
+    const sesiones = [crearSesionFalsa({ id: 'a' }), crearSesionFalsa({ id: 'b' })];
+
+    const estado = reductor(
+      undefined,
+      cargarHistorialPomodoro.fulfilled(sesiones, 'peticion-1', undefined),
+    );
+
+    expect(estado.historial).toEqual(sesiones);
   });
 });

@@ -4,6 +4,7 @@ import { AplicacionController } from './aplicacion.controller.js';
 import { AplicacionService } from './aplicacion.service.js';
 import { ModuloAutenticacion } from './autenticacion/autenticacion.module.js';
 import { ModuloObjetivos } from './objetivos/objetivos.module.js';
+import { ModuloPomodoro } from './pomodoro/pomodoro.module.js';
 import { ModuloPrisma } from './prisma/prisma.module.js';
 import { ModuloTareas } from './tareas/tareas.module.js';
 
@@ -16,6 +17,7 @@ import { ModuloTareas } from './tareas/tareas.module.js';
     ModuloAutenticacion,
     ModuloObjetivos,
     ModuloTareas,
+    ModuloPomodoro,
   ],
   controllers: [AplicacionController],
   providers: [AplicacionService],

@@ -4,12 +4,12 @@ Este fichero recoge en todo momento qué está hecho y qué queda pendiente en e
 
 ## 👉 Empezar aquí la próxima sesión
 
-Las Fases 1, 2, 3 y 4 están completas y con commit/push hecho a `main`. Además, ya hay una primera batería de tests automatizados en frontend y backend (ver más abajo).
+Las Fases 1, 2, 3 y 4 están completas y con commit/push hecho a `main`, con una primera batería de tests automatizados en frontend y backend, y con el historial de sesiones de Pomodoro ya implementado y probado de punta a punta (Docker/Postgres arrancados, curl directo a la API y prueba visual en Chrome).
 
 No queda ningún punto abierto del roadmap original. Próximos pasos posibles (a decidir con el usuario, no hay nada obligatorio):
 - Generar iconos PNG dedicados (192x192/512x512) para el manifest de la PWA en vez de reutilizar `favicon.svg` (funciona, pero unos iconos maskable a medida quedarían mejor en Android).
-- Historial de sesiones de Pomodoro asociado a tareas (mencionado como posible ampliación en las decisiones ya tomadas).
-- Seguir ampliando los tests: quedan sin cubrir las páginas completas de React (`Pagina*.tsx`) y `EstrategiaJwt`/los guards de autenticación del backend. El e2e real (`pnpm test:e2e` en `backend/`) no se ha podido ejecutar en esta máquina porque necesita Docker/Postgres levantado.
+- Estadísticas del historial de Pomodoro (p. ej. pomodoros completados hoy/esta semana) en `PaginaEstadisticas`, ahora que ya hay datos guardados en `sesiones_pomodoro`.
+- Seguir ampliando los tests: quedan sin cubrir las páginas completas de React (`Pagina*.tsx`, incluida la nueva UI de `PaginaPomodoro`) y `EstrategiaJwt`/los guards de autenticación del backend. El e2e real (`pnpm test:e2e` en `backend/`) sigue sin probarse en esta máquina.
 
 Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz del proyecto) — Postgres no arranca solo.
 
@@ -76,6 +76,12 @@ Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz
 - [x] Modo oscuro: `interfazSlice` guarda `tema` (`'claro' | 'oscuro'`), con valor inicial desde `localStorage` o `prefers-color-scheme` del sistema si no hay nada guardado. Componente `SelectorTema` (botón 🌙/☀️ junto al `SelectorIdioma` en `PaginaInicio`) que alterna la clase `.dark` en `<html>` y el `<meta name="theme-color">`.
 - [x] PWA: `public/manifest.webmanifest` (nombre, iconos con el `favicon.svg` existente, `display: standalone`) enlazado desde `index.html`; `public/sw.js` con estrategia stale-while-revalidate para peticiones `GET` al propio origen (nunca a la API, que es otro origen); registrado desde `main.tsx` solo en producción. `index.html` también actualizado: `<title>FocusFlow</title>` (antes "frontend"), meta descripción, `lang="es"`.
 
+## Historial de Pomodoro
+
+- [x] Backend: nuevo modelo `SesionPomodoro` en `schema.prisma` (enum `FasePomodoro`, `duracionSegundos`, `usuarioId`, `tareaId` opcional con `onDelete: SetNull` — a diferencia de Objetivo→Tarea, que es en cascada, aquí se conserva el historial aunque se borre la tarea). Migración `20260918164219_historial_pomodoro` generada y aplicada contra Postgres real. Módulo `pomodoro/` (`ModuloPomodoro`) con `POST /pomodoro/sesiones` (registra una fase completada, comprobando que la tarea asociada — si la hay — es del usuario) y `GET /pomodoro/sesiones` (últimas 20, con el título de la tarea incluido). Probado con tests unitarios y con `curl` real contra la base de datos, incluido el caso de intentar asociar la sesión a la tarea de otro usuario (rechazado con 404).
+- [x] Frontend: `pomodoroSlice` guarda qué fase se acaba de completar (`ultimaFaseCompletada`) para poder registrarla en el momento justo — antes, en cuanto sonaba el aviso, `estado.fase` ya apuntaba a la *siguiente* fase, no a la que acababa de terminar. `PaginaPomodoro` añade un desplegable "Tarea asociada (opcional)" (con las tareas no completadas del usuario) y una tarjeta "Historial reciente" que carga las últimas sesiones al entrar en la página. Probado en Chrome con una cuenta real: se crea una tarea en Objetivos, aparece en el desplegable de Pomodoro, y una sesión registrada por la API aparece en el historial nada más recargar la página.
+- [x] Tests: `pomodoro.service.spec.ts` y `pomodoro.controller.spec.ts` en el backend (mismo patrón de aislamiento por usuario que Objetivos/Tareas); `pomodoroSlice.test.ts` ampliado con los nuevos `extraReducers` del historial.
+
 ## Decisiones ya tomadas (para no volver a preguntarlas)
 
 - Frontend: React + TypeScript, Tailwind CSS + shadcn/ui, Redux Toolkit, react-intl.
@@ -93,7 +99,7 @@ Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz
 - La sesión del frontend se restaura automáticamente al cargar la app: si hay un token guardado en `localStorage`, se llama a `/autenticacion/perfil`; si el token ya no es válido, se borra.
 - Modelo de datos: un `Objetivo` agrupa `Tarea`s (mini-tareas), pero una `Tarea` también puede existir suelta (sin objetivo) para permitir captura rápida estilo GTD. Al borrar un `Objetivo` se borran en cascada sus tareas.
 - El progreso de cada objetivo (barra + "X de Y tareas") se calcula en el frontend a partir de las tareas ya cargadas en el store (`tareasSlice`), no del valor `totalTareas`/`tareasCompletadas` que devuelve el backend al listar objetivos — así se mantiene actualizado al instante al añadir/completar tareas sin tener que recargar la lista de objetivos.
-- El Pomodoro es una funcionalidad de frontend puramente local (slice `pomodoroSlice`, sin llamadas al backend todavía): no guarda historial de sesiones en la base de datos. Eso quedaría para la Fase 3 (estadísticas de progreso) si se decide asociar pomodoros completados a tareas concretas.
+- El temporizador Pomodoro en sí (cuenta atrás, fases, ciclos) sigue siendo puramente local en `pomodoroSlice` — no hay llamadas al backend mientras corre. Solo al completarse una fase se dispara una llamada para guardar esa sesión en el historial (`SesionPomodoro`), de forma asociativa (opcional) a una tarea concreta.
 - El campo `Tarea.completada` (booleano) se sustituyó por `Tarea.estado` (enum `POR_HACER` / `EN_PROCESO` / `HECHA`) para poder soportar el tablero Kanban de 3 columnas sin tener dos fuentes de verdad sobre el estado de una tarea. El checkbox de "completada" en Objetivos/Tareas ahora alterna entre `POR_HACER` y `HECHA`.
 - El tablero Kanban usa flechas (←/→) para mover tareas entre columnas en lugar de arrastrar y soltar, para no añadir una librería de drag-and-drop solo para esto; se puede revisar más adelante si se necesita una experiencia más visual.
 - La priorización de Eisenhower se guarda como dos booleanos independientes (`urgente`, `importante`) en `Tarea`, no como un único enum de 4 valores, porque son dos criterios ortogonales que además se muestran como dos botones independientes en la UI.
