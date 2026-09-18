@@ -26,3 +26,15 @@ export const mensajesPorIdioma: Record<CodigoIdioma, Record<string, string>> = {
   ca,
   en,
 };
+
+// "va" no es una etiqueta BCP-47/ICU válida para el valenciano (Intl.NumberFormat/DateTimeFormat
+// no la reconocen y react-intl avisa en consola con "Missing locale data"). La etiqueta correcta
+// es "ca-ES-valencia" (catalán, variante valenciana), que sí reconoce Intl nativamente.
+export const CODIGO_LOCALE_ICU: Record<CodigoIdioma, string> = {
+  es: 'es',
+  va: 'ca-ES-valencia',
+  gl: 'gl',
+  eu: 'eu',
+  ca: 'ca',
+  en: 'en',
+};

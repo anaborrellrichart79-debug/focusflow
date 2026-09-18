@@ -63,6 +63,10 @@ export function ObjetivoTarjeta({ objetivo }: { objetivo: Objetivo }) {
             <li key={tarea.id} className="flex items-center gap-2">
               <Checkbox
                 checked={tarea.estado === 'HECHA'}
+                aria-label={intl.formatMessage(
+                  { id: 'tareas.marcarCompletada' },
+                  { titulo: tarea.titulo },
+                )}
                 onCheckedChange={(marcada) =>
                   despachar(
                     cambiarEstadoTarea({

@@ -91,6 +91,7 @@ export function PaginaKanban() {
                           variant="ghost"
                           size="icon-xs"
                           aria-label={intl.formatMessage({ id: 'pareto.marcar' })}
+                          aria-pressed={tarea.esAltoImpacto}
                           onClick={() =>
                             despachar(
                               marcarAltoImpactoTarea({

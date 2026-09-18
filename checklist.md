@@ -4,11 +4,12 @@ Este fichero recoge en todo momento qué está hecho y qué queda pendiente en e
 
 ## 👉 Empezar aquí la próxima sesión
 
-Las Fases 1, 2 y 3 están completas (auth, CRUD objetivos/tareas, Pomodoro, Kanban, Eisenhower, captura rápida GTD, estadísticas + Pareto), con push ya hecho a `main`. Solo queda la **Fase 4 — Pulido**. Sugerencia de orden, de más rápido/aislado a más largo:
+Las Fases 1, 2, 3 y 4 están completas (auth, CRUD objetivos/tareas, Pomodoro, Kanban, Eisenhower, captura rápida GTD, estadísticas + Pareto, modo oscuro, accesibilidad, PWA básica). Pendiente de revisión del usuario y de hacer commit/push a `main`.
 
-1. **Modo oscuro**: los valores de la clase `.dark` ya existen en `frontend/src/index.css` (copiados del preset de shadcn) pero no hay ningún interruptor en la UI que añada/quite esa clase al `<html>`. Es el más rápido de los cuatro: un botón junto al `SelectorIdioma` que alterne `.dark` y guarde la preferencia en `localStorage`.
-2. **Accesibilidad (a11y)**: revisar `aria-label` que falten, contraste, navegación por teclado (sobre todo en Kanban/Eisenhower, que usan botones sin foco visible personalizado) y que los formularios anuncien errores a lectores de pantalla.
-3. **PWA**: manifest + service worker básico (instalable, quizá cache del shell de la app). Es el más grande de los tres; conviene dejarlo para el final.
+No queda ningún punto abierto del roadmap original. Próximos pasos posibles (a decidir con el usuario, no hay nada obligatorio):
+- Generar iconos PNG dedicados (192x192/512x512) para el manifest de la PWA en vez de reutilizar `favicon.svg` (funciona, pero unos iconos maskable a medida quedarían mejor en Android).
+- Historial de sesiones de Pomodoro asociado a tareas (mencionado como posible ampliación en las decisiones ya tomadas).
+- Tests automatizados (no hay ninguno todavía, ni en frontend ni en backend).
 
 Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz del proyecto) — Postgres no arranca solo.
 
@@ -53,10 +54,10 @@ Antes de continuar, recuerda levantar Docker (`docker compose up -d` en la raíz
 
 - [x] Selector de idioma funcional (react-intl) con los 6 idiomas: castellano, valenciano, gallego, vasco, catalán, inglés (mensajes de ejemplo únicamente, ver pendiente de traducciones completas).
 - [x] Traducciones completas para los 6 idiomas de todo lo construido hasta ahora (auth, objetivos/tareas, Pomodoro, Kanban, Eisenhower, captura rápida, estadísticas/Pareto).
-- [ ] Cargar datos de locale de `Intl.NumberFormat`/`DateTimeFormat` para eu/gl/va/ca si se usa formateo de números o fechas (aviso visto en consola: "Missing locale data for locale eu").
-- [ ] Accesibilidad (a11y).
-- [ ] Modo oscuro.
-- [ ] PWA (instalable, offline básico).
+- [x] Locale de `Intl.NumberFormat`/`DateTimeFormat` para eu/gl/va/ca: la causa real del aviso en consola era que `"va"` (valenciano) no es una etiqueta BCP-47/ICU válida (`Intl.NumberFormat.supportedLocalesOf('va')` devuelve `[]`; comprobado con Node). Se añadió `CODIGO_LOCALE_ICU` en `frontend/src/idiomas/index.ts`, que traduce `"va"` a la etiqueta correcta `"ca-ES-valencia"` (catalán, variante valenciana) solo para lo que se le pasa a `Intl`/`IntlProvider`; el resto del código sigue usando `"va"` como código interno. eu/gl/ca/es/en ya eran válidos de por sí.
+- [x] Accesibilidad (a11y): `document.documentElement.lang` se sincroniza con el idioma elegido; se restauró el anillo de foco del campo de `CapturaRapida` (tenía `focus-visible:ring-0`, quedaba sin ningún indicador visible al navegar con teclado); botones de alternar (Eisenhower urgente/importante, estrella de alto impacto en Kanban) llevan `aria-pressed` para anunciar su estado a lectores de pantalla; el checkbox de completar tarea en `ObjetivoTarjeta` tiene `aria-label` con el título de la tarea. El resto (botones de shadcn/ui, checkboxes de Radix) ya traía foco visible y `aria-label` de fábrica.
+- [x] Modo oscuro: `interfazSlice` guarda `tema` (`'claro' | 'oscuro'`), con valor inicial desde `localStorage` o `prefers-color-scheme` del sistema si no hay nada guardado. Componente `SelectorTema` (botón 🌙/☀️ junto al `SelectorIdioma` en `PaginaInicio`) que alterna la clase `.dark` en `<html>` y el `<meta name="theme-color">`.
+- [x] PWA: `public/manifest.webmanifest` (nombre, iconos con el `favicon.svg` existente, `display: standalone`) enlazado desde `index.html`; `public/sw.js` con estrategia stale-while-revalidate para peticiones `GET` al propio origen (nunca a la API, que es otro origen); registrado desde `main.tsx` solo en producción. `index.html` también actualizado: `<title>FocusFlow</title>` (antes "frontend"), meta descripción, `lang="es"`.
 
 ## Decisiones ya tomadas (para no volver a preguntarlas)
 

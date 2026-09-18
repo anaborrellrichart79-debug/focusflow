@@ -28,6 +28,7 @@ export const eu = {
   'tareas.anadir': 'Gehitu',
   'tareas.sueltas.titulo': 'Zeregin solteak',
   'tareas.eliminar': 'Zeregina ezabatu',
+  'tareas.marcarCompletada': '"{titulo}" eginda dagoela markatu',
   'inicio.irAPomodoro': 'Pomodoro tenporizadorea',
   'pomodoro.fase.trabajo': 'Lana',
   'pomodoro.fase.descansoCorto': 'Atseden laburra',
@@ -65,4 +66,6 @@ export const eu = {
   'estadisticas.pareto.vacio':
     'Oraindik ez duzu eragin handiko zereginik markatu. Markatu ★ erabiliz Kanban taulatik.',
   'pareto.marcar': 'Eragin handikoa den markatu',
+  'tema.activarOscuro': 'Modu iluna aktibatu',
+  'tema.activarClaro': 'Modu argia aktibatu',
 };

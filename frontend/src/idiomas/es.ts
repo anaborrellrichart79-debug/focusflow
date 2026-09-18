@@ -28,6 +28,7 @@ export const es = {
   'tareas.anadir': 'Añadir',
   'tareas.sueltas.titulo': 'Tareas sueltas',
   'tareas.eliminar': 'Eliminar tarea',
+  'tareas.marcarCompletada': 'Marcar "{titulo}" como completada',
   'inicio.irAPomodoro': 'Temporizador Pomodoro',
   'pomodoro.fase.trabajo': 'Trabajo',
   'pomodoro.fase.descansoCorto': 'Descanso corto',
@@ -65,4 +66,6 @@ export const es = {
   'estadisticas.pareto.vacio':
     'Aún no has marcado ninguna tarea como de alto impacto. Márcalas con ★ desde el tablero Kanban.',
   'pareto.marcar': 'Marcar como alto impacto',
+  'tema.activarOscuro': 'Activar modo oscuro',
+  'tema.activarClaro': 'Activar modo claro',
 };

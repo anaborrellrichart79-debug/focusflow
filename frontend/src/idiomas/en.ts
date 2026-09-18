@@ -28,6 +28,7 @@ export const en = {
   'tareas.anadir': 'Add',
   'tareas.sueltas.titulo': 'Standalone tasks',
   'tareas.eliminar': 'Delete task',
+  'tareas.marcarCompletada': 'Mark "{titulo}" as done',
   'inicio.irAPomodoro': 'Pomodoro timer',
   'pomodoro.fase.trabajo': 'Work',
   'pomodoro.fase.descansoCorto': 'Short break',
@@ -65,4 +66,6 @@ export const en = {
   'estadisticas.pareto.vacio':
     "You haven't marked any task as high impact yet. Mark them with ★ from the Kanban board.",
   'pareto.marcar': 'Mark as high impact',
+  'tema.activarOscuro': 'Turn on dark mode',
+  'tema.activarClaro': 'Turn on light mode',
 };

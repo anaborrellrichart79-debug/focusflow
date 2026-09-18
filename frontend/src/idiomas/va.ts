@@ -28,6 +28,7 @@ export const va = {
   'tareas.anadir': 'Afegir',
   'tareas.sueltas.titulo': 'Tasques soltes',
   'tareas.eliminar': 'Eliminar tasca',
+  'tareas.marcarCompletada': 'Marcar "{titulo}" com a completada',
   'inicio.irAPomodoro': 'Temporitzador Pomodoro',
   'pomodoro.fase.trabajo': 'Treball',
   'pomodoro.fase.descansoCorto': 'Descans curt',
@@ -65,4 +66,6 @@ export const va = {
   'estadisticas.pareto.vacio':
     'Encara no has marcat cap tasca com d\'alt impacte. Marca-les amb ★ des del tauler Kanban.',
   'pareto.marcar': 'Marcar com d\'alt impacte',
+  'tema.activarOscuro': 'Activar mode fosc',
+  'tema.activarClaro': 'Activar mode clar',
 };

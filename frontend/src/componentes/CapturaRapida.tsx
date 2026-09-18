@@ -26,7 +26,8 @@ export function CapturaRapida() {
         value={titulo}
         onChange={(evento) => setTitulo(evento.target.value)}
         placeholder={intl.formatMessage({ id: 'captura.placeholder' })}
-        className="rounded-full border-none shadow-none focus-visible:ring-0"
+        aria-label={intl.formatMessage({ id: 'captura.placeholder' })}
+        className="rounded-full border-none shadow-none"
       />
       <Button type="submit" size="sm" className="rounded-full">
         {intl.formatMessage({ id: 'captura.boton' })}

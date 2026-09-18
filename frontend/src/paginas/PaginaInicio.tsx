@@ -4,6 +4,7 @@ import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cerrarSesion } from '@/almacen/sesionSlice';
 import { Button } from '@/components/ui/button';
 import { SelectorIdioma } from '@/componentes/SelectorIdioma';
+import { SelectorTema } from '@/componentes/SelectorTema';
 
 export function PaginaInicio() {
   const intl = useIntl();
@@ -13,6 +14,7 @@ export function PaginaInicio() {
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-6 px-4 text-center">
       <div className="flex w-full items-center justify-end gap-3">
+        <SelectorTema />
         <SelectorIdioma />
       </div>
       <h1 className="text-4xl font-semibold tracking-tight">

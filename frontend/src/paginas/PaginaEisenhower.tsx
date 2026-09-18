@@ -74,6 +74,7 @@ export function PaginaEisenhower() {
                         <Button
                           variant={tarea.urgente ? 'default' : 'outline'}
                           size="xs"
+                          aria-pressed={tarea.urgente}
                           onClick={() => alternar(tarea, 'urgente')}
                         >
                           {intl.formatMessage({ id: 'eisenhower.marcar.urgente' })}
@@ -81,6 +82,7 @@ export function PaginaEisenhower() {
                         <Button
                           variant={tarea.importante ? 'default' : 'outline'}
                           size="xs"
+                          aria-pressed={tarea.importante}
                           onClick={() => alternar(tarea, 'importante')}
                         >
                           {intl.formatMessage({ id: 'eisenhower.marcar.importante' })}
