@@ -13,7 +13,7 @@ export function SelectorIdioma() {
       onChange={(evento) =>
         despachar(cambiarIdioma(evento.target.value as CodigoIdioma))
       }
-      className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+      className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm transition-shadow hover:shadow-md"
     >
       {IDIOMAS_DISPONIBLES.map((idioma) => (
         <option key={idioma.codigo} value={idioma.codigo}>

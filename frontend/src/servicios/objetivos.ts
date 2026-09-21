@@ -4,6 +4,7 @@ export interface Objetivo {
   id: string;
   titulo: string;
   descripcion: string | null;
+  fechaLimite: string | null;
   totalTareas: number;
   tareasCompletadas: number;
   creadoEn: string;
@@ -20,7 +21,7 @@ export function listarObjetivos(token: string) {
 
 export function crearObjetivo(
   token: string,
-  datos: { titulo: string; descripcion?: string },
+  datos: { titulo: string; descripcion?: string; fechaLimite?: string },
 ) {
   return peticionApi<Objetivo>('/objetivos', {
     method: 'POST',

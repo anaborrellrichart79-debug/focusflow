@@ -1,4 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
+import etiquetasReducer from './etiquetasSlice';
+import googleReducer from './googleSlice';
 import interfazReducer from './interfazSlice';
 import objetivosReducer from './objetivosSlice';
 import pomodoroReducer from './pomodoroSlice';
@@ -11,7 +13,9 @@ export const store = configureStore({
     sesion: sesionReducer,
     objetivos: objetivosReducer,
     tareas: tareasReducer,
+    etiquetas: etiquetasReducer,
     pomodoro: pomodoroReducer,
+    google: googleReducer,
   },
 });
 

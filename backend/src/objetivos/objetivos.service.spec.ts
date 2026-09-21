@@ -30,7 +30,27 @@ describe('ObjetivosService', () => {
     await servicio.crear('usuario-1', { titulo: 'Aprender TypeScript' });
 
     expect(prismaFalso.objetivo.create).toHaveBeenCalledWith({
-      data: { titulo: 'Aprender TypeScript', descripcion: undefined, usuarioId: 'usuario-1' },
+      data: {
+        titulo: 'Aprender TypeScript',
+        descripcion: undefined,
+        fechaLimite: undefined,
+        usuarioId: 'usuario-1',
+      },
+    });
+  });
+
+  it('crear pasa la fechaLimite tal cual a Prisma', async () => {
+    const fechaLimite = new Date('2026-12-31T00:00:00.000Z');
+
+    await servicio.crear('usuario-1', { titulo: 'Con fecha', fechaLimite });
+
+    expect(prismaFalso.objetivo.create).toHaveBeenCalledWith({
+      data: {
+        titulo: 'Con fecha',
+        descripcion: undefined,
+        fechaLimite,
+        usuarioId: 'usuario-1',
+      },
     });
   });
 

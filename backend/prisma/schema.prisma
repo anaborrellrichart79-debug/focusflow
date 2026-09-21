@@ -13,28 +13,39 @@ datasource db {
 }
 
 model Usuario {
-  id               String            @id @default(uuid())
-  correo           String            @unique
-  contrasena       String
-  nombre           String?
-  objetivos        Objetivo[]
-  tareas           Tarea[]
-  sesionesPomodoro SesionPomodoro[]
-  creadoEn         DateTime          @default(now())
-  actualizadoEn    DateTime          @updatedAt
+  id                         String                   @id @default(uuid())
+  correo                     String                   @unique
+  contrasena                 String
+  nombre                     String?
+  objetivos                  Objetivo[]
+  tareas                     Tarea[]
+  sesionesPomodoro           SesionPomodoro[]
+  etiquetas                  Etiqueta[]
+  eventosGoogle              EventoCalendarioGoogle[]
+  // Tokens de la cuenta de Google Calendar conectada (si la hay). Sin cifrar:
+  // misma postura de seguridad que el resto del proyecto (JWT_SECRET en claro
+  // en .env, sin cifrado adicional en la base de datos), aceptable para un
+  // proyecto personal en desarrollo local, no para producción multiusuario.
+  googleAccessToken          String?
+  googleRefreshToken         String?
+  googleTokenExpiraEn        DateTime?
+  googleUltimaSincronizacion DateTime?
+  creadoEn                   DateTime                 @default(now())
+  actualizadoEn              DateTime                 @updatedAt
 
   @@map("usuarios")
 }
 
 model Objetivo {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   titulo        String
   descripcion   String?
+  fechaLimite   DateTime?
   usuarioId     String
-  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario       Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   tareas        Tarea[]
-  creadoEn      DateTime @default(now())
-  actualizadoEn DateTime @updatedAt
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
 
   @@map("objetivos")
 }
@@ -45,23 +56,65 @@ enum EstadoTarea {
   HECHA
 }
 
+enum Recurrencia {
+  NINGUNA
+  DIARIA
+  SEMANAL
+}
+
 model Tarea {
-  id               String           @id @default(uuid())
-  titulo           String
-  descripcion      String?
-  estado           EstadoTarea      @default(POR_HACER)
-  urgente          Boolean          @default(false)
-  importante       Boolean          @default(false)
-  esAltoImpacto    Boolean          @default(false)
-  usuarioId        String
-  usuario          Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  objetivoId       String?
-  objetivo         Objetivo?        @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
-  sesionesPomodoro SesionPomodoro[]
-  creadoEn         DateTime         @default(now())
-  actualizadoEn    DateTime         @updatedAt
+  id                    String                  @id @default(uuid())
+  titulo                String
+  descripcion           String?
+  estado                EstadoTarea             @default(POR_HACER)
+  urgente               Boolean                 @default(false)
+  importante            Boolean                 @default(false)
+  esAltoImpacto         Boolean                 @default(false)
+  fechaLimite           DateTime?
+  recurrencia           Recurrencia             @default(NINGUNA)
+  tiempoEstimadoMinutos Int?
+  usuarioId             String
+  usuario               Usuario                 @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  objetivoId            String?
+  objetivo              Objetivo?               @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  sesionesPomodoro      SesionPomodoro[]
+  subtareas             Subtarea[]
+  etiquetas             Etiqueta[]              @relation("TareaEtiquetas")
+  eventoGoogle          EventoCalendarioGoogle?
+  creadoEn              DateTime                @default(now())
+  actualizadoEn         DateTime                @updatedAt
 
   @@map("tareas")
+}
+
+// Checklist dentro de una tarea, para tareas más grandes que un Pomodoro sin
+// llegar a crear un objetivo nuevo. Solo título + completada: no necesita su
+// propio estado Kanban ni prioridad, hereda el contexto de la tarea padre.
+model Subtarea {
+  id            String   @id @default(uuid())
+  titulo        String
+  completada    Boolean  @default(false)
+  tareaId       String
+  tarea         Tarea    @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("subtareas")
+}
+
+// Etiquetas libres por usuario (no por tarea): "nombre" es único por usuario
+// para poder reutilizar la misma etiqueta en varias tareas vía connectOrCreate
+// sin duplicados, y para poder ofrecer un listado de "mis etiquetas" en la UI.
+model Etiqueta {
+  id        String   @id @default(uuid())
+  nombre    String
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tareas    Tarea[]  @relation("TareaEtiquetas")
+  creadoEn  DateTime @default(now())
+
+  @@unique([usuarioId, nombre])
+  @@map("etiquetas")
 }
 
 enum FasePomodoro {
@@ -75,14 +128,34 @@ enum FasePomodoro {
 // tareaId es opcional y se conserva el historial aunque se borre la tarea
 // (onDelete: SetNull), a diferencia de Objetivo->Tarea que sí es en cascada.
 model SesionPomodoro {
-  id               String       @id @default(uuid())
+  id               String                  @id @default(uuid())
   fase             FasePomodoro
   duracionSegundos Int
   usuarioId        String
-  usuario          Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario          Usuario                 @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   tareaId          String?
-  tarea            Tarea?       @relation(fields: [tareaId], references: [id], onDelete: SetNull)
-  completadaEn     DateTime     @default(now())
+  tarea            Tarea?                  @relation(fields: [tareaId], references: [id], onDelete: SetNull)
+  completadaEn     DateTime                @default(now())
+  eventoGoogle     EventoCalendarioGoogle?
 
   @@map("sesiones_pomodoro")
+}
+
+// Lleva la cuenta de qué tarea/sesión de Pomodoro ya tiene su evento gemelo en
+// Google Calendar, para no duplicarlo en cada sincronización y para saber a
+// qué tarea traducir un evento que llega importado desde el calendario. Un
+// evento de Google es de una cosa o de la otra, nunca de las dos a la vez.
+model EventoCalendarioGoogle {
+  id               String          @id @default(uuid())
+  usuarioId        String
+  usuario          Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  googleEventId    String
+  tareaId          String?         @unique
+  tarea            Tarea?          @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+  sesionPomodoroId String?         @unique
+  sesionPomodoro   SesionPomodoro? @relation(fields: [sesionPomodoroId], references: [id], onDelete: Cascade)
+  actualizadoEn    DateTime        @updatedAt
+
+  @@unique([usuarioId, googleEventId])
+  @@map("eventos_calendario_google")
 }

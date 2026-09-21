@@ -1,4 +1,19 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsDate,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
+import { Recurrencia } from '../../generated/prisma/enums.js';
 
 export class CrearTareaDto {
   @IsString()
@@ -14,4 +29,26 @@ export class CrearTareaDto {
   @IsOptional()
   @IsUUID()
   objetivoId?: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  fechaLimite?: Date;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  etiquetas?: string[];
+
+  @IsOptional()
+  @IsEnum(Recurrencia)
+  recurrencia?: Recurrencia;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  tiempoEstimadoMinutos?: number;
 }

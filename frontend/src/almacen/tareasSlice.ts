@@ -1,11 +1,18 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { ErrorApi } from '@/servicios/api';
 import {
+  actualizarSubtarea as actualizarSubtareaApi,
+  crearSubtarea as crearSubtareaApi,
+  eliminarSubtarea as eliminarSubtareaApi,
+  type Subtarea,
+} from '@/servicios/subtareas';
+import {
   actualizarTarea as actualizarTareaApi,
   crearTarea as crearTareaApi,
   eliminarTarea as eliminarTareaApi,
   listarTareas as listarTareasApi,
   type EstadoTarea,
+  type Recurrencia,
   type Tarea,
 } from '@/servicios/tareas';
 import type { EstadoRaiz } from './store';
@@ -46,7 +53,14 @@ export const cargarTareas = createAsyncThunk<
 
 export const crearTarea = createAsyncThunk<
   Tarea,
-  { titulo: string; descripcion?: string; objetivoId?: string },
+  {
+    titulo: string;
+    descripcion?: string;
+    objetivoId?: string;
+    fechaLimite?: string;
+    etiquetas?: string[];
+    recurrencia?: Recurrencia;
+  },
   { state: EstadoRaiz; rejectValue: string }
 >('tareas/crear', async (datos, { getState, rejectWithValue }) => {
   try {
@@ -62,9 +76,16 @@ export const cambiarEstadoTarea = createAsyncThunk<
   Tarea,
   { id: string; estado: EstadoTarea },
   { state: EstadoRaiz; rejectValue: string }
->('tareas/cambiarEstado', async ({ id, estado }, { getState, rejectWithValue }) => {
+>('tareas/cambiarEstado', async ({ id, estado }, { getState, dispatch, rejectWithValue }) => {
   try {
-    return await actualizarTareaApi(tokenOError(getState()), id, { estado });
+    const tarea = await actualizarTareaApi(tokenOError(getState()), id, { estado });
+    // Si la tarea era recurrente, el backend ya ha creado en silencio la
+    // siguiente ocurrencia: se recarga la lista para que aparezca sin esperar
+    // a la próxima navegación.
+    if (estado === 'HECHA') {
+      dispatch(cargarTareas());
+    }
+    return tarea;
   } catch (error) {
     return rejectWithValue(
       error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
@@ -103,6 +124,79 @@ export const marcarAltoImpactoTarea = createAsyncThunk<
   }
 });
 
+export const cambiarFechaLimiteTarea = createAsyncThunk<
+  Tarea,
+  { id: string; fechaLimite: string },
+  { state: EstadoRaiz; rejectValue: string }
+>('tareas/cambiarFechaLimite', async ({ id, fechaLimite }, { getState, rejectWithValue }) => {
+  try {
+    return await actualizarTareaApi(tokenOError(getState()), id, { fechaLimite });
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+    );
+  }
+});
+
+export const cambiarDescripcionTarea = createAsyncThunk<
+  Tarea,
+  { id: string; descripcion: string },
+  { state: EstadoRaiz; rejectValue: string }
+>('tareas/cambiarDescripcion', async ({ id, descripcion }, { getState, rejectWithValue }) => {
+  try {
+    return await actualizarTareaApi(tokenOError(getState()), id, { descripcion });
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+    );
+  }
+});
+
+export const cambiarEtiquetasTarea = createAsyncThunk<
+  Tarea,
+  { id: string; etiquetas: string[] },
+  { state: EstadoRaiz; rejectValue: string }
+>('tareas/cambiarEtiquetas', async ({ id, etiquetas }, { getState, rejectWithValue }) => {
+  try {
+    return await actualizarTareaApi(tokenOError(getState()), id, { etiquetas });
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+    );
+  }
+});
+
+export const cambiarRecurrenciaTarea = createAsyncThunk<
+  Tarea,
+  { id: string; recurrencia: Recurrencia },
+  { state: EstadoRaiz; rejectValue: string }
+>('tareas/cambiarRecurrencia', async ({ id, recurrencia }, { getState, rejectWithValue }) => {
+  try {
+    return await actualizarTareaApi(tokenOError(getState()), id, { recurrencia });
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+    );
+  }
+});
+
+export const cambiarTiempoEstimadoTarea = createAsyncThunk<
+  Tarea,
+  { id: string; tiempoEstimadoMinutos: number },
+  { state: EstadoRaiz; rejectValue: string }
+>(
+  'tareas/cambiarTiempoEstimado',
+  async ({ id, tiempoEstimadoMinutos }, { getState, rejectWithValue }) => {
+    try {
+      return await actualizarTareaApi(tokenOError(getState()), id, { tiempoEstimadoMinutos });
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+      );
+    }
+  },
+);
+
 export const eliminarTarea = createAsyncThunk<
   string,
   string,
@@ -114,6 +208,54 @@ export const eliminarTarea = createAsyncThunk<
   } catch (error) {
     return rejectWithValue(
       error instanceof ErrorApi ? error.message : 'No se pudo eliminar la tarea',
+    );
+  }
+});
+
+export const crearSubtareaTarea = createAsyncThunk<
+  { tareaId: string; subtarea: Subtarea },
+  { tareaId: string; titulo: string },
+  { state: EstadoRaiz; rejectValue: string }
+>('tareas/crearSubtarea', async ({ tareaId, titulo }, { getState, rejectWithValue }) => {
+  try {
+    const subtarea = await crearSubtareaApi(tokenOError(getState()), tareaId, { titulo });
+    return { tareaId, subtarea };
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo crear la subtarea',
+    );
+  }
+});
+
+export const cambiarSubtarea = createAsyncThunk<
+  { tareaId: string; subtarea: Subtarea },
+  { id: string; tareaId: string; completada?: boolean; titulo?: string },
+  { state: EstadoRaiz; rejectValue: string }
+>(
+  'tareas/cambiarSubtarea',
+  async ({ id, tareaId, ...cambios }, { getState, rejectWithValue }) => {
+    try {
+      const subtarea = await actualizarSubtareaApi(tokenOError(getState()), id, cambios);
+      return { tareaId, subtarea };
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof ErrorApi ? error.message : 'No se pudo actualizar la subtarea',
+      );
+    }
+  },
+);
+
+export const eliminarSubtareaTarea = createAsyncThunk<
+  { tareaId: string; id: string },
+  { id: string; tareaId: string },
+  { state: EstadoRaiz; rejectValue: string }
+>('tareas/eliminarSubtarea', async ({ id, tareaId }, { getState, rejectWithValue }) => {
+  try {
+    await eliminarSubtareaApi(tokenOError(getState()), id);
+    return { tareaId, id };
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo eliminar la subtarea',
     );
   }
 });
@@ -142,11 +284,42 @@ const tareasSlice = createSlice({
       .addCase(eliminarTarea.fulfilled, (estado, accion) => {
         estado.lista = estado.lista.filter((tarea) => tarea.id !== accion.payload);
       })
+      .addCase(crearSubtareaTarea.fulfilled, (estado, accion) => {
+        const tarea = estado.lista.find((tarea) => tarea.id === accion.payload.tareaId);
+        if (tarea) {
+          tarea.subtareas.push(accion.payload.subtarea);
+        }
+      })
+      .addCase(cambiarSubtarea.fulfilled, (estado, accion) => {
+        const tarea = estado.lista.find((tarea) => tarea.id === accion.payload.tareaId);
+        if (!tarea) return;
+        const indice = tarea.subtareas.findIndex(
+          (subtarea) => subtarea.id === accion.payload.subtarea.id,
+        );
+        if (indice !== -1) {
+          tarea.subtareas[indice] = accion.payload.subtarea;
+        }
+      })
+      .addCase(eliminarSubtareaTarea.fulfilled, (estado, accion) => {
+        const tarea = estado.lista.find((tarea) => tarea.id === accion.payload.tareaId);
+        if (tarea) {
+          tarea.subtareas = tarea.subtareas.filter(
+            (subtarea) => subtarea.id !== accion.payload.id,
+          );
+        }
+      })
       .addMatcher(
         (accion): accion is { type: string; payload: Tarea } =>
-          [cambiarEstadoTarea, cambiarPrioridadTarea, marcarAltoImpactoTarea].some(
-            (thunk) => thunk.fulfilled.match(accion),
-          ),
+          [
+            cambiarEstadoTarea,
+            cambiarPrioridadTarea,
+            marcarAltoImpactoTarea,
+            cambiarFechaLimiteTarea,
+            cambiarDescripcionTarea,
+            cambiarEtiquetasTarea,
+            cambiarRecurrenciaTarea,
+            cambiarTiempoEstimadoTarea,
+          ].some((thunk) => thunk.fulfilled.match(accion)),
         (estado, accion) => {
           const indice = estado.lista.findIndex((tarea) => tarea.id === accion.payload.id);
           if (indice !== -1) {

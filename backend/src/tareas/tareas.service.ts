@@ -1,8 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { EstadoTarea, Recurrencia } from '../generated/prisma/enums.js';
+import type { TareaModel } from '../generated/prisma/models.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import type { ActualizarTareaDto } from './dto/actualizar-tarea.dto.js';
 import type { CrearTareaDto } from './dto/crear-tarea.dto.js';
 import type { FiltrarTareasDto } from './dto/filtrar-tareas.dto.js';
+
+const INCLUIR_RELACIONES = {
+  subtareas: { orderBy: { creadoEn: 'asc' as const } },
+  etiquetas: true,
+};
 
 @Injectable()
 export class TareasService {
@@ -18,8 +25,12 @@ export class TareasService {
         titulo: datos.titulo,
         descripcion: datos.descripcion,
         objetivoId: datos.objetivoId,
+        fechaLimite: datos.fechaLimite,
+        tiempoEstimadoMinutos: datos.tiempoEstimadoMinutos,
         usuarioId,
+        etiquetas: this.construirEtiquetasCrear(usuarioId, datos.etiquetas),
       },
+      include: INCLUIR_RELACIONES,
     });
   }
 
@@ -30,6 +41,7 @@ export class TareasService {
         objetivoId: filtros.objetivoId,
         estado: filtros.estado,
       },
+      include: INCLUIR_RELACIONES,
       orderBy: { creadoEn: 'desc' },
     });
   }
@@ -45,21 +57,91 @@ export class TareasService {
   }
 
   async actualizar(usuarioId: string, id: string, datos: ActualizarTareaDto) {
-    await this.obtenerUna(usuarioId, id);
+    const tareaOriginal = await this.obtenerUna(usuarioId, id);
 
     if (datos.objetivoId) {
       await this.verificarPropiedadObjetivo(usuarioId, datos.objetivoId);
     }
 
-    return this.prisma.tarea.update({
+    const { etiquetas, ...resto } = datos;
+
+    const tareaActualizada = await this.prisma.tarea.update({
       where: { id },
-      data: datos,
+      data: {
+        ...resto,
+        etiquetas: this.construirEtiquetasActualizar(usuarioId, etiquetas),
+      },
+      include: INCLUIR_RELACIONES,
     });
+
+    if (
+      datos.estado === EstadoTarea.HECHA &&
+      tareaOriginal.estado !== EstadoTarea.HECHA &&
+      tareaOriginal.recurrencia !== Recurrencia.NINGUNA
+    ) {
+      await this.crearSiguienteOcurrencia(usuarioId, tareaOriginal);
+    }
+
+    return tareaActualizada;
   }
 
   async eliminar(usuarioId: string, id: string) {
     await this.obtenerUna(usuarioId, id);
     await this.prisma.tarea.delete({ where: { id } });
+  }
+
+  private construirEtiquetasCrear(usuarioId: string, nombres: string[] | undefined) {
+    if (!nombres) return undefined;
+
+    return {
+      connectOrCreate: this.limpiarNombres(nombres).map((nombre) => ({
+        where: { usuarioId_nombre: { usuarioId, nombre } },
+        create: { nombre, usuarioId },
+      })),
+    };
+  }
+
+  private construirEtiquetasActualizar(usuarioId: string, nombres: string[] | undefined) {
+    if (!nombres) return undefined;
+
+    return {
+      set: [],
+      connectOrCreate: this.limpiarNombres(nombres).map((nombre) => ({
+        where: { usuarioId_nombre: { usuarioId, nombre } },
+        create: { nombre, usuarioId },
+      })),
+    };
+  }
+
+  private limpiarNombres(nombres: string[]) {
+    return [...new Set(nombres.map((nombre) => nombre.trim()).filter(Boolean))];
+  }
+
+  // Al completar una tarea recurrente se crea automáticamente la siguiente
+  // ocurrencia (misma tarea, nueva fechaLimite), sin etiquetas ni subtareas:
+  // esas son específicas de la ejecución que se acaba de completar, no de la
+  // rutina en sí.
+  private async crearSiguienteOcurrencia(usuarioId: string, tareaOriginal: TareaModel) {
+    const fechaBase = tareaOriginal.fechaLimite ?? new Date();
+    const fechaLimite = new Date(fechaBase);
+    if (tareaOriginal.recurrencia === Recurrencia.DIARIA) {
+      fechaLimite.setDate(fechaLimite.getDate() + 1);
+    } else if (tareaOriginal.recurrencia === Recurrencia.SEMANAL) {
+      fechaLimite.setDate(fechaLimite.getDate() + 7);
+    }
+
+    await this.prisma.tarea.create({
+      data: {
+        titulo: tareaOriginal.titulo,
+        descripcion: tareaOriginal.descripcion,
+        objetivoId: tareaOriginal.objetivoId,
+        urgente: tareaOriginal.urgente,
+        importante: tareaOriginal.importante,
+        recurrencia: tareaOriginal.recurrencia,
+        fechaLimite,
+        usuarioId,
+      },
+    });
   }
 
   private async verificarPropiedadObjetivo(usuarioId: string, objetivoId: string) {

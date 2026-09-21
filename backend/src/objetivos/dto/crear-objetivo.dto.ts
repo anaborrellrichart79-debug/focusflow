@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDate, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CrearObjetivoDto {
   @IsString()
@@ -10,4 +11,9 @@ export class CrearObjetivoDto {
   @IsString()
   @MaxLength(2000)
   descripcion?: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  fechaLimite?: Date;
 }

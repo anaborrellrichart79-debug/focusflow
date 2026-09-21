@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Tarea } from '@/servicios/tareas';
 import { renderizarPagina } from '@/pruebas/render';
 import { PaginaEisenhower } from './PaginaEisenhower';
@@ -13,6 +13,11 @@ function crearTareaFalsa(datos: Partial<Tarea>): Tarea {
     urgente: false,
     importante: false,
     esAltoImpacto: false,
+    fechaLimite: null,
+    recurrencia: 'NINGUNA',
+    tiempoEstimadoMinutos: null,
+    subtareas: [],
+    etiquetas: [],
     objetivoId: null,
     usuarioId: 'usuario-1',
     creadoEn: '2026-01-01T00:00:00.000Z',
@@ -66,5 +71,58 @@ describe('PaginaEisenhower', () => {
       'aria-pressed',
       'false',
     );
+  });
+
+  describe('urgencia automática por fecha límite', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-06-15T12:00:00.000Z'));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('una tarea importante sin marcar como urgente, pero que vence mañana, cae en "Hacer ya"', () => {
+      const tareas = [
+        crearTareaFalsa({
+          id: 'a',
+          titulo: 'Entrega inminente',
+          urgente: false,
+          importante: true,
+          fechaLimite: '2026-06-16T12:00:00.000Z',
+        }),
+      ];
+
+      renderizarPagina(<PaginaEisenhower />, {
+        estadoPrecargado: { tareas: { lista: tareas, cargando: false, error: null } },
+      });
+
+      expect(obtenerCuadrante('Hacer ya').getByText('Entrega inminente')).toBeInTheDocument();
+      expect(obtenerCuadrante('Hacer ya').getByText(/Urgente por fecha/)).toBeInTheDocument();
+      expect(obtenerCuadrante('Planificar').queryByText('Entrega inminente')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Urgente' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+    });
+
+    it('una tarea importante con fecha lejana se queda en "Planificar"', () => {
+      const tareas = [
+        crearTareaFalsa({
+          id: 'a',
+          titulo: 'Con margen',
+          urgente: false,
+          importante: true,
+          fechaLimite: '2026-07-01T12:00:00.000Z',
+        }),
+      ];
+
+      renderizarPagina(<PaginaEisenhower />, {
+        estadoPrecargado: { tareas: { lista: tareas, cargando: false, error: null } },
+      });
+
+      expect(obtenerCuadrante('Planificar').getByText('Con margen')).toBeInTheDocument();
+    });
   });
 });

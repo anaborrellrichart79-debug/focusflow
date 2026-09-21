@@ -81,6 +81,7 @@ export function PaginaPomodoro() {
   }, [notificacionPendiente, ultimaFaseCompletada, tareaAsociadaId, despachar]);
 
   const cicloActual = (ciclosCompletados % CICLOS_PARA_DESCANSO_LARGO) + 1;
+  const colorFase = fase === 'trabajo' ? 'var(--motivador)' : 'var(--exito)';
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center gap-6 px-4 py-10">
@@ -92,10 +93,17 @@ export function PaginaPomodoro() {
 
       <Card className="w-full">
         <CardContent className="flex flex-col items-center gap-4 py-10">
-          <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          <span
+            className="flex items-center gap-2 text-sm font-medium uppercase tracking-wide"
+            style={{ color: colorFase }}
+          >
+            <span aria-hidden className="size-2.5 rounded-full" style={{ backgroundColor: colorFase }} />
             {intl.formatMessage({ id: ETIQUETAS_FASE[fase] })}
           </span>
-          <span className="text-6xl font-semibold tabular-nums tracking-tight">
+          <span
+            className="text-6xl font-semibold tabular-nums tracking-tight transition-colors"
+            style={{ color: colorFase }}
+          >
             {formatearTiempo(segundosRestantes)}
           </span>
           <span className="text-sm text-muted-foreground">
@@ -125,7 +133,7 @@ export function PaginaPomodoro() {
             <select
               value={tareaAsociadaId}
               onChange={(evento) => setTareaAsociadaId(evento.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+              className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm transition-shadow hover:shadow-md"
             >
               <option value="">
                 {intl.formatMessage({ id: 'pomodoro.tareaAsociada.ninguna' })}

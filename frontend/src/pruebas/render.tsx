@@ -4,6 +4,8 @@ import type { ReactElement } from 'react';
 import { IntlProvider } from 'react-intl';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
+import etiquetasReducer from '@/almacen/etiquetasSlice';
+import googleReducer from '@/almacen/googleSlice';
 import interfazReducer from '@/almacen/interfazSlice';
 import objetivosReducer from '@/almacen/objetivosSlice';
 import pomodoroReducer from '@/almacen/pomodoroSlice';
@@ -17,7 +19,9 @@ const reductorRaiz = {
   sesion: sesionReducer,
   objetivos: objetivosReducer,
   tareas: tareasReducer,
+  etiquetas: etiquetasReducer,
   pomodoro: pomodoroReducer,
+  google: googleReducer,
 };
 
 export function crearTiendaDePrueba(estadoPrecargado?: Partial<EstadoRaiz>) {

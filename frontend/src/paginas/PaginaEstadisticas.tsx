@@ -8,7 +8,10 @@ import { cargarTareas } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { MapaActividad } from '@/componentes/MapaActividad';
 import type { EstadoTarea } from '@/servicios/tareas';
+import { calcularRachaDias } from '@/utilidades/rachas';
+import { construirFilaCsv, descargarCsv } from '@/utilidades/exportar';
 
 const MILISEGUNDOS_POR_DIA = 24 * 60 * 60 * 1000;
 
@@ -57,16 +60,64 @@ export function PaginaEstadisticas() {
   const minutosTrabajoSemana = Math.round(
     sesionesTrabajoSemana.reduce((total, sesion) => total + sesion.duracionSegundos, 0) / 60,
   );
+  const rachaDias = calcularRachaDias(sesionesTrabajo.map((sesion) => sesion.completadaEn));
+
+  function tiempoRealMinutos(tareaId: string) {
+    return Math.round(
+      historialPomodoro
+        .filter((sesion) => sesion.fase === 'TRABAJO' && sesion.tareaId === tareaId)
+        .reduce((total, sesion) => total + sesion.duracionSegundos, 0) / 60,
+    );
+  }
+
+  const comparacionTiempo = tareas
+    .filter((tarea) => tarea.tiempoEstimadoMinutos != null)
+    .map((tarea) => ({ tarea, tiempoReal: tiempoRealMinutos(tarea.id) }));
+
+  function alExportarCsv() {
+    const filas = [
+      construirFilaCsv([
+        'Título',
+        'Objetivo',
+        'Estado',
+        'Fecha límite',
+        'Tiempo estimado (min)',
+        'Tiempo real (min)',
+        'Etiquetas',
+      ]),
+      ...tareas.map((tarea) => {
+        const nombreObjetivo = objetivos.find((o) => o.id === tarea.objetivoId)?.titulo ?? '';
+        return construirFilaCsv([
+          tarea.titulo,
+          nombreObjetivo,
+          tarea.estado,
+          tarea.fechaLimite ? intl.formatDate(tarea.fechaLimite) : '',
+          tarea.tiempoEstimadoMinutos ?? '',
+          tiempoRealMinutos(tarea.id),
+          tarea.etiquetas.map((etiqueta) => etiqueta.nombre).join('; '),
+        ]);
+      }),
+    ];
+    descargarCsv(filas, `focusflow-tareas-${new Date().toISOString().slice(0, 10)}.csv`);
+  }
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-10">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">
           {intl.formatMessage({ id: 'estadisticas.titulo' })}
         </h1>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/">{intl.formatMessage({ id: 'app.titulo' })}</Link>
-        </Button>
+        <div className="no-imprimir flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={alExportarCsv}>
+            {intl.formatMessage({ id: 'estadisticas.exportar.csv' })}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            {intl.formatMessage({ id: 'estadisticas.exportar.pdf' })}
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/">{intl.formatMessage({ id: 'app.titulo' })}</Link>
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -74,7 +125,7 @@ export function PaginaEstadisticas() {
           <CardTitle>{intl.formatMessage({ id: 'estadisticas.progresoGlobal' })}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          <span className="text-5xl font-semibold tabular-nums tracking-tight">
+          <span className="text-5xl font-semibold tabular-nums tracking-tight text-primary">
             {porcentajeCompletado}%
           </span>
           <span className="text-sm text-muted-foreground">
@@ -96,30 +147,42 @@ export function PaginaEstadisticas() {
               {intl.formatMessage({ id: 'estadisticas.pomodoro.vacio' })}
             </p>
           ) : (
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col gap-1">
-                <span className="text-3xl font-semibold tabular-nums tracking-tight">
-                  {pomodorosHoy}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {intl.formatMessage({ id: 'estadisticas.pomodoro.hoy' })}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-3xl font-semibold tabular-nums tracking-tight">
-                  {pomodorosSemana}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {intl.formatMessage({ id: 'estadisticas.pomodoro.semana' })}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-3xl font-semibold tabular-nums tracking-tight">
-                  {minutosTrabajoSemana}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {intl.formatMessage({ id: 'estadisticas.pomodoro.minutosSemana' })}
-                </span>
+            <div className="flex flex-col gap-4">
+              {rachaDias > 0 ? (
+                <p className="flex items-center gap-1.5 text-sm font-medium text-motivador">
+                  <span aria-hidden>🔥</span>
+                  {intl.formatMessage({ id: 'estadisticas.racha' }, { racha: rachaDias })}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {intl.formatMessage({ id: 'estadisticas.racha.vacia' })}
+                </p>
+              )}
+              <div className="grid grid-cols-1 gap-3 xs:grid-cols-3 xs:gap-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-3xl font-semibold tabular-nums tracking-tight text-motivador">
+                    {pomodorosHoy}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {intl.formatMessage({ id: 'estadisticas.pomodoro.hoy' })}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-3xl font-semibold tabular-nums tracking-tight text-motivador">
+                    {pomodorosSemana}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {intl.formatMessage({ id: 'estadisticas.pomodoro.semana' })}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-3xl font-semibold tabular-nums tracking-tight text-motivador">
+                    {minutosTrabajoSemana}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {intl.formatMessage({ id: 'estadisticas.pomodoro.minutosSemana' })}
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -214,14 +277,14 @@ export function PaginaEstadisticas() {
           <div className="flex h-6 w-full gap-0.5 overflow-hidden rounded-full bg-muted">
             {tareasAltoImpacto.length > 0 && (
               <div
-                style={{ backgroundColor: 'var(--chart-1)', flexGrow: tareasAltoImpacto.length }}
+                style={{ backgroundColor: 'var(--motivador)', flexGrow: tareasAltoImpacto.length }}
                 className="flex-shrink-0 first:rounded-l-full last:rounded-r-full"
               />
             )}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             <div className="flex items-center gap-1.5 text-sm">
-              <span className="size-3 rounded-sm" style={{ backgroundColor: 'var(--chart-1)' }} aria-hidden />
+              <span className="size-3 rounded-sm" style={{ backgroundColor: 'var(--motivador)' }} aria-hidden />
               <span className="text-muted-foreground">
                 {intl.formatMessage({ id: 'estadisticas.pareto.leyendaAltoImpacto' })}
               </span>
@@ -242,7 +305,57 @@ export function PaginaEstadisticas() {
             <ul className="flex flex-col gap-1">
               {tareasAltoImpacto.map((tarea) => (
                 <li key={tarea.id} className="text-sm">
-                  ★ {tarea.titulo}
+                  <span className="text-motivador">★</span> {tarea.titulo}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{intl.formatMessage({ id: 'estadisticas.actividad.titulo' })}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MapaActividad fechasIso={sesionesTrabajo.map((sesion) => sesion.completadaEn)} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{intl.formatMessage({ id: 'estadisticas.tiempoComparado.titulo' })}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {comparacionTiempo.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {intl.formatMessage({ id: 'estadisticas.tiempoComparado.vacio' })}
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {comparacionTiempo.map(({ tarea, tiempoReal }) => (
+                <li key={tarea.id} className="flex flex-col gap-1">
+                  <span className="text-sm">{tarea.titulo}</span>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                    <span className="text-muted-foreground">
+                      {intl.formatMessage(
+                        { id: 'estadisticas.tiempoComparado.estimado' },
+                        { minutos: tarea.tiempoEstimadoMinutos },
+                      )}
+                    </span>
+                    <span
+                      className={
+                        tiempoReal > (tarea.tiempoEstimadoMinutos ?? 0)
+                          ? 'font-medium text-destructive'
+                          : 'font-medium text-exito'
+                      }
+                    >
+                      {intl.formatMessage(
+                        { id: 'estadisticas.tiempoComparado.real' },
+                        { minutos: tiempoReal },
+                      )}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>

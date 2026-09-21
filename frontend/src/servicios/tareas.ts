@@ -1,6 +1,9 @@
+import type { Etiqueta } from './etiquetas';
 import { peticionApi } from './api';
+import type { Subtarea } from './subtareas';
 
 export type EstadoTarea = 'POR_HACER' | 'EN_PROCESO' | 'HECHA';
+export type Recurrencia = 'NINGUNA' | 'DIARIA' | 'SEMANAL';
 
 export interface Tarea {
   id: string;
@@ -10,8 +13,13 @@ export interface Tarea {
   urgente: boolean;
   importante: boolean;
   esAltoImpacto: boolean;
+  fechaLimite: string | null;
+  recurrencia: Recurrencia;
+  tiempoEstimadoMinutos: number | null;
   objetivoId: string | null;
   usuarioId: string;
+  subtareas: Subtarea[];
+  etiquetas: Etiqueta[];
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -26,7 +34,15 @@ export function listarTareas(token: string) {
 
 export function crearTarea(
   token: string,
-  datos: { titulo: string; descripcion?: string; objetivoId?: string },
+  datos: {
+    titulo: string;
+    descripcion?: string;
+    objetivoId?: string;
+    fechaLimite?: string;
+    etiquetas?: string[];
+    recurrencia?: Recurrencia;
+    tiempoEstimadoMinutos?: number;
+  },
 ) {
   return peticionApi<Tarea>('/tareas', {
     method: 'POST',
@@ -45,6 +61,10 @@ export function actualizarTarea(
     urgente: boolean;
     importante: boolean;
     esAltoImpacto: boolean;
+    fechaLimite: string;
+    etiquetas: string[];
+    recurrencia: Recurrencia;
+    tiempoEstimadoMinutos: number;
   }>,
 ) {
   return peticionApi<Tarea>(`/tareas/${id}`, {

@@ -44,7 +44,7 @@ export const cargarObjetivos = createAsyncThunk<
 
 export const crearObjetivo = createAsyncThunk<
   Objetivo,
-  { titulo: string; descripcion?: string },
+  { titulo: string; descripcion?: string; fechaLimite?: string },
   { state: EstadoRaiz; rejectValue: string }
 >('objetivos/crear', async (datos, { getState, rejectWithValue }) => {
   try {

@@ -1,9 +1,16 @@
 import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import type { SesionPomodoro } from '@/servicios/pomodoro';
 import type { Tarea } from '@/servicios/tareas';
 import { renderizarPagina } from '@/pruebas/render';
+import { descargarCsv } from '@/utilidades/exportar';
 import { PaginaEstadisticas } from './PaginaEstadisticas';
+
+vi.mock('@/utilidades/exportar', async (importarOriginal) => ({
+  ...(await importarOriginal<typeof import('@/utilidades/exportar')>()),
+  descargarCsv: vi.fn(),
+}));
 
 const MILISEGUNDOS_POR_DIA = 24 * 60 * 60 * 1000;
 
@@ -16,6 +23,11 @@ function crearTareaFalsa(datos: Partial<Tarea>): Tarea {
     urgente: false,
     importante: false,
     esAltoImpacto: false,
+    fechaLimite: null,
+    recurrencia: 'NINGUNA',
+    tiempoEstimadoMinutos: null,
+    subtareas: [],
+    etiquetas: [],
     objetivoId: null,
     usuarioId: 'usuario-1',
     creadoEn: '2026-01-01T00:00:00.000Z',
@@ -98,5 +110,114 @@ describe('PaginaEstadisticas', () => {
     // Hoy: solo "hoy" (1). Esta semana: "hoy" + "hace-3-dias" (2). Minutos: 25+25=50.
     const numeros = screen.getAllByText(/^\d+$/).map((nodo) => nodo.textContent);
     expect(numeros).toEqual(expect.arrayContaining(['1', '2', '50']));
+  });
+
+  it('muestra la racha de días seguidos cuando hay una sesión de trabajo hoy', () => {
+    const historial: SesionPomodoro[] = [crearSesionFalsa({ id: 'hoy', fase: 'TRABAJO' })];
+
+    renderizarPagina(<PaginaEstadisticas />, {
+      estadoPrecargado: {
+        pomodoro: {
+          fase: 'trabajo',
+          segundosRestantes: 1500,
+          activo: false,
+          ciclosCompletados: 0,
+          notificacionPendiente: false,
+          ultimaFaseCompletada: null,
+          historial,
+        },
+      },
+    });
+
+    expect(screen.getByText('Racha: 1 día seguido')).toBeInTheDocument();
+  });
+
+  it('sin sesiones recientes (aunque haya historial antiguo), muestra el mensaje de racha vacía', () => {
+    const ahora = Date.now();
+    const historial: SesionPomodoro[] = [
+      crearSesionFalsa({
+        id: 'hace-10-dias',
+        fase: 'TRABAJO',
+        completadaEn: new Date(ahora - 10 * MILISEGUNDOS_POR_DIA).toISOString(),
+      }),
+    ];
+
+    renderizarPagina(<PaginaEstadisticas />, {
+      estadoPrecargado: {
+        pomodoro: {
+          fase: 'trabajo',
+          segundosRestantes: 1500,
+          activo: false,
+          ciclosCompletados: 0,
+          notificacionPendiente: false,
+          ultimaFaseCompletada: null,
+          historial,
+        },
+      },
+    });
+
+    expect(
+      screen.getByText('Aún no tienes una racha activa. ¡Empieza hoy!'),
+    ).toBeInTheDocument();
+  });
+
+  it('muestra el mapa de actividad diaria', () => {
+    renderizarPagina(<PaginaEstadisticas />);
+
+    expect(screen.getByText('Actividad diaria')).toBeInTheDocument();
+  });
+
+  it('sin tareas con tiempo estimado, muestra el mensaje vacío de la comparación de tiempo', () => {
+    renderizarPagina(<PaginaEstadisticas />);
+
+    expect(
+      screen.getByText(
+        'Pon un tiempo estimado en una tarea (desde su detalle) y regístrale sesiones de Pomodoro para verla comparada aquí.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('con una tarea con tiempo estimado, compara el estimado contra el real registrado', () => {
+    const tareas = [
+      crearTareaFalsa({ id: 'a', titulo: 'Escribir el informe', tiempoEstimadoMinutos: 30 }),
+    ];
+    const historial: SesionPomodoro[] = [
+      crearSesionFalsa({ id: 's1', fase: 'TRABAJO', duracionSegundos: 1500, tareaId: 'a' }),
+    ];
+
+    renderizarPagina(<PaginaEstadisticas />, {
+      estadoPrecargado: {
+        tareas: { lista: tareas, cargando: false, error: null },
+        pomodoro: {
+          fase: 'trabajo',
+          segundosRestantes: 1500,
+          activo: false,
+          ciclosCompletados: 0,
+          notificacionPendiente: false,
+          ultimaFaseCompletada: null,
+          historial,
+        },
+      },
+    });
+
+    expect(screen.getByText('Escribir el informe')).toBeInTheDocument();
+    expect(screen.getByText('Estimado: 30 min')).toBeInTheDocument();
+    expect(screen.getByText('Real: 25 min')).toBeInTheDocument();
+  });
+
+  it('el botón "Exportar CSV" genera un archivo con las tareas', async () => {
+    const usuario = userEvent.setup();
+    const tareas = [crearTareaFalsa({ id: 'a', titulo: 'Tarea exportable' })];
+
+    renderizarPagina(<PaginaEstadisticas />, {
+      estadoPrecargado: { tareas: { lista: tareas, cargando: false, error: null } },
+    });
+
+    await usuario.click(screen.getByRole('button', { name: 'Exportar CSV' }));
+
+    expect(descargarCsv).toHaveBeenCalledTimes(1);
+    const [filas, nombreArchivo] = vi.mocked(descargarCsv).mock.calls[0];
+    expect(filas.some((fila) => fila.includes('Tarea exportable'))).toBe(true);
+    expect(nombreArchivo).toMatch(/^focusflow-tareas-\d{4}-\d{2}-\d{2}\.csv$/);
   });
 });
