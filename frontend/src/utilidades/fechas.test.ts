@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { diasHastaFecha, esUrgentePorFecha } from './fechas';
+import {
+  calcularFinBloque,
+  combinarFechaYHora,
+  diasHastaFecha,
+  esUrgentePorFecha,
+  obtenerSoloFecha,
+  obtenerSoloHora,
+  tieneHoraInicio,
+} from './fechas';
 
 // Las horas se fijan a mediodía UTC en el "ahora" y en las fechas de prueba para que la
 // comparación de días de calendario no dependa de la zona horaria de quien ejecuta los tests.
@@ -43,6 +51,54 @@ describe('utilidades/fechas', () => {
 
     it('es false si vence dentro de más de 2 días', () => {
       expect(esUrgentePorFecha('2026-06-20T12:00:00.000Z')).toBe(false);
+    });
+  });
+
+  describe('tieneHoraInicio', () => {
+    it('es false para una fecha límite sin hora (medianoche UTC)', () => {
+      expect(tieneHoraInicio('2026-06-16T00:00:00.000Z')).toBe(false);
+    });
+
+    it('es true para una fecha límite con hora', () => {
+      expect(tieneHoraInicio('2026-06-16T09:30:00.000Z')).toBe(true);
+    });
+  });
+
+  describe('obtenerSoloFecha', () => {
+    it('devuelve la parte de fecha en formato YYYY-MM-DD', () => {
+      expect(obtenerSoloFecha('2026-06-16T09:30:00.000Z')).toBe('2026-06-16');
+    });
+  });
+
+  describe('obtenerSoloHora', () => {
+    it('devuelve la parte de hora en formato HH:MM cuando hay hora de inicio', () => {
+      expect(obtenerSoloHora('2026-06-16T09:30:00.000Z')).toBe('09:30');
+    });
+
+    it('devuelve cadena vacía cuando no hay hora de inicio', () => {
+      expect(obtenerSoloHora('2026-06-16T00:00:00.000Z')).toBe('');
+    });
+  });
+
+  describe('combinarFechaYHora', () => {
+    it('combina fecha y hora en un ISO-8601 completo en UTC', () => {
+      expect(combinarFechaYHora('2026-06-16', '09:30')).toBe('2026-06-16T09:30:00.000Z');
+    });
+
+    it('usa medianoche cuando no se indica hora', () => {
+      expect(combinarFechaYHora('2026-06-16', '')).toBe('2026-06-16T00:00:00.000Z');
+    });
+  });
+
+  describe('calcularFinBloque', () => {
+    it('suma la duración indicada a la hora de inicio', () => {
+      const fin = calcularFinBloque('2026-06-16T09:00:00.000Z', 45);
+      expect(fin.toISOString()).toBe('2026-06-16T09:45:00.000Z');
+    });
+
+    it('usa 30 minutos por defecto si no hay duración', () => {
+      const fin = calcularFinBloque('2026-06-16T09:00:00.000Z', null);
+      expect(fin.toISOString()).toBe('2026-06-16T09:30:00.000Z');
     });
   });
 });

@@ -51,4 +51,12 @@ export class CrearTareaDto {
   @Min(1)
   @Max(1000)
   tiempoEstimadoMinutos?: number;
+
+  // Solo tiene sentido cuando fechaLimite lleva una hora de inicio real (no
+  // medianoche); ver el comentario del campo en schema.prisma.
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(480)
+  duracionMinutos?: number;
 }

@@ -19,10 +19,29 @@ export interface ResumenSincronizacion {
   actualizados: number;
   eliminados: number;
   importados: number;
+  // Eventos individuales que fallaron al hablar con la API de Google (p. ej.
+  // una instancia de un evento recurrente que Google rechaza reescribir) y
+  // que se omitieron para no abortar el resto de la sincronización.
+  errores: number;
 }
+
+const DURACION_MINUTOS_POR_DEFECTO = 30;
 
 function mismoDia(a: Date, b: Date) {
   return a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
+}
+
+// Una tarea "tiene hora de inicio" cuando su fechaLimite no cae exactamente a
+// medianoche UTC; así se distingue de una fecha límite sin hora (la que pone
+// un <input type="date">, que Date interpreta como medianoche UTC) sin
+// necesitar un campo booleano aparte.
+function tieneHoraInicio(fecha: Date): boolean {
+  return (
+    fecha.getUTCHours() !== 0 ||
+    fecha.getUTCMinutes() !== 0 ||
+    fecha.getUTCSeconds() !== 0 ||
+    fecha.getUTCMilliseconds() !== 0
+  );
 }
 
 @Injectable()
@@ -153,6 +172,7 @@ export class GoogleService {
     let actualizados = 0;
     let eliminados = 0;
     let importados = 0;
+    let errores = 0;
 
     const tareas = await this.prisma.tarea.findMany({
       where: { usuarioId, fechaLimite: { not: null } },
@@ -160,39 +180,48 @@ export class GoogleService {
     });
 
     for (const tarea of tareas) {
-      if (tarea.estado === 'HECHA') {
+      try {
+        if (tarea.estado === 'HECHA') {
+          if (tarea.eventoGoogle) {
+            await calendar.events
+              .delete({ calendarId: 'primary', eventId: tarea.eventoGoogle.googleEventId })
+              .catch(() => undefined);
+            await this.prisma.eventoCalendarioGoogle.delete({
+              where: { id: tarea.eventoGoogle.id },
+            });
+            eliminados += 1;
+          }
+          continue;
+        }
+
+        const recurso = this.construirEventoDesdeTarea(tarea);
+
         if (tarea.eventoGoogle) {
-          await calendar.events
-            .delete({ calendarId: 'primary', eventId: tarea.eventoGoogle.googleEventId })
-            .catch(() => undefined);
-          await this.prisma.eventoCalendarioGoogle.delete({
-            where: { id: tarea.eventoGoogle.id },
+          await calendar.events.update({
+            calendarId: 'primary',
+            eventId: tarea.eventoGoogle.googleEventId,
+            requestBody: recurso,
           });
-          eliminados += 1;
-        }
-        continue;
-      }
-
-      const recurso = this.construirEventoDesdeTarea(tarea);
-
-      if (tarea.eventoGoogle) {
-        await calendar.events.update({
-          calendarId: 'primary',
-          eventId: tarea.eventoGoogle.googleEventId,
-          requestBody: recurso,
-        });
-        actualizados += 1;
-      } else {
-        const respuesta = await calendar.events.insert({
-          calendarId: 'primary',
-          requestBody: recurso,
-        });
-        if (respuesta.data.id) {
-          await this.prisma.eventoCalendarioGoogle.create({
-            data: { usuarioId, googleEventId: respuesta.data.id, tareaId: tarea.id },
+          actualizados += 1;
+        } else {
+          const respuesta = await calendar.events.insert({
+            calendarId: 'primary',
+            requestBody: recurso,
           });
+          if (respuesta.data.id) {
+            await this.prisma.eventoCalendarioGoogle.create({
+              data: { usuarioId, googleEventId: respuesta.data.id, tareaId: tarea.id },
+            });
+          }
+          creados += 1;
         }
-        creados += 1;
+      } catch (error) {
+        // Un evento problemático (p. ej. una instancia de un evento
+        // recurrente importado, que Google no deja reescribir como si fuera
+        // un evento simple de FocusFlow) no debe tumbar el resto de la
+        // sincronización: se cuenta como error y se sigue con las demás.
+        errores += 1;
+        console.error(`No se pudo sincronizar la tarea ${tarea.id} con Google Calendar`, error);
       }
     }
 
@@ -204,15 +233,23 @@ export class GoogleService {
     });
 
     for (const sesion of sesiones) {
-      const respuesta = await calendar.events.insert({
-        calendarId: 'primary',
-        requestBody: this.construirEventoDesdeSesion(sesion),
-      });
-      if (respuesta.data.id) {
-        await this.prisma.eventoCalendarioGoogle.create({
-          data: { usuarioId, googleEventId: respuesta.data.id, sesionPomodoroId: sesion.id },
+      try {
+        const respuesta = await calendar.events.insert({
+          calendarId: 'primary',
+          requestBody: this.construirEventoDesdeSesion(sesion),
         });
-        creados += 1;
+        if (respuesta.data.id) {
+          await this.prisma.eventoCalendarioGoogle.create({
+            data: { usuarioId, googleEventId: respuesta.data.id, sesionPomodoroId: sesion.id },
+          });
+          creados += 1;
+        }
+      } catch (error) {
+        errores += 1;
+        console.error(
+          `No se pudo empujar la sesión de Pomodoro ${sesion.id} a Google Calendar`,
+          error,
+        );
       }
     }
 
@@ -234,34 +271,56 @@ export class GoogleService {
     });
 
     for (const evento of listado.data.items ?? []) {
-      if (!evento.id || evento.status === 'cancelled' || !evento.summary) continue;
-      const fechaInicioTexto = evento.start?.dateTime ?? evento.start?.date;
-      if (!fechaInicioTexto) continue;
-      const fechaEvento = new Date(fechaInicioTexto);
+      try {
+        if (!evento.id || evento.status === 'cancelled' || !evento.summary) continue;
+        const fechaInicioTexto = evento.start?.dateTime ?? evento.start?.date;
+        if (!fechaInicioTexto) continue;
+        const fechaEvento = new Date(fechaInicioTexto);
+        // Solo un evento con hora (dateTime) tiene una duración real que
+        // conservar; uno de todo el día (date) no la necesita.
+        const duracionEvento =
+          evento.start?.dateTime && evento.end?.dateTime
+            ? Math.max(
+                5,
+                Math.round(
+                  (new Date(evento.end.dateTime).getTime() - fechaEvento.getTime()) / 60000,
+                ),
+              )
+            : undefined;
 
-      if (mapaConocidos.has(evento.id)) {
-        const tareaId = mapaConocidos.get(evento.id);
-        if (!tareaId) continue; // era un evento de sesión de Pomodoro: esos no se reimportan ni actualizan
-        const tareaActual = tareas.find((t) => t.id === tareaId);
-        if (!tareaActual) continue;
-        const fechaCambiada = !tareaActual.fechaLimite || !mismoDia(tareaActual.fechaLimite, fechaEvento);
-        if (tareaActual.titulo !== evento.summary || fechaCambiada) {
-          await this.prisma.tarea.update({
-            where: { id: tareaId },
-            data: { titulo: evento.summary, fechaLimite: fechaEvento },
-          });
-          actualizados += 1;
+        if (mapaConocidos.has(evento.id)) {
+          const tareaId = mapaConocidos.get(evento.id);
+          if (!tareaId) continue; // era un evento de sesión de Pomodoro: esos no se reimportan ni actualizan
+          const tareaActual = tareas.find((t) => t.id === tareaId);
+          if (!tareaActual) continue;
+          const fechaCambiada =
+            !tareaActual.fechaLimite || !mismoDia(tareaActual.fechaLimite, fechaEvento);
+          if (tareaActual.titulo !== evento.summary || fechaCambiada) {
+            await this.prisma.tarea.update({
+              where: { id: tareaId },
+              data: { titulo: evento.summary, fechaLimite: fechaEvento, duracionMinutos: duracionEvento },
+            });
+            actualizados += 1;
+          }
+          continue;
         }
-        continue;
-      }
 
-      const tareaImportada = await this.prisma.tarea.create({
-        data: { titulo: evento.summary, fechaLimite: fechaEvento, usuarioId },
-      });
-      await this.prisma.eventoCalendarioGoogle.create({
-        data: { usuarioId, googleEventId: evento.id, tareaId: tareaImportada.id },
-      });
-      importados += 1;
+        const tareaImportada = await this.prisma.tarea.create({
+          data: {
+            titulo: evento.summary,
+            fechaLimite: fechaEvento,
+            duracionMinutos: duracionEvento,
+            usuarioId,
+          },
+        });
+        await this.prisma.eventoCalendarioGoogle.create({
+          data: { usuarioId, googleEventId: evento.id, tareaId: tareaImportada.id },
+        });
+        importados += 1;
+      } catch (error) {
+        errores += 1;
+        console.error(`No se pudo importar el evento ${evento.id} de Google Calendar`, error);
+      }
     }
 
     await this.prisma.usuario.update({
@@ -269,20 +328,35 @@ export class GoogleService {
       data: { googleUltimaSincronizacion: new Date() },
     });
 
-    return { creados, actualizados, eliminados, importados };
+    return { creados, actualizados, eliminados, importados, errores };
   }
 
   private construirEventoDesdeTarea(tarea: {
     titulo: string;
     descripcion: string | null;
     fechaLimite: Date | null;
+    duracionMinutos: number | null;
   }): calendar_v3.Schema$Event {
-    const fecha = tarea.fechaLimite!.toISOString().slice(0, 10);
+    const inicio = tarea.fechaLimite!;
+
+    if (!tieneHoraInicio(inicio)) {
+      const fecha = inicio.toISOString().slice(0, 10);
+      return {
+        summary: tarea.titulo,
+        description: tarea.descripcion ?? undefined,
+        start: { date: fecha },
+        end: { date: fecha },
+        extendedProperties: { private: { focusflow: 'true' } },
+      };
+    }
+
+    const duracionMinutos = tarea.duracionMinutos ?? DURACION_MINUTOS_POR_DEFECTO;
+    const fin = new Date(inicio.getTime() + duracionMinutos * 60000);
     return {
       summary: tarea.titulo,
       description: tarea.descripcion ?? undefined,
-      start: { date: fecha },
-      end: { date: fecha },
+      start: { dateTime: inicio.toISOString() },
+      end: { dateTime: fin.toISOString() },
       extendedProperties: { private: { focusflow: 'true' } },
     };
   }

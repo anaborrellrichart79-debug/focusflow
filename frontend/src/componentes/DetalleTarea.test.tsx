@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
@@ -15,6 +15,7 @@ function crearTareaFalsa(datos: Partial<Tarea>): Tarea {
     importante: false,
     esAltoImpacto: false,
     fechaLimite: null,
+    duracionMinutos: null,
     recurrencia: 'NINGUNA',
     tiempoEstimadoMinutos: null,
     subtareas: [],
@@ -127,6 +128,44 @@ describe('DetalleTarea', () => {
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ titulo: 'Ensayar la charla' }),
+        }),
+      );
+    });
+
+    it('poner una hora de inicio guarda la fecha límite con hora y la duración por defecto (30 min)', async () => {
+      vi.mocked(fetch).mockImplementation(async (entrada) => {
+        const url = String(entrada);
+        if (url.includes('/pomodoro/sesiones')) {
+          return { ok: true, json: async () => [] } as Response;
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            ...crearTareaFalsa({ fechaLimite: '2026-06-20T09:00:00.000Z', duracionMinutos: 30 }),
+          }),
+        } as Response;
+      });
+
+      const tarea = crearTareaFalsa({ fechaLimite: '2026-06-20T00:00:00.000Z' });
+
+      renderizarPagina(<DetalleTarea tarea={tarea} />, {
+        estadoPrecargado: { sesion: SESION_AUTENTICADA },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
+
+      const dialogo = screen.getByRole('dialog');
+      const campoHora = within(dialogo).getByLabelText('Hora de inicio');
+      fireEvent.change(campoHora, { target: { value: '09:00' } });
+      fireEvent.blur(campoHora);
+
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/tareas/tarea-1',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({
+            fechaLimite: '2026-06-20T09:00:00.000Z',
+            duracionMinutos: 30,
+          }),
         }),
       );
     });

@@ -105,6 +105,15 @@ export function PaginaAjustes() {
             </p>
           )}
 
+          {ultimoResumen != null && ultimoResumen.errores > 0 && (
+            <p className="text-sm text-motivador">
+              {intl.formatMessage(
+                { id: 'ajustes.google.errores' },
+                { cantidad: ultimoResumen.errores },
+              )}
+            </p>
+          )}
+
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex flex-wrap gap-3">

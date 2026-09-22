@@ -15,6 +15,7 @@ function crearTareaFalsa(datos: Partial<Tarea>): Tarea {
     importante: false,
     esAltoImpacto: false,
     fechaLimite: null,
+    duracionMinutos: null,
     recurrencia: 'NINGUNA',
     tiempoEstimadoMinutos: null,
     subtareas: [],

@@ -45,6 +45,7 @@ describe('TareasService', () => {
         objetivoId: undefined,
         fechaLimite: undefined,
         tiempoEstimadoMinutos: undefined,
+        duracionMinutos: undefined,
         usuarioId: 'usuario-1',
         etiquetas: undefined,
       },
@@ -64,6 +65,27 @@ describe('TareasService', () => {
         objetivoId: undefined,
         fechaLimite,
         tiempoEstimadoMinutos: undefined,
+        duracionMinutos: undefined,
+        usuarioId: 'usuario-1',
+        etiquetas: undefined,
+      },
+      include: INCLUIR_RELACIONES,
+    });
+  });
+
+  it('crear una tarea con fechaLimite con hora y duracionMinutos los pasa tal cual a Prisma', async () => {
+    const fechaLimite = new Date('2026-12-31T09:00:00.000Z');
+
+    await servicio.crear('usuario-1', { titulo: 'Con hora', fechaLimite, duracionMinutos: 45 });
+
+    expect(prismaFalso.tarea.create).toHaveBeenCalledWith({
+      data: {
+        titulo: 'Con hora',
+        descripcion: undefined,
+        objetivoId: undefined,
+        fechaLimite,
+        tiempoEstimadoMinutos: undefined,
+        duracionMinutos: 45,
         usuarioId: 'usuario-1',
         etiquetas: undefined,
       },

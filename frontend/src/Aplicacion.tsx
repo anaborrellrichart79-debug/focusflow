@@ -6,6 +6,7 @@ import { cargarEstadoGoogle, sincronizarGoogle } from '@/almacen/googleSlice';
 import { restaurarSesion } from '@/almacen/sesionSlice';
 import { RutaProtegida } from '@/componentes/RutaProtegida';
 import { CODIGO_LOCALE_ICU, mensajesPorIdioma } from '@/idiomas';
+import { PaginaAgenda } from '@/paginas/PaginaAgenda';
 import { PaginaAjustes } from '@/paginas/PaginaAjustes';
 import { PaginaEisenhower } from '@/paginas/PaginaEisenhower';
 import { PaginaEstadisticas } from '@/paginas/PaginaEstadisticas';
@@ -109,6 +110,14 @@ export function Aplicacion() {
               element={
                 <RutaProtegida>
                   <PaginaRevision />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/agenda"
+              element={
+                <RutaProtegida>
+                  <PaginaAgenda />
                 </RutaProtegida>
               }
             />

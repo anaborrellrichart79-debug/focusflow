@@ -5,6 +5,7 @@ import { cargarHistorialPomodoro } from '@/almacen/pomodoroSlice';
 import {
   cambiarDescripcionTarea,
   cambiarEtiquetasTarea,
+  cambiarFechaLimiteTarea,
   cambiarRecurrenciaTarea,
   cambiarSubtarea,
   cambiarTiempoEstimadoTarea,
@@ -18,6 +19,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Recurrencia, Tarea } from '@/servicios/tareas';
+import {
+  DURACION_MINUTOS_POR_DEFECTO,
+  combinarFechaYHora,
+  obtenerSoloFecha,
+  obtenerSoloHora,
+} from '@/utilidades/fechas';
 
 const OPCIONES_RECURRENCIA: { valor: Recurrencia; clave: string }[] = [
   { valor: 'NINGUNA', clave: 'tarea.recurrencia.ninguna' },
@@ -37,6 +44,11 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
   const [tiempoEstimado, setTiempoEstimado] = useState(
     tarea.tiempoEstimadoMinutos?.toString() ?? '',
   );
+  const [fecha, setFecha] = useState(tarea.fechaLimite ? obtenerSoloFecha(tarea.fechaLimite) : '');
+  const [hora, setHora] = useState(tarea.fechaLimite ? obtenerSoloHora(tarea.fechaLimite) : '');
+  const [duracion, setDuracion] = useState(
+    (tarea.duracionMinutos ?? DURACION_MINUTOS_POR_DEFECTO).toString(),
+  );
   const [nuevaEtiqueta, setNuevaEtiqueta] = useState('');
   const [nuevaSubtarea, setNuevaSubtarea] = useState('');
 
@@ -49,6 +61,9 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
     if (valor) {
       setDescripcion(tarea.descripcion ?? '');
       setTiempoEstimado(tarea.tiempoEstimadoMinutos?.toString() ?? '');
+      setFecha(tarea.fechaLimite ? obtenerSoloFecha(tarea.fechaLimite) : '');
+      setHora(tarea.fechaLimite ? obtenerSoloHora(tarea.fechaLimite) : '');
+      setDuracion((tarea.duracionMinutos ?? DURACION_MINUTOS_POR_DEFECTO).toString());
     }
   }
 
@@ -62,6 +77,18 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
     const minutos = Number.parseInt(tiempoEstimado, 10);
     if (Number.isFinite(minutos) && minutos > 0 && minutos !== tarea.tiempoEstimadoMinutos) {
       despachar(cambiarTiempoEstimadoTarea({ id: tarea.id, tiempoEstimadoMinutos: minutos }));
+    }
+  }
+
+  function guardarFechaLimite() {
+    if (!fecha) return;
+    const fechaLimite = combinarFechaYHora(fecha, hora);
+    const duracionMinutos = hora ? Number.parseInt(duracion, 10) || undefined : undefined;
+    if (
+      fechaLimite !== tarea.fechaLimite ||
+      (hora && duracionMinutos !== (tarea.duracionMinutos ?? undefined))
+    ) {
+      despachar(cambiarFechaLimiteTarea({ id: tarea.id, fechaLimite, duracionMinutos }));
     }
   }
 
@@ -130,6 +157,43 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
                 rows={3}
               />
             </label>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium">
+                {intl.formatMessage({ id: 'tarea.detalle.fechaLimite' })}
+              </span>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={fecha}
+                  onChange={(evento) => setFecha(evento.target.value)}
+                  onBlur={guardarFechaLimite}
+                  aria-label={intl.formatMessage({ id: 'fechaLimite.etiqueta' })}
+                />
+                <Input
+                  type="time"
+                  value={hora}
+                  onChange={(evento) => setHora(evento.target.value)}
+                  onBlur={guardarFechaLimite}
+                  aria-label={intl.formatMessage({ id: 'tarea.detalle.horaInicio' })}
+                  className="max-w-28"
+                />
+              </div>
+              {hora && (
+                <label className="flex flex-col gap-1.5 text-sm">
+                  {intl.formatMessage({ id: 'tarea.detalle.duracion' })}
+                  <Input
+                    type="number"
+                    min={5}
+                    max={480}
+                    value={duracion}
+                    onChange={(evento) => setDuracion(evento.target.value)}
+                    onBlur={guardarFechaLimite}
+                    className="max-w-32"
+                  />
+                </label>
+              )}
+            </div>
 
             <label className="flex flex-col gap-1.5 text-sm">
               {intl.formatMessage({ id: 'tarea.detalle.recurrencia' })}

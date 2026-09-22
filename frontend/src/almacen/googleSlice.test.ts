@@ -53,6 +53,7 @@ describe('googleSlice', () => {
       actualizados: 1,
       eliminados: 0,
       importados: 3,
+      errores: 0,
     };
 
     const estado = reductor(undefined, sincronizarGoogle.fulfilled(resumen, 'peticion-1', undefined));
@@ -84,7 +85,7 @@ describe('googleSlice', () => {
       ultimaSincronizacion: '2026-09-21T18:00:00.000Z',
       sincronizando: false,
       cargandoEstado: false,
-      ultimoResumen: { creados: 1, actualizados: 0, eliminados: 0, importados: 0 },
+      ultimoResumen: { creados: 1, actualizados: 0, eliminados: 0, importados: 0, errores: 0 },
       error: null,
     };
 

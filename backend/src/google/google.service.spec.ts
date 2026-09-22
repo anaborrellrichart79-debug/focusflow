@@ -329,6 +329,118 @@ describe('GoogleService', () => {
       expect(resumen.importados).toBe(1);
     });
 
+    it('crea un evento con hora (no de todo el día) cuando la tarea tiene hora de inicio', async () => {
+      prismaFalso.tarea.findMany.mockResolvedValue([
+        {
+          id: 'tarea-1',
+          titulo: 'Reunión de equipo',
+          descripcion: null,
+          estado: 'POR_HACER',
+          fechaLimite: new Date('2026-09-25T09:00:00.000Z'),
+          duracionMinutos: 45,
+          eventoGoogle: null,
+        },
+      ]);
+      calendarFalso.events.insert.mockResolvedValue({ data: { id: 'evento-google-1' } });
+
+      await servicio.sincronizar('usuario-1');
+
+      expect(calendarFalso.events.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requestBody: expect.objectContaining({
+            start: { dateTime: '2026-09-25T09:00:00.000Z' },
+            end: { dateTime: '2026-09-25T09:45:00.000Z' },
+          }),
+        }),
+      );
+    });
+
+    it('usa 30 minutos de duración por defecto si la tarea con hora no tiene duracionMinutos', async () => {
+      prismaFalso.tarea.findMany.mockResolvedValue([
+        {
+          id: 'tarea-1',
+          titulo: 'Llamada rápida',
+          descripcion: null,
+          estado: 'POR_HACER',
+          fechaLimite: new Date('2026-09-25T09:00:00.000Z'),
+          duracionMinutos: null,
+          eventoGoogle: null,
+        },
+      ]);
+      calendarFalso.events.insert.mockResolvedValue({ data: { id: 'evento-google-1' } });
+
+      await servicio.sincronizar('usuario-1');
+
+      expect(calendarFalso.events.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requestBody: expect.objectContaining({
+            end: { dateTime: '2026-09-25T09:30:00.000Z' },
+          }),
+        }),
+      );
+    });
+
+    it('no aborta la sincronización si un evento concreto falla al hablar con Google', async () => {
+      prismaFalso.tarea.findMany.mockResolvedValue([
+        {
+          id: 'tarea-conflictiva',
+          titulo: 'Instancia de evento recurrente',
+          descripcion: null,
+          estado: 'EN_PROCESO',
+          fechaLimite: new Date('2026-09-25T00:00:00.000Z'),
+          duracionMinutos: null,
+          eventoGoogle: { id: 'rel-1', googleEventId: 'evento-recurrente-1' },
+        },
+        {
+          id: 'tarea-normal',
+          titulo: 'Tarea que sí puede sincronizarse',
+          descripcion: null,
+          estado: 'POR_HACER',
+          fechaLimite: new Date('2026-09-26T00:00:00.000Z'),
+          duracionMinutos: null,
+          eventoGoogle: null,
+        },
+      ]);
+      calendarFalso.events.update.mockRejectedValueOnce(new Error('Bad Request'));
+      calendarFalso.events.insert.mockResolvedValue({ data: { id: 'evento-google-2' } });
+
+      const resumen = await servicio.sincronizar('usuario-1');
+
+      expect(resumen.errores).toBe(1);
+      expect(resumen.creados).toBe(1);
+      expect(prismaFalso.usuario.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { googleUltimaSincronizacion: expect.any(Date) } }),
+      );
+    });
+
+    it('captura la duración real al importar un evento con hora', async () => {
+      calendarFalso.events.list.mockResolvedValue({
+        data: {
+          items: [
+            {
+              id: 'evento-externo-1',
+              summary: 'Revisión médica',
+              status: 'confirmed',
+              start: { dateTime: '2026-09-26T10:00:00.000Z' },
+              end: { dateTime: '2026-09-26T10:45:00.000Z' },
+            },
+          ],
+        },
+      });
+      prismaFalso.tarea.create.mockResolvedValue({ id: 'tarea-importada-1' });
+
+      await servicio.sincronizar('usuario-1');
+
+      expect(prismaFalso.tarea.create).toHaveBeenCalledWith({
+        data: {
+          titulo: 'Revisión médica',
+          fechaLimite: new Date('2026-09-26T10:00:00.000Z'),
+          duracionMinutos: 45,
+          usuarioId: 'usuario-1',
+        },
+      });
+    });
+
     it('no reimporta ni toca un evento ya conocido que sigue igual', async () => {
       const tareaExistente = {
         id: 'tarea-1',

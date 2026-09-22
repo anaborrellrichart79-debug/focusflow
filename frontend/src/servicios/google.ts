@@ -10,6 +10,7 @@ export interface ResumenSincronizacionGoogle {
   actualizados: number;
   eliminados: number;
   importados: number;
+  errores: number;
 }
 
 function cabeceras(token: string) {

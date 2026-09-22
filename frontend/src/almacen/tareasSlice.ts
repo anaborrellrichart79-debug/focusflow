@@ -126,17 +126,23 @@ export const marcarAltoImpactoTarea = createAsyncThunk<
 
 export const cambiarFechaLimiteTarea = createAsyncThunk<
   Tarea,
-  { id: string; fechaLimite: string },
+  { id: string; fechaLimite: string; duracionMinutos?: number },
   { state: EstadoRaiz; rejectValue: string }
->('tareas/cambiarFechaLimite', async ({ id, fechaLimite }, { getState, rejectWithValue }) => {
-  try {
-    return await actualizarTareaApi(tokenOError(getState()), id, { fechaLimite });
-  } catch (error) {
-    return rejectWithValue(
-      error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
-    );
-  }
-});
+>(
+  'tareas/cambiarFechaLimite',
+  async ({ id, fechaLimite, duracionMinutos }, { getState, rejectWithValue }) => {
+    try {
+      return await actualizarTareaApi(tokenOError(getState()), id, {
+        fechaLimite,
+        duracionMinutos,
+      });
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+      );
+    }
+  },
+);
 
 export const cambiarDescripcionTarea = createAsyncThunk<
   Tarea,

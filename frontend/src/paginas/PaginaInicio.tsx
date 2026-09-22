@@ -89,6 +89,9 @@ export function PaginaInicio() {
               <Link to="/revision">{intl.formatMessage({ id: 'inicio.irARevision' })}</Link>
             </Button>
             <Button asChild variant="outline">
+              <Link to="/agenda">{intl.formatMessage({ id: 'inicio.irAAgenda' })}</Link>
+            </Button>
+            <Button asChild variant="outline">
               <Link to="/ajustes">{intl.formatMessage({ id: 'inicio.irAAjustes' })}</Link>
             </Button>
             <Button variant="outline" onClick={() => despachar(cerrarSesion())}>

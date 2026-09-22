@@ -27,6 +27,7 @@ export class TareasService {
         objetivoId: datos.objetivoId,
         fechaLimite: datos.fechaLimite,
         tiempoEstimadoMinutos: datos.tiempoEstimadoMinutos,
+        duracionMinutos: datos.duracionMinutos,
         usuarioId,
         etiquetas: this.construirEtiquetasCrear(usuarioId, datos.etiquetas),
       },

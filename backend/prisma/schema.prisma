@@ -71,6 +71,12 @@ model Tarea {
   importante            Boolean                 @default(false)
   esAltoImpacto         Boolean                 @default(false)
   fechaLimite           DateTime?
+  // Duración en minutos de la tarea cuando fechaLimite lleva una hora de
+  // inicio real (no medianoche): permite representarla como bloque de tiempo
+  // en la Agenda y como evento con hora en Google Calendar en vez de "todo
+  // el día". Null cuando no se ha indicado (se asumen 30 minutos en los
+  // sitios que la consumen).
+  duracionMinutos       Int?
   recurrencia           Recurrencia             @default(NINGUNA)
   tiempoEstimadoMinutos Int?
   usuarioId             String

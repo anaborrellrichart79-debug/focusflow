@@ -14,6 +14,7 @@ export interface Tarea {
   importante: boolean;
   esAltoImpacto: boolean;
   fechaLimite: string | null;
+  duracionMinutos: number | null;
   recurrencia: Recurrencia;
   tiempoEstimadoMinutos: number | null;
   objetivoId: string | null;
@@ -39,6 +40,7 @@ export function crearTarea(
     descripcion?: string;
     objetivoId?: string;
     fechaLimite?: string;
+    duracionMinutos?: number;
     etiquetas?: string[];
     recurrencia?: Recurrencia;
     tiempoEstimadoMinutos?: number;
@@ -62,6 +64,7 @@ export function actualizarTarea(
     importante: boolean;
     esAltoImpacto: boolean;
     fechaLimite: string;
+    duracionMinutos: number;
     etiquetas: string[];
     recurrencia: Recurrencia;
     tiempoEstimadoMinutos: number;
