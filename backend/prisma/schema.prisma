@@ -30,6 +30,16 @@ model Usuario {
   googleRefreshToken         String?
   googleTokenExpiraEn        DateTime?
   googleUltimaSincronizacion DateTime?
+  // Modo escolar (planificador de exámenes/trabajos) y consentimiento de un
+  // tutor legal para menores de edad. fechaNacimiento determina si hace falta
+  // consentimiento (ver calcularEdad en comun/edad.util.ts); consentimientoConfirmado
+  // por defecto en true para no bloquear retroactivamente a las cuentas ya
+  // existentes, que no tienen fecha de nacimiento registrada.
+  fechaNacimiento            DateTime?
+  correoTutor                String?
+  consentimientoConfirmado   Boolean                  @default(true)
+  consentimientoReenviadoEn  DateTime?
+  modoEscolarActivo          Boolean                  @default(false)
   creadoEn                   DateTime                 @default(now())
   actualizadoEn              DateTime                 @updatedAt
 
@@ -41,6 +51,10 @@ model Objetivo {
   titulo        String
   descripcion   String?
   fechaLimite   DateTime?
+  // Independiente del ámbito de sus tareas (sin cascada automática entre
+  // ambos): un objetivo escolar agrupa tareas escolares por convención de uso,
+  // pero no se fuerza a nivel de datos.
+  ambito        Ambito    @default(PERSONAL)
   usuarioId     String
   usuario       Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   tareas        Tarea[]
@@ -62,6 +76,23 @@ enum Recurrencia {
   SEMANAL
 }
 
+// Distingue tareas/objetivos personales o profesionales de los escolares, para
+// poder filtrar la vista activa (selector de ámbito en el frontend) y no
+// mezclar ambos mundos cuando el usuario no lo quiere.
+enum Ambito {
+  PERSONAL
+  ESCOLAR
+}
+
+// Solo relevante cuando Tarea.ambito = ESCOLAR; no se fuerza con una
+// constraint de base de datos (mismo criterio que duracionMinutos con
+// fechaLimite), se valida en el DTO/frontend.
+enum TipoEscolar {
+  EXAMEN
+  TRABAJO
+  PRESENTACION
+}
+
 model Tarea {
   id                    String                  @id @default(uuid())
   titulo                String
@@ -79,6 +110,8 @@ model Tarea {
   duracionMinutos       Int?
   recurrencia           Recurrencia             @default(NINGUNA)
   tiempoEstimadoMinutos Int?
+  ambito                Ambito                  @default(PERSONAL)
+  tipoEscolar           TipoEscolar?
   usuarioId             String
   usuario               Usuario                 @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   objetivoId            String?

@@ -1,9 +1,12 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderizarPagina } from '@/pruebas/render';
 import { PaginaRegistro } from './PaginaRegistro';
+
+const FECHA_NACIMIENTO_ADULTA = '1990-01-01';
+const FECHA_NACIMIENTO_MENOR = '2015-01-01';
 
 function renderizarConRutas() {
   return renderizarPagina(
@@ -29,7 +32,13 @@ describe('PaginaRegistro', () => {
       ok: true,
       json: async () => ({
         tokenAcceso: 'token-de-prueba',
-        usuario: { id: 'usuario-1', correo: 'nueva@example.com', nombre: null },
+        usuario: {
+          id: 'usuario-1',
+          correo: 'nueva@example.com',
+          nombre: null,
+          consentimientoConfirmado: true,
+          modoEscolarActivo: false,
+        },
       }),
     } as Response);
 
@@ -38,6 +47,9 @@ describe('PaginaRegistro', () => {
 
     await usuario.type(screen.getByLabelText('Correo electrónico'), 'nueva@example.com');
     await usuario.type(screen.getByLabelText('Contraseña'), 'Abcdefg1');
+    fireEvent.change(screen.getByLabelText('Fecha de nacimiento'), {
+      target: { value: FECHA_NACIMIENTO_ADULTA },
+    });
     await usuario.click(screen.getByRole('button', { name: 'Registrarme' }));
 
     expect(await screen.findByText('Marcador de inicio')).toBeInTheDocument();
@@ -45,8 +57,13 @@ describe('PaginaRegistro', () => {
 
     const [, opciones] = vi.mocked(fetch).mock.calls[0];
     const cuerpoEnviado = JSON.parse(opciones!.body as string);
-    expect(cuerpoEnviado).toEqual({ correo: 'nueva@example.com', contrasena: 'Abcdefg1' });
+    expect(cuerpoEnviado).toEqual({
+      correo: 'nueva@example.com',
+      contrasena: 'Abcdefg1',
+      fechaNacimiento: FECHA_NACIMIENTO_ADULTA,
+    });
     expect(cuerpoEnviado).not.toHaveProperty('nombre');
+    expect(cuerpoEnviado).not.toHaveProperty('correoTutor');
   });
 
   it('si se rellena el nombre, se envía en la petición de registro', async () => {
@@ -54,7 +71,13 @@ describe('PaginaRegistro', () => {
       ok: true,
       json: async () => ({
         tokenAcceso: 'token-de-prueba',
-        usuario: { id: 'usuario-1', correo: 'nueva@example.com', nombre: 'Ana' },
+        usuario: {
+          id: 'usuario-1',
+          correo: 'nueva@example.com',
+          nombre: 'Ana',
+          consentimientoConfirmado: true,
+          modoEscolarActivo: false,
+        },
       }),
     } as Response);
 
@@ -64,6 +87,9 @@ describe('PaginaRegistro', () => {
     await usuario.type(screen.getByLabelText('Nombre'), 'Ana');
     await usuario.type(screen.getByLabelText('Correo electrónico'), 'nueva@example.com');
     await usuario.type(screen.getByLabelText('Contraseña'), 'Abcdefg1');
+    fireEvent.change(screen.getByLabelText('Fecha de nacimiento'), {
+      target: { value: FECHA_NACIMIENTO_ADULTA },
+    });
     await usuario.click(screen.getByRole('button', { name: 'Registrarme' }));
 
     await screen.findByText('Marcador de inicio');
@@ -85,9 +111,50 @@ describe('PaginaRegistro', () => {
 
     await usuario.type(screen.getByLabelText('Correo electrónico'), 'ana@example.com');
     await usuario.type(screen.getByLabelText('Contraseña'), 'Abcdefg1');
+    fireEvent.change(screen.getByLabelText('Fecha de nacimiento'), {
+      target: { value: FECHA_NACIMIENTO_ADULTA },
+    });
     await usuario.click(screen.getByRole('button', { name: 'Registrarme' }));
 
     expect(await screen.findByText('Ya existe un usuario con ese correo')).toBeInTheDocument();
     expect(screen.queryByText('Marcador de inicio')).not.toBeInTheDocument();
+  });
+
+  it('si la fecha de nacimiento implica ser menor de edad, pide el correo del tutor y lo envía', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        tokenAcceso: 'token-de-prueba',
+        usuario: {
+          id: 'usuario-menor',
+          correo: 'menor@example.com',
+          nombre: null,
+          consentimientoConfirmado: false,
+          modoEscolarActivo: false,
+        },
+      }),
+    } as Response);
+
+    const usuario = userEvent.setup();
+    renderizarConRutas();
+
+    expect(screen.queryByLabelText(/tutor/i)).not.toBeInTheDocument();
+
+    await usuario.type(screen.getByLabelText('Correo electrónico'), 'menor@example.com');
+    await usuario.type(screen.getByLabelText('Contraseña'), 'Abcdefg1');
+    fireEvent.change(screen.getByLabelText('Fecha de nacimiento'), {
+      target: { value: FECHA_NACIMIENTO_MENOR },
+    });
+
+    const campoTutor = await screen.findByLabelText(/tutor/i);
+    await usuario.type(campoTutor, 'tutor@example.com');
+    await usuario.click(screen.getByRole('button', { name: 'Registrarme' }));
+
+    await screen.findByText('Marcador de inicio');
+
+    const [, opciones] = vi.mocked(fetch).mock.calls[0];
+    const cuerpoEnviado = JSON.parse(opciones!.body as string);
+    expect(cuerpoEnviado.fechaNacimiento).toBe(FECHA_NACIMIENTO_MENOR);
+    expect(cuerpoEnviado.correoTutor).toBe('tutor@example.com');
   });
 });

@@ -34,6 +34,7 @@ describe('ObjetivosService', () => {
         titulo: 'Aprender TypeScript',
         descripcion: undefined,
         fechaLimite: undefined,
+        ambito: undefined,
         usuarioId: 'usuario-1',
       },
     });
@@ -49,8 +50,17 @@ describe('ObjetivosService', () => {
         titulo: 'Con fecha',
         descripcion: undefined,
         fechaLimite,
+        ambito: undefined,
         usuarioId: 'usuario-1',
       },
+    });
+  });
+
+  it('crear un objetivo escolar guarda el ambito', async () => {
+    await servicio.crear('usuario-1', { titulo: 'Aprobar el curso', ambito: 'ESCOLAR' });
+
+    expect(prismaFalso.objetivo.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ ambito: 'ESCOLAR' }),
     });
   });
 

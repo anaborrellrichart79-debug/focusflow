@@ -4,6 +4,8 @@ import type { Subtarea } from './subtareas';
 
 export type EstadoTarea = 'POR_HACER' | 'EN_PROCESO' | 'HECHA';
 export type Recurrencia = 'NINGUNA' | 'DIARIA' | 'SEMANAL';
+export type Ambito = 'PERSONAL' | 'ESCOLAR';
+export type TipoEscolar = 'EXAMEN' | 'TRABAJO' | 'PRESENTACION';
 
 export interface Tarea {
   id: string;
@@ -17,6 +19,8 @@ export interface Tarea {
   duracionMinutos: number | null;
   recurrencia: Recurrencia;
   tiempoEstimadoMinutos: number | null;
+  ambito: Ambito;
+  tipoEscolar: TipoEscolar | null;
   objetivoId: string | null;
   usuarioId: string;
   subtareas: Subtarea[];
@@ -44,6 +48,8 @@ export function crearTarea(
     etiquetas?: string[];
     recurrencia?: Recurrencia;
     tiempoEstimadoMinutos?: number;
+    ambito?: Ambito;
+    tipoEscolar?: TipoEscolar;
   },
 ) {
   return peticionApi<Tarea>('/tareas', {
@@ -68,6 +74,8 @@ export function actualizarTarea(
     etiquetas: string[];
     recurrencia: Recurrencia;
     tiempoEstimadoMinutos: number;
+    ambito: Ambito;
+    tipoEscolar: TipoEscolar;
   }>,
 ) {
   return peticionApi<Tarea>(`/tareas/${id}`, {

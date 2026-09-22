@@ -46,6 +46,8 @@ describe('TareasService', () => {
         fechaLimite: undefined,
         tiempoEstimadoMinutos: undefined,
         duracionMinutos: undefined,
+        ambito: undefined,
+        tipoEscolar: undefined,
         usuarioId: 'usuario-1',
         etiquetas: undefined,
       },
@@ -66,6 +68,8 @@ describe('TareasService', () => {
         fechaLimite,
         tiempoEstimadoMinutos: undefined,
         duracionMinutos: undefined,
+        ambito: undefined,
+        tipoEscolar: undefined,
         usuarioId: 'usuario-1',
         etiquetas: undefined,
       },
@@ -86,9 +90,27 @@ describe('TareasService', () => {
         fechaLimite,
         tiempoEstimadoMinutos: undefined,
         duracionMinutos: 45,
+        ambito: undefined,
+        tipoEscolar: undefined,
         usuarioId: 'usuario-1',
         etiquetas: undefined,
       },
+      include: INCLUIR_RELACIONES,
+    });
+  });
+
+  it('crear una tarea escolar (examen) guarda ambito y tipoEscolar', async () => {
+    await servicio.crear('usuario-1', {
+      titulo: 'Examen de Matemáticas',
+      ambito: 'ESCOLAR',
+      tipoEscolar: 'EXAMEN',
+    });
+
+    expect(prismaFalso.tarea.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        ambito: 'ESCOLAR',
+        tipoEscolar: 'EXAMEN',
+      }),
       include: INCLUIR_RELACIONES,
     });
   });
@@ -214,6 +236,8 @@ describe('TareasService', () => {
         importante: true,
         estado: 'POR_HACER',
         recurrencia: 'DIARIA',
+        ambito: 'PERSONAL',
+        tipoEscolar: null,
         fechaLimite: new Date('2026-06-15T12:00:00.000Z'),
       });
 
@@ -227,9 +251,36 @@ describe('TareasService', () => {
           urgente: false,
           importante: true,
           recurrencia: 'DIARIA',
+          ambito: 'PERSONAL',
+          tipoEscolar: null,
           fechaLimite: new Date('2026-06-16T12:00:00.000Z'),
           usuarioId: 'usuario-1',
         },
+      });
+    });
+
+    it('una tarea escolar recurrente conserva el ámbito y el tipo escolar en la siguiente ocurrencia', async () => {
+      prismaFalso.tarea.findFirst.mockResolvedValue({
+        id: 'tarea-1',
+        titulo: 'Repasar vocabulario',
+        descripcion: null,
+        objetivoId: null,
+        urgente: false,
+        importante: false,
+        estado: 'POR_HACER',
+        recurrencia: 'DIARIA',
+        ambito: 'ESCOLAR',
+        tipoEscolar: 'TRABAJO',
+        fechaLimite: new Date('2026-06-15T12:00:00.000Z'),
+      });
+
+      await servicio.actualizar('usuario-1', 'tarea-1', { estado: 'HECHA' });
+
+      expect(prismaFalso.tarea.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          ambito: 'ESCOLAR',
+          tipoEscolar: 'TRABAJO',
+        }),
       });
     });
 

@@ -13,13 +13,14 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UsuarioActual } from '../autenticacion/decoradores/usuario-actual.decorator.js';
+import { GuardaConsentimientoConfirmado } from '../autenticacion/guardias/consentimiento-confirmado.guard.js';
 import type { UsuarioPeticion } from '../autenticacion/interfaces/carga-util-jwt.interface.js';
 import { ActualizarTareaDto } from './dto/actualizar-tarea.dto.js';
 import { CrearTareaDto } from './dto/crear-tarea.dto.js';
 import { FiltrarTareasDto } from './dto/filtrar-tareas.dto.js';
 import { TareasService } from './tareas.service.js';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), GuardaConsentimientoConfirmado)
 @Controller('tareas')
 export class TareasController {
   constructor(private readonly tareasService: TareasService) {}

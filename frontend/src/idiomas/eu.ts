@@ -7,6 +7,10 @@ export const eu = {
   'auth.registro.nombre': 'Izena',
   'auth.registro.correo': 'Helbide elektronikoa',
   'auth.registro.contrasena': 'Pasahitza',
+  'auth.registro.fechaNacimiento': 'Jaiotze-data',
+  'auth.registro.correoTutor': 'Zure aita, ama edo legezko tutorearen posta elektronikoa',
+  'auth.registro.correoTutorAyuda':
+    'Adin txikikoa zarenez, zure tutoreak kontu honen erabilera baieztatu behar du.',
   'auth.registro.boton': 'Erregistratu',
   'auth.registro.enlaceLogin': 'Bazara erabiltzailea? Hasi saioa',
   'auth.login.titulo': 'Hasi saioa',

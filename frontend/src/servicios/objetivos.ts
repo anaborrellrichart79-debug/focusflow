@@ -1,10 +1,12 @@
 import { peticionApi } from './api';
+import type { Ambito } from './tareas';
 
 export interface Objetivo {
   id: string;
   titulo: string;
   descripcion: string | null;
   fechaLimite: string | null;
+  ambito: Ambito;
   totalTareas: number;
   tareasCompletadas: number;
   creadoEn: string;
@@ -21,7 +23,7 @@ export function listarObjetivos(token: string) {
 
 export function crearObjetivo(
   token: string,
-  datos: { titulo: string; descripcion?: string; fechaLimite?: string },
+  datos: { titulo: string; descripcion?: string; fechaLimite?: string; ambito?: Ambito },
 ) {
   return peticionApi<Objetivo>('/objetivos', {
     method: 'POST',

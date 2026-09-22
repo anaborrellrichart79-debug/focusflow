@@ -53,7 +53,16 @@ export const restaurarSesion = createAsyncThunk(
 
 export const registrarse = createAsyncThunk(
   'sesion/registrarse',
-  async (datos: { correo: string; contrasena: string; nombre?: string }, { rejectWithValue }) => {
+  async (
+    datos: {
+      correo: string;
+      contrasena: string;
+      nombre?: string;
+      fechaNacimiento: string;
+      correoTutor?: string;
+    },
+    { rejectWithValue },
+  ) => {
     try {
       return await registrarUsuarioApi(datos);
     } catch (error) {

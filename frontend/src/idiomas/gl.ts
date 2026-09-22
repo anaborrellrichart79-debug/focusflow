@@ -7,6 +7,10 @@ export const gl = {
   'auth.registro.nombre': 'Nome',
   'auth.registro.correo': 'Correo electrónico',
   'auth.registro.contrasena': 'Contrasinal',
+  'auth.registro.fechaNacimiento': 'Data de nacemento',
+  'auth.registro.correoTutor': 'Correo do pai, nai ou titor legal',
+  'auth.registro.correoTutorAyuda':
+    'Ao seres menor de idade, necesitamos que o teu titor confirme o uso desta conta.',
   'auth.registro.boton': 'Rexistrarme',
   'auth.registro.enlaceLogin': 'Xa tes conta? Inicia sesión',
   'auth.login.titulo': 'Iniciar sesión',

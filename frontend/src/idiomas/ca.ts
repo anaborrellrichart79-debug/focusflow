@@ -7,6 +7,10 @@ export const ca = {
   'auth.registro.nombre': 'Nom',
   'auth.registro.correo': 'Correu electrònic',
   'auth.registro.contrasena': 'Contrasenya',
+  'auth.registro.fechaNacimiento': 'Data de naixement',
+  'auth.registro.correoTutor': 'Correu del pare, la mare o el tutor legal',
+  'auth.registro.correoTutorAyuda':
+    'En ser menor d\'edat, necessitem que el teu tutor confirmi l\'ús d\'aquest compte.',
   'auth.registro.boton': 'Registrar-me',
   'auth.registro.enlaceLogin': 'Ja tens compte? Inicia sessió',
   'auth.login.titulo': 'Iniciar sessió',

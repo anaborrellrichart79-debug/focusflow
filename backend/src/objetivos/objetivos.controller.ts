@@ -12,12 +12,13 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UsuarioActual } from '../autenticacion/decoradores/usuario-actual.decorator.js';
+import { GuardaConsentimientoConfirmado } from '../autenticacion/guardias/consentimiento-confirmado.guard.js';
 import type { UsuarioPeticion } from '../autenticacion/interfaces/carga-util-jwt.interface.js';
 import { ActualizarObjetivoDto } from './dto/actualizar-objetivo.dto.js';
 import { CrearObjetivoDto } from './dto/crear-objetivo.dto.js';
 import { ObjetivosService } from './objetivos.service.js';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), GuardaConsentimientoConfirmado)
 @Controller('objetivos')
 export class ObjetivosController {
   constructor(private readonly objetivosService: ObjetivosService) {}

@@ -1,11 +1,12 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UsuarioActual } from '../autenticacion/decoradores/usuario-actual.decorator.js';
+import { GuardaConsentimientoConfirmado } from '../autenticacion/guardias/consentimiento-confirmado.guard.js';
 import type { UsuarioPeticion } from '../autenticacion/interfaces/carga-util-jwt.interface.js';
 import { CrearSesionPomodoroDto } from './dto/crear-sesion-pomodoro.dto.js';
 import { PomodoroService } from './pomodoro.service.js';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), GuardaConsentimientoConfirmado)
 @Controller('pomodoro/sesiones')
 export class PomodoroController {
   constructor(private readonly pomodoroService: PomodoroService) {}

@@ -7,6 +7,10 @@ export const en = {
   'auth.registro.nombre': 'Name',
   'auth.registro.correo': 'Email',
   'auth.registro.contrasena': 'Password',
+  'auth.registro.fechaNacimiento': 'Date of birth',
+  'auth.registro.correoTutor': "Your parent or legal guardian's email",
+  'auth.registro.correoTutorAyuda':
+    'Since you are under 18, we need your guardian to confirm the use of this account.',
   'auth.registro.boton': 'Sign up',
   'auth.registro.enlaceLogin': 'Already have an account? Sign in',
   'auth.login.titulo': 'Sign in',

@@ -7,6 +7,10 @@ export const es = {
   'auth.registro.nombre': 'Nombre',
   'auth.registro.correo': 'Correo electrónico',
   'auth.registro.contrasena': 'Contraseña',
+  'auth.registro.fechaNacimiento': 'Fecha de nacimiento',
+  'auth.registro.correoTutor': 'Correo de tu padre, madre o tutor legal',
+  'auth.registro.correoTutorAyuda':
+    'Al ser menor de edad, necesitamos que tu tutor confirme el uso de esta cuenta.',
   'auth.registro.boton': 'Registrarme',
   'auth.registro.enlaceLogin': '¿Ya tienes cuenta? Inicia sesión',
   'auth.login.titulo': 'Iniciar sesión',

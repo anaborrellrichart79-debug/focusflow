@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  calcularEdad,
   calcularFinBloque,
   combinarFechaYHora,
   diasHastaFecha,
@@ -99,6 +100,18 @@ describe('utilidades/fechas', () => {
     it('usa 30 minutos por defecto si no hay duración', () => {
       const fin = calcularFinBloque('2026-06-16T09:00:00.000Z', null);
       expect(fin.toISOString()).toBe('2026-06-16T09:30:00.000Z');
+    });
+  });
+
+  describe('calcularEdad', () => {
+    it('cumple los 18 exactamente el día del cumpleaños', () => {
+      const ahora = new Date('2026-09-22T12:00:00.000Z');
+      expect(calcularEdad('2008-09-22T00:00:00.000Z', ahora)).toBe(18);
+    });
+
+    it('todavía tiene 17 el día antes de cumplir 18', () => {
+      const ahora = new Date('2026-09-21T12:00:00.000Z');
+      expect(calcularEdad('2008-09-22T00:00:00.000Z', ahora)).toBe(17);
     });
   });
 });

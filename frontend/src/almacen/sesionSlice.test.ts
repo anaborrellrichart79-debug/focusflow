@@ -4,7 +4,13 @@ import reductor, { cerrarSesion, iniciarSesionUsuario, restaurarSesion } from '.
 
 const CLAVE_TOKEN = 'focusflow.tokenAcceso';
 
-const usuarioFalso: UsuarioSesion = { id: 'usuario-1', correo: 'ana@example.com', nombre: 'Ana' };
+const usuarioFalso: UsuarioSesion = {
+  id: 'usuario-1',
+  correo: 'ana@example.com',
+  nombre: 'Ana',
+  consentimientoConfirmado: true,
+  modoEscolarActivo: false,
+};
 
 describe('sesionSlice', () => {
   beforeEach(() => {

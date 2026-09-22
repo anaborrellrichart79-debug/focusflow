@@ -1,4 +1,5 @@
-import { IsEmail, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsDateString, IsEmail, IsOptional, IsString, Matches, MinLength, ValidateIf } from 'class-validator';
+import { calcularEdad } from '../../comun/edad.util.js';
 
 export class RegistrarUsuarioDto {
   @IsEmail({}, { message: 'El correo electrónico no es válido' })
@@ -14,4 +15,16 @@ export class RegistrarUsuarioDto {
   @IsOptional()
   @IsString()
   nombre?: string;
+
+  @IsDateString({}, { message: 'La fecha de nacimiento no es válida' })
+  fechaNacimiento!: string;
+
+  // Solo obligatorio para menores de 18 años: hace falta el correo de un
+  // tutor legal para poder confirmar el uso de la cuenta.
+  @ValidateIf((datos: RegistrarUsuarioDto) => calcularEdad(datos.fechaNacimiento) < 18)
+  @IsEmail(
+    {},
+    { message: 'Se necesita el correo de un tutor legal para menores de 18 años' },
+  )
+  correoTutor?: string;
 }

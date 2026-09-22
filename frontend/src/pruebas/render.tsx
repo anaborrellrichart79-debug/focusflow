@@ -42,7 +42,13 @@ export function crearTiendaDePrueba(estadoPrecargado?: Partial<EstadoRaiz>) {
 // red, lo cual es justo lo que interesa en tests que solo quieren comprobar
 // cómo se renderiza un estado ya precargado.
 export const SESION_AUTENTICADA: EstadoRaiz['sesion'] = {
-  usuario: { id: 'usuario-1', correo: 'ana@example.com', nombre: 'Ana' },
+  usuario: {
+    id: 'usuario-1',
+    correo: 'ana@example.com',
+    nombre: 'Ana',
+    consentimientoConfirmado: true,
+    modoEscolarActivo: false,
+  },
   tokenAcceso: 'token-de-prueba',
   cargando: false,
   restaurando: false,

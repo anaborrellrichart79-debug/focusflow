@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ServicioPrisma } from '../prisma/prisma.service.js';
 import { TareasController } from './tareas.controller.js';
 import { TareasService } from './tareas.service.js';
 
@@ -13,13 +14,21 @@ describe('TareasController', () => {
     actualizar: vi.fn(),
     eliminar: vi.fn(),
   };
+  // GuardaConsentimientoConfirmado (aplicado a nivel de clase junto a
+  // AuthGuard('jwt')) necesita poder resolverse en el módulo de test, aunque
+  // estos tests llamen al controlador directamente sin pasar por el pipeline
+  // HTTP de guards.
+  const prismaFalso = { usuario: { findUnique: vi.fn() } };
 
   beforeEach(async () => {
     vi.clearAllMocks();
 
     const modulo: TestingModule = await Test.createTestingModule({
       controllers: [TareasController],
-      providers: [{ provide: TareasService, useValue: servicioFalso }],
+      providers: [
+        { provide: TareasService, useValue: servicioFalso },
+        { provide: ServicioPrisma, useValue: prismaFalso },
+      ],
     }).compile();
 
     controlador = modulo.get(TareasController);

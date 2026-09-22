@@ -9,6 +9,9 @@ describe('AutenticacionController', () => {
     registrar: vi.fn(),
     iniciarSesion: vi.fn(),
     obtenerUsuarioPorId: vi.fn(),
+    confirmarConsentimiento: vi.fn(),
+    reenviarConfirmacion: vi.fn(),
+    actualizarPreferencias: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -23,7 +26,11 @@ describe('AutenticacionController', () => {
   });
 
   it('registrar delega en el servicio con los datos del body', async () => {
-    const datos = { correo: 'ana@example.com', contrasena: 'Abcdefg1' };
+    const datos = {
+      correo: 'ana@example.com',
+      contrasena: 'Abcdefg1',
+      fechaNacimiento: '1990-01-01T00:00:00.000Z',
+    };
     servicioFalso.registrar.mockResolvedValue({ tokenAcceso: 'token' });
 
     const resultado = await controlador.registrar(datos);
@@ -48,5 +55,26 @@ describe('AutenticacionController', () => {
     await controlador.obtenerPerfil({ id: 'usuario-1', correo: 'ana@example.com' });
 
     expect(servicioFalso.obtenerUsuarioPorId).toHaveBeenCalledWith('usuario-1');
+  });
+
+  it('confirmarConsentimiento delega en el servicio con el token del body', async () => {
+    await controlador.confirmarConsentimiento({ token: 'token-abc' });
+
+    expect(servicioFalso.confirmarConsentimiento).toHaveBeenCalledWith('token-abc');
+  });
+
+  it('reenviarConfirmacion delega en el servicio con el usuario autenticado', async () => {
+    await controlador.reenviarConfirmacion({ id: 'usuario-1', correo: 'ana@example.com' });
+
+    expect(servicioFalso.reenviarConfirmacion).toHaveBeenCalledWith('usuario-1');
+  });
+
+  it('actualizarPreferencias delega en el servicio con el usuario y el body', async () => {
+    await controlador.actualizarPreferencias(
+      { id: 'usuario-1', correo: 'ana@example.com' },
+      { modoEscolarActivo: true },
+    );
+
+    expect(servicioFalso.actualizarPreferencias).toHaveBeenCalledWith('usuario-1', true);
   });
 });

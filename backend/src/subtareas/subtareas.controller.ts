@@ -11,12 +11,13 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UsuarioActual } from '../autenticacion/decoradores/usuario-actual.decorator.js';
+import { GuardaConsentimientoConfirmado } from '../autenticacion/guardias/consentimiento-confirmado.guard.js';
 import type { UsuarioPeticion } from '../autenticacion/interfaces/carga-util-jwt.interface.js';
 import { ActualizarSubtareaDto } from './dto/actualizar-subtarea.dto.js';
 import { CrearSubtareaDto } from './dto/crear-subtarea.dto.js';
 import { SubtareasService } from './subtareas.service.js';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), GuardaConsentimientoConfirmado)
 @Controller()
 export class SubtareasController {
   constructor(private readonly subtareasService: SubtareasService) {}

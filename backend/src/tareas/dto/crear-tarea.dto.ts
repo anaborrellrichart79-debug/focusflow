@@ -13,7 +13,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { Recurrencia } from '../../generated/prisma/enums.js';
+import { Ambito, Recurrencia, TipoEscolar } from '../../generated/prisma/enums.js';
 
 export class CrearTareaDto {
   @IsString()
@@ -59,4 +59,14 @@ export class CrearTareaDto {
   @Min(5)
   @Max(480)
   duracionMinutos?: number;
+
+  @IsOptional()
+  @IsEnum(Ambito)
+  ambito?: Ambito;
+
+  // Solo tiene sentido cuando ambito = ESCOLAR; no se fuerza aquí (ver
+  // comentario del campo en schema.prisma), lo controla la UI.
+  @IsOptional()
+  @IsEnum(TipoEscolar)
+  tipoEscolar?: TipoEscolar;
 }

@@ -14,6 +14,7 @@ export class ObjetivosService {
         titulo: datos.titulo,
         descripcion: datos.descripcion,
         fechaLimite: datos.fechaLimite,
+        ambito: datos.ambito,
         usuarioId,
       },
     });

@@ -68,3 +68,21 @@ export function calcularFinBloque(fechaIso: string, duracionMinutos: number | nu
   const inicio = new Date(fechaIso);
   return new Date(inicio.getTime() + (duracionMinutos ?? DURACION_MINUTOS_POR_DEFECTO) * 60000);
 }
+
+// Edad en años completos a partir de una fecha de nacimiento. Se usa en el
+// registro para saber si hace falta pedir el correo de un tutor legal (mismo
+// cálculo que calcularEdad en el backend, backend/src/comun/edad.util.ts).
+export function calcularEdad(fechaNacimiento: string, ahora: Date = new Date()): number {
+  const nacimiento = new Date(fechaNacimiento);
+  let edad = ahora.getUTCFullYear() - nacimiento.getUTCFullYear();
+
+  const aunNoHaCumplidoEsteAnio =
+    ahora.getUTCMonth() < nacimiento.getUTCMonth() ||
+    (ahora.getUTCMonth() === nacimiento.getUTCMonth() && ahora.getUTCDate() < nacimiento.getUTCDate());
+
+  if (aunNoHaCumplidoEsteAnio) {
+    edad -= 1;
+  }
+
+  return edad;
+}

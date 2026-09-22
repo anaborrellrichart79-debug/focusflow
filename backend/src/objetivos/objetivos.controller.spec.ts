@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ServicioPrisma } from '../prisma/prisma.service.js';
 import { ObjetivosController } from './objetivos.controller.js';
 import { ObjetivosService } from './objetivos.service.js';
 
@@ -13,13 +14,17 @@ describe('ObjetivosController', () => {
     actualizar: vi.fn(),
     eliminar: vi.fn(),
   };
+  const prismaFalso = { usuario: { findUnique: vi.fn() } };
 
   beforeEach(async () => {
     vi.clearAllMocks();
 
     const modulo: TestingModule = await Test.createTestingModule({
       controllers: [ObjetivosController],
-      providers: [{ provide: ObjetivosService, useValue: servicioFalso }],
+      providers: [
+        { provide: ObjetivosService, useValue: servicioFalso },
+        { provide: ServicioPrisma, useValue: prismaFalso },
+      ],
     }).compile();
 
     controlador = modulo.get(ObjetivosController);

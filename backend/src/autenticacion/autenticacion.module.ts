@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ModuloCorreo } from '../correo/correo.module.js';
 import { AutenticacionController } from './autenticacion.controller.js';
 import { AutenticacionService } from './autenticacion.service.js';
 import { EstrategiaJwt } from './estrategias/jwt.strategy.js';
@@ -9,6 +10,7 @@ import { EstrategiaJwt } from './estrategias/jwt.strategy.js';
 @Module({
   imports: [
     PassportModule,
+    ModuloCorreo,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

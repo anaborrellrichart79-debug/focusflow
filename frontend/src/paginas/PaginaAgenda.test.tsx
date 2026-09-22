@@ -19,6 +19,8 @@ function crearTareaFalsa(datos: Partial<Tarea> & { id: string }): Tarea {
     esAltoImpacto: false,
     fechaLimite: null,
     duracionMinutos: null,
+    ambito: 'PERSONAL',
+    tipoEscolar: null,
     recurrencia: 'NINGUNA',
     tiempoEstimadoMinutos: null,
     objetivoId: null,
