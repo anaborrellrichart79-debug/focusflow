@@ -70,6 +70,11 @@ type Definicion = [
 const PRIMARIA_COMUNES: Definicion[] = [
   ['Conocimiento del Medio Natural, Social y Cultural', OBLIGATORIA],
   ['Educación Artística', OBLIGATORIA],
+  // El art. 8 permite desdoblar Educación Artística en estas dos áreas (y
+  // muchas comunidades lo hacen): se ofrecen las tres y cada horario usa las
+  // que correspondan.
+  ['Educación Plástica y Visual', OBLIGATORIA],
+  ['Música y Danza', OBLIGATORIA],
   ['Educación Física', OBLIGATORIA],
   ['Lengua Castellana y Literatura', OBLIGATORIA],
   ['Lengua Extranjera', OBLIGATORIA],
