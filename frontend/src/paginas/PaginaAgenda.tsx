@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
-import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
+import { seleccionarAmbitoActivo, seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cargarTareas } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { DetalleTarea } from '@/componentes/DetalleTarea';
-import { obtenerDiasSemana, obtenerSemanasMes, ordenarTareasDelDia, tareasDelDia } from '@/utilidades/agenda';
+import {
+  clasesDelDia,
+  combinarDia,
+  obtenerDiasSemana,
+  obtenerSemanasMes,
+  tareasDelDia,
+  type ClaseAgenda,
+} from '@/utilidades/agenda';
+import { colorTextoSobre } from '@/utilidades/colores';
 import { tieneHoraInicio } from '@/utilidades/fechas';
 
 type ModoVista = 'dia' | 'semana' | 'mes';
@@ -19,6 +27,12 @@ export function PaginaAgenda() {
   const intl = useIntl();
   const despachar = usarDespachador();
   const tareas = usarSelector(seleccionarTareasDelAmbito);
+  // Las clases del horario activo se ven con "Todo" y con "Escolar"; con el
+  // modo escolar apagado no hay horario que mostrar.
+  const ambito = usarSelector(seleccionarAmbitoActivo);
+  const modoEscolar = usarSelector((estado) => estado.sesion.usuario?.modoEscolarActivo ?? false);
+  const horarioActivo = usarSelector((estado) => estado.horario.activo);
+  const horario = modoEscolar && ambito !== 'PERSONAL' ? horarioActivo : null;
   const idiomaIcu = intl.locale;
 
   const [modo, setModo] = useState<ModoVista>('semana');
@@ -75,10 +89,33 @@ export function PaginaAgenda() {
     return formateadorHora.format(new Date(tarea.fechaLimite));
   }
 
-  const tareasDia = useMemo(
-    () => ordenarTareasDelDia(tareasDelDia(tareas, fechaReferencia)),
-    [tareas, fechaReferencia],
+  const elementosDia = useMemo(
+    () => combinarDia(tareasDelDia(tareas, fechaReferencia), clasesDelDia(horario, fechaReferencia)),
+    [tareas, horario, fechaReferencia],
   );
+
+  function renderizarClase(clase: ClaseAgenda, compacta: boolean) {
+    return (
+      <span
+        className={
+          compacta
+            ? // Columnas estrechas: las palabras largas ("Matemáticas") se
+              // cortan con guion en vez de salirse del recuadro de color.
+              'block rounded px-1.5 py-0.5 font-medium hyphens-auto [overflow-wrap:anywhere]'
+            : 'flex flex-wrap items-baseline gap-x-2 rounded-md px-2 py-1 font-medium'
+        }
+        style={{ backgroundColor: clase.color, color: colorTextoSobre(clase.color) }}
+      >
+        {clase.nombre}
+        {!compacta && (
+          <span className="text-xs font-normal opacity-80">
+            {intl.formatMessage({ id: 'agenda.clase.hasta' }, { hora: clase.horaFin })}
+            {clase.aula && ` · ${clase.aula}`}
+          </span>
+        )}
+      </span>
+    );
+  }
   const diasSemana = useMemo(() => obtenerDiasSemana(fechaReferencia), [fechaReferencia]);
   const semanasMes = useMemo(() => obtenerSemanasMes(fechaReferencia), [fechaReferencia]);
   const mesActual = fechaReferencia.getUTCMonth();
@@ -123,27 +160,34 @@ export function PaginaAgenda() {
             <h2 className="text-lg font-medium capitalize">
               {formateadorDiaCompleto.format(fechaReferencia)}
             </h2>
-            {tareasDia.length === 0 ? (
+            {elementosDia.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {intl.formatMessage({ id: 'agenda.sinTareas' })}
               </p>
             ) : (
               <ul className="flex flex-col gap-2">
-                {tareasDia.map((tarea) => (
-                  <li key={tarea.id} className="flex items-center gap-3 text-sm">
-                    <span className="w-14 shrink-0 text-muted-foreground">
-                      {renderizarHora(tarea) ?? intl.formatMessage({ id: 'agenda.sinHora' })}
-                    </span>
-                    <DetalleTarea
-                      tarea={tarea}
-                      className={
-                        tarea.estado === 'HECHA'
-                          ? 'text-left line-through text-muted-foreground hover:underline'
-                          : 'text-left hover:underline'
-                      }
-                    />
-                  </li>
-                ))}
+                {elementosDia.map((elemento) =>
+                  elemento.tipo === 'clase' ? (
+                    <li key={`clase-${elemento.clase.id}`} className="flex items-center gap-3 text-sm">
+                      <span className="w-14 shrink-0 text-muted-foreground">{elemento.hora}</span>
+                      {renderizarClase(elemento.clase, false)}
+                    </li>
+                  ) : (
+                    <li key={elemento.tarea.id} className="flex items-center gap-3 text-sm">
+                      <span className="w-14 shrink-0 text-muted-foreground">
+                        {renderizarHora(elemento.tarea) ?? intl.formatMessage({ id: 'agenda.sinHora' })}
+                      </span>
+                      <DetalleTarea
+                        tarea={elemento.tarea}
+                        className={
+                          elemento.tarea.estado === 'HECHA'
+                            ? 'text-left line-through text-muted-foreground hover:underline'
+                            : 'text-left hover:underline'
+                        }
+                      />
+                    </li>
+                  ),
+                )}
               </ul>
             )}
           </CardContent>
@@ -153,7 +197,7 @@ export function PaginaAgenda() {
       {modo === 'semana' && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-7">
           {diasSemana.map((dia) => {
-            const tareasDelDiaActual = ordenarTareasDelDia(tareasDelDia(tareas, dia));
+            const elementosDelDia = combinarDia(tareasDelDia(tareas, dia), clasesDelDia(horario, dia));
             const esHoy = dia.getTime() === alInicioDelDiaUtc(new Date()).getTime();
             return (
               <Card key={dia.toISOString()} className={esHoy ? 'border-primary' : undefined}>
@@ -165,27 +209,36 @@ export function PaginaAgenda() {
                   >
                     {formateadorDiaCorto.format(dia)}
                   </button>
-                  {tareasDelDiaActual.length === 0 ? (
+                  {elementosDelDia.length === 0 ? (
                     <p className="text-xs text-muted-foreground">
                       {intl.formatMessage({ id: 'agenda.sinTareas' })}
                     </p>
                   ) : (
                     <ul className="flex flex-col gap-1.5">
-                      {tareasDelDiaActual.map((tarea) => (
-                        <li key={tarea.id} className="text-xs">
-                          {renderizarHora(tarea) && (
-                            <span className="text-muted-foreground">{renderizarHora(tarea)} </span>
-                          )}
-                          <DetalleTarea
-                            tarea={tarea}
-                            className={
-                              tarea.estado === 'HECHA'
-                                ? 'line-through text-muted-foreground hover:underline'
-                                : 'hover:underline'
-                            }
-                          />
-                        </li>
-                      ))}
+                      {elementosDelDia.map((elemento) =>
+                        elemento.tipo === 'clase' ? (
+                          <li key={`clase-${elemento.clase.id}`} className="text-xs">
+                            <span className="text-muted-foreground">{elemento.hora} </span>
+                            {renderizarClase(elemento.clase, true)}
+                          </li>
+                        ) : (
+                          <li key={elemento.tarea.id} className="text-xs">
+                            {renderizarHora(elemento.tarea) && (
+                              <span className="text-muted-foreground">
+                                {renderizarHora(elemento.tarea)}{' '}
+                              </span>
+                            )}
+                            <DetalleTarea
+                              tarea={elemento.tarea}
+                              className={
+                                elemento.tarea.estado === 'HECHA'
+                                  ? 'line-through text-muted-foreground hover:underline'
+                                  : 'hover:underline'
+                              }
+                            />
+                          </li>
+                        ),
+                      )}
                     </ul>
                   )}
                 </CardContent>

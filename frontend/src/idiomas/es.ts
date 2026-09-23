@@ -199,7 +199,6 @@ export const es = {
   'planificador.descripcion': 'Tus próximos exámenes, trabajos y presentaciones, ordenados por fecha.',
   'planificador.nueva.titulo': 'Añadir examen o entrega',
   'planificador.nueva.tituloPlaceholder': 'p. ej. Examen del tema 3',
-  'planificador.nueva.asignatura': 'Asignatura (opcional)',
   'planificador.nueva.boton': 'Añadir al planificador',
   'planificador.filtro': 'Filtrar por tipo',
   'planificador.filtro.todos': 'Todo',
@@ -300,4 +299,8 @@ export const es = {
   'comunidad.LA_RIOJA': 'La Rioja',
   'comunidad.CEUTA': 'Ceuta',
   'comunidad.MELILLA': 'Melilla',
+  'tarea.detalle.asignatura': 'Asignatura',
+  'tarea.detalle.sinAsignatura': 'Sin asignatura',
+  'planificador.sinHorario': 'Crea tu horario de clase para elegir la asignatura',
+  'agenda.clase.hasta': 'hasta las {hora}',
 };

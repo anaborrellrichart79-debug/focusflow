@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { crearHorarioFalso } from '@/pruebas/horarioFalso';
 import type { Tarea } from '@/servicios/tareas';
-import { obtenerDiasSemana, obtenerSemanasMes, ordenarTareasDelDia, tareasDelDia } from './agenda';
+import {
+  clasesDelDia,
+  combinarDia,
+  obtenerDiasSemana,
+  obtenerSemanasMes,
+  ordenarTareasDelDia,
+  tareasDelDia,
+} from './agenda';
 
 function tareaDePrueba(parcial: Partial<Tarea> & { id: string }): Tarea {
   return {
@@ -77,6 +85,53 @@ describe('utilidades/agenda', () => {
       const resultado = ordenarTareasDelDia(tareas);
 
       expect(resultado.map((t) => t.id)).toEqual(['sin-hora', 'manana', 'tarde']);
+    });
+  });
+
+  describe('clases del horario', () => {
+    // 2026-06-15 es lunes; el horario falso tiene Matemáticas el lunes a las 8:30.
+    const lunes = new Date(Date.UTC(2026, 5, 15));
+    const martes = new Date(Date.UTC(2026, 5, 16));
+    const sabado = new Date(Date.UTC(2026, 5, 20));
+
+    it('clasesDelDia devuelve las clases de ese día de la semana, con hora, nombre y color', () => {
+      expect(clasesDelDia(crearHorarioFalso(), lunes)).toEqual([
+        {
+          id: 's-1',
+          horaInicio: '08:30',
+          horaFin: '09:30',
+          nombre: 'Matemáticas',
+          color: '#3B82F6',
+          aula: '12',
+        },
+      ]);
+      expect(clasesDelDia(crearHorarioFalso(), martes)).toEqual([]);
+    });
+
+    it('no hay clases en fin de semana ni sin horario', () => {
+      expect(clasesDelDia(crearHorarioFalso(), sabado)).toEqual([]);
+      expect(clasesDelDia(null, lunes)).toEqual([]);
+    });
+
+    it('combinarDia pone primero las tareas sin hora y luego clases y tareas por hora', () => {
+      const clases = clasesDelDia(crearHorarioFalso(), lunes);
+      const elementos = combinarDia(
+        [
+          tareaDePrueba({ id: 'tarde', fechaLimite: '2026-06-15T17:00:00.000Z' }),
+          tareaDePrueba({ id: 'sin-hora', fechaLimite: '2026-06-15T00:00:00.000Z' }),
+          tareaDePrueba({ id: 'temprano', fechaLimite: '2026-06-15T08:00:00.000Z' }),
+          tareaDePrueba({ id: 'a-la-vez', fechaLimite: '2026-06-15T08:30:00.000Z' }),
+        ],
+        clases,
+      );
+
+      expect(elementos.map((e) => (e.tipo === 'clase' ? `clase ${e.clase.nombre}` : e.tarea.id))).toEqual([
+        'sin-hora',
+        'temprano',
+        'clase Matemáticas',
+        'a-la-vez',
+        'tarde',
+      ]);
     });
   });
 });

@@ -199,7 +199,6 @@ export const gl = {
   'planificador.descripcion': 'Os teus próximos exames, traballos e presentacións, ordenados por data.',
   'planificador.nueva.titulo': 'Engadir exame ou entrega',
   'planificador.nueva.tituloPlaceholder': 'p. ex. Exame do tema 3',
-  'planificador.nueva.asignatura': 'Materia (opcional)',
   'planificador.nueva.boton': 'Engadir ao planificador',
   'planificador.filtro': 'Filtrar por tipo',
   'planificador.filtro.todos': 'Todo',
@@ -300,4 +299,8 @@ export const gl = {
   'comunidad.LA_RIOJA': 'A Rioxa',
   'comunidad.CEUTA': 'Ceuta',
   'comunidad.MELILLA': 'Melilla',
+  'tarea.detalle.asignatura': 'Materia',
+  'tarea.detalle.sinAsignatura': 'Sen materia',
+  'planificador.sinHorario': 'Crea o teu horario de clase para escoller a materia',
+  'agenda.clase.hasta': 'ata as {hora}',
 };

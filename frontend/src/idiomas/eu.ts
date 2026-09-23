@@ -199,7 +199,6 @@ export const eu = {
   'planificador.descripcion': 'Zure hurrengo azterketak, lanak eta aurkezpenak, dataren arabera ordenatuta.',
   'planificador.nueva.titulo': 'Gehitu azterketa edo entrega',
   'planificador.nueva.tituloPlaceholder': 'adib. 3. gaiko azterketa',
-  'planificador.nueva.asignatura': 'Irakasgaia (aukerakoa)',
   'planificador.nueva.boton': 'Gehitu planifikatzailera',
   'planificador.filtro': 'Iragazi motaren arabera',
   'planificador.filtro.todos': 'Dena',
@@ -300,4 +299,8 @@ export const eu = {
   'comunidad.LA_RIOJA': 'Errioxa',
   'comunidad.CEUTA': 'Ceuta',
   'comunidad.MELILLA': 'Melilla',
+  'tarea.detalle.asignatura': 'Irakasgaia',
+  'tarea.detalle.sinAsignatura': 'Irakasgairik gabe',
+  'planificador.sinHorario': 'Sortu zure eskola-ordutegia irakasgaia aukeratzeko',
+  'agenda.clase.hasta': '{hora} arte',
 };

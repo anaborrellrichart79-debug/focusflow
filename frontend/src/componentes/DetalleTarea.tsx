@@ -4,6 +4,7 @@ import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cargarHistorialPomodoro } from '@/almacen/pomodoroSlice';
 import {
   cambiarAmbitoTarea,
+  cambiarAsignaturaTarea,
   cambiarDescripcionTarea,
   cambiarEtiquetasTarea,
   cambiarFechaLimiteTarea,
@@ -46,7 +47,24 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
   const etiquetasConocidas = usarSelector((estado) => estado.etiquetas.lista);
   const historialPomodoro = usarSelector((estado) => estado.pomodoro.historial);
   const modoEscolar = usarSelector((estado) => estado.sesion.usuario?.modoEscolarActivo ?? false);
+  const asignaturasHorario = usarSelector((estado) => estado.horario.activo?.asignaturas);
   const idDatalist = useId();
+
+  // Asignaturas del horario activo; si la tarea tiene una de otro horario
+  // (p. ej. del curso pasado), se añade para que el desplegable la muestre.
+  const opcionesAsignatura = (asignaturasHorario ?? []).map((elegida) => ({
+    id: elegida.id,
+    nombre: elegida.asignatura.nombre,
+  }));
+  if (
+    tarea.asignaturaHorario &&
+    !opcionesAsignatura.some((opcion) => opcion.id === tarea.asignaturaHorario!.id)
+  ) {
+    opcionesAsignatura.push({
+      id: tarea.asignaturaHorario.id,
+      nombre: tarea.asignaturaHorario.asignatura.nombre,
+    });
+  }
 
   const [abierto, setAbierto] = useState(false);
   const [descripcion, setDescripcion] = useState(tarea.descripcion ?? '');
@@ -244,6 +262,31 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
                   {OPCIONES_TIPO_ESCOLAR.map((opcion) => (
                     <option key={opcion.valor} value={opcion.valor}>
                       {opcion.icono} {intl.formatMessage({ id: opcion.clave })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {modoEscolar && tarea.ambito === 'ESCOLAR' && opcionesAsignatura.length > 0 && (
+              <label className="flex flex-col gap-1.5 text-sm">
+                {intl.formatMessage({ id: 'tarea.detalle.asignatura' })}
+                <select
+                  value={tarea.asignaturaHorarioId ?? ''}
+                  onChange={(evento) =>
+                    despachar(
+                      cambiarAsignaturaTarea({
+                        id: tarea.id,
+                        asignaturaHorarioId: evento.target.value || null,
+                      }),
+                    )
+                  }
+                  className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm transition-shadow hover:shadow-md"
+                >
+                  <option value="">{intl.formatMessage({ id: 'tarea.detalle.sinAsignatura' })}</option>
+                  {opcionesAsignatura.map((opcion) => (
+                    <option key={opcion.id} value={opcion.id}>
+                      {opcion.nombre}
                     </option>
                   ))}
                 </select>

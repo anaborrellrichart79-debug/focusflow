@@ -199,7 +199,6 @@ export const en = {
   'planificador.descripcion': 'Your upcoming exams, assignments and presentations, sorted by date.',
   'planificador.nueva.titulo': 'Add an exam or assignment',
   'planificador.nueva.tituloPlaceholder': 'e.g. Unit 3 exam',
-  'planificador.nueva.asignatura': 'Subject (optional)',
   'planificador.nueva.boton': 'Add to planner',
   'planificador.filtro': 'Filter by type',
   'planificador.filtro.todos': 'All',
@@ -300,4 +299,8 @@ export const en = {
   'comunidad.LA_RIOJA': 'La Rioja',
   'comunidad.CEUTA': 'Ceuta',
   'comunidad.MELILLA': 'Melilla',
+  'tarea.detalle.asignatura': 'Subject',
+  'tarea.detalle.sinAsignatura': 'No subject',
+  'planificador.sinHorario': 'Create your class timetable to choose the subject',
+  'agenda.clase.hasta': 'until {hora}',
 };

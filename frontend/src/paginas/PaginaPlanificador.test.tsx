@@ -1,6 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { crearHorarioFalso } from '@/pruebas/horarioFalso';
 import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
 import type { Tarea } from '@/servicios/tareas';
 import { PaginaPlanificador } from './PaginaPlanificador';
@@ -114,7 +115,7 @@ describe('PaginaPlanificador', () => {
     expect(screen.queryByText('Examen de mates')).not.toBeInTheDocument();
   });
 
-  it('añadir una entrega la crea como escolar, con su tipo, fecha y asignatura como etiqueta', async () => {
+  it('añadir una entrega la crea como escolar, con su tipo, fecha y la asignatura del horario', async () => {
     const usuario = userEvent.setup();
     vi.stubGlobal(
       'fetch',
@@ -126,23 +127,64 @@ describe('PaginaPlanificador', () => {
       }),
     );
 
-    renderizarPagina(<PaginaPlanificador />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
+    renderizarPagina(<PaginaPlanificador />, {
+      estadoPrecargado: {
+        sesion: SESION_AUTENTICADA,
+        horario: {
+          cursos: [],
+          lista: [],
+          activo: crearHorarioFalso(),
+          cargado: true,
+          guardando: false,
+          error: null,
+        },
+      },
+    });
 
-    await usuario.type(screen.getByLabelText('p. ej. Examen del tema 3'), 'Trabajo de biología');
+    await usuario.type(screen.getByLabelText('p. ej. Examen del tema 3'), 'Trabajo de mates');
     fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'TRABAJO' } });
     fireEvent.change(screen.getByLabelText('Fecha límite'), { target: { value: '2026-06-20' } });
-    await usuario.type(screen.getByLabelText('Asignatura (opcional)'), 'Biología');
+    await usuario.selectOptions(screen.getByLabelText('Asignatura'), 'Matemáticas');
     await usuario.click(screen.getByRole('button', { name: 'Añadir al planificador' }));
 
     const llamadaPost = vi
       .mocked(fetch)
       .mock.calls.find(([, opciones]) => opciones?.method === 'POST');
     expect(JSON.parse(llamadaPost![1]!.body as string)).toEqual({
-      titulo: 'Trabajo de biología',
+      titulo: 'Trabajo de mates',
       fechaLimite: '2026-06-20',
       ambito: 'ESCOLAR',
       tipoEscolar: 'TRABAJO',
-      etiquetas: ['Biología'],
+      asignaturaHorarioId: 'ah-mates',
     });
+  });
+
+  it('sin horario de clase, en lugar del desplegable de asignatura enlaza a crearlo', () => {
+    renderizarPagina(<PaginaPlanificador />);
+
+    expect(screen.queryByLabelText('Asignatura')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Crea tu horario de clase para elegir la asignatura' }),
+    ).toHaveAttribute('href', '/horario');
+  });
+
+  it('una entrega con asignatura muestra la asignatura con su color', () => {
+    renderizarPagina(<PaginaPlanificador />, {
+      estadoPrecargado: {
+        tareas: {
+          lista: [
+            crearTareaFalsa({
+              titulo: 'Examen del tema 3',
+              asignaturaHorarioId: 'ah-mates',
+              asignaturaHorario: { id: 'ah-mates', color: '#3B82F6', asignatura: { nombre: 'Matemáticas' } },
+            }),
+          ],
+          cargando: false,
+          error: null,
+        },
+      },
+    });
+
+    expect(screen.getByText('Matemáticas')).toHaveStyle({ backgroundColor: '#3B82F6' });
   });
 });

@@ -3,6 +3,7 @@ import { IntlProvider } from 'react-intl';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cargarEstadoGoogle, sincronizarGoogle } from '@/almacen/googleSlice';
+import { cargarHorarios } from '@/almacen/horarioSlice';
 import { restaurarSesion } from '@/almacen/sesionSlice';
 import { DisenoAplicacion } from '@/componentes/DisenoAplicacion';
 import { RutaProtegida } from '@/componentes/RutaProtegida';
@@ -41,6 +42,13 @@ export function Aplicacion() {
   useEffect(() => {
     if (usuario) despachar(cargarEstadoGoogle());
   }, [usuario, despachar]);
+
+  // El horario activo lo usan la Agenda (clases), el Planificador y el detalle
+  // de las tareas (asignatura), así que se carga una vez al entrar.
+  const modoEscolar = usuario?.modoEscolarActivo ?? false;
+  useEffect(() => {
+    if (modoEscolar) despachar(cargarHorarios());
+  }, [modoEscolar, despachar]);
 
   useEffect(() => {
     if (!usuario || !conectadoGoogle) return;

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
+import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cargarEtiquetas } from '@/almacen/etiquetasSlice';
 import { cambiarEstadoTarea, cargarTareas, crearTarea } from '@/almacen/tareasSlice';
@@ -43,7 +44,10 @@ export function PaginaPlanificador() {
   const [titulo, setTitulo] = useState('');
   const [tipo, setTipo] = useState<TipoEscolar>('EXAMEN');
   const [fecha, setFecha] = useState('');
-  const [asignatura, setAsignatura] = useState('');
+  const [asignaturaHorarioId, setAsignaturaHorarioId] = useState('');
+  const asignaturasHorario = usarSelector(
+    (estado) => estado.horario.activo?.asignaturas ?? [],
+  );
 
   useEffect(() => {
     despachar(cargarTareas());
@@ -62,14 +66,12 @@ export function PaginaPlanificador() {
         fechaLimite: fecha,
         ambito: 'ESCOLAR',
         tipoEscolar: tipo,
-        // La asignatura se guarda como una etiqueta normal: así también se
-        // puede ver (y reutilizar) desde el resto de vistas sin un campo nuevo.
-        etiquetas: asignatura.trim() ? [asignatura.trim()] : undefined,
+        // La asignatura sale del horario de clase activo (con su color).
+        asignaturaHorarioId: asignaturaHorarioId || undefined,
       }),
     );
     setTitulo('');
     setFecha('');
-    setAsignatura('');
   }
 
   function renderizarEntrega(tarea: Tarea) {
@@ -140,13 +142,25 @@ export function PaginaPlanificador() {
                 aria-label={intl.formatMessage({ id: 'tarea.detalle.fechaLimite' })}
                 className="w-auto"
               />
-              <Input
-                value={asignatura}
-                onChange={(evento) => setAsignatura(evento.target.value)}
-                placeholder={intl.formatMessage({ id: 'planificador.nueva.asignatura' })}
-                aria-label={intl.formatMessage({ id: 'planificador.nueva.asignatura' })}
-                className="min-w-32 flex-1"
-              />
+              {asignaturasHorario.length > 0 ? (
+                <select
+                  value={asignaturaHorarioId}
+                  onChange={(evento) => setAsignaturaHorarioId(evento.target.value)}
+                  aria-label={intl.formatMessage({ id: 'tarea.detalle.asignatura' })}
+                  className={`${CLASE_SELECT} min-w-32 flex-1`}
+                >
+                  <option value="">{intl.formatMessage({ id: 'tarea.detalle.sinAsignatura' })}</option>
+                  {asignaturasHorario.map((elegida) => (
+                    <option key={elegida.id} value={elegida.id}>
+                      {elegida.asignatura.nombre}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Link to="/horario" className="self-center text-sm text-primary hover:underline">
+                  {intl.formatMessage({ id: 'planificador.sinHorario' })}
+                </Link>
+              )}
             </div>
             <Button type="submit">{intl.formatMessage({ id: 'planificador.nueva.boton' })}</Button>
           </form>

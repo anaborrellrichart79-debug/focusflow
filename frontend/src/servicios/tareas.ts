@@ -21,6 +21,11 @@ export interface Tarea {
   tiempoEstimadoMinutos: number | null;
   ambito: Ambito;
   tipoEscolar: TipoEscolar | null;
+  // Asignatura de un horario de clase, con su color (solo tareas escolares).
+  // Opcionales en el tipo para no obligar a cada dato de prueba a incluirlas;
+  // el backend siempre las devuelve (null si no hay).
+  asignaturaHorarioId?: string | null;
+  asignaturaHorario?: { id: string; color: string; asignatura: { nombre: string } } | null;
   objetivoId: string | null;
   usuarioId: string;
   subtareas: Subtarea[];
@@ -50,6 +55,7 @@ export function crearTarea(
     tiempoEstimadoMinutos?: number;
     ambito?: Ambito;
     tipoEscolar?: TipoEscolar;
+    asignaturaHorarioId?: string;
   },
 ) {
   return peticionApi<Tarea>('/tareas', {
@@ -76,6 +82,7 @@ export function actualizarTarea(
     tiempoEstimadoMinutos: number;
     ambito: Ambito;
     tipoEscolar: TipoEscolar | null;
+    asignaturaHorarioId: string | null;
   }>,
 ) {
   return peticionApi<Tarea>(`/tareas/${id}`, {

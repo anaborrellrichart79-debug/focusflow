@@ -25,7 +25,11 @@ export function CuadriculaHorario({ horario, editable = false, alPulsarCelda }: 
       <table className="w-full min-w-[640px] table-fixed border-collapse text-sm">
         <thead>
           <tr className="bg-muted">
-            <th scope="col" className="w-24 border border-border px-2 py-2 text-left font-medium">
+            {/* La columna de horas queda fija al desplazar la tabla en el móvil. */}
+            <th
+              scope="col"
+              className="sticky left-0 z-10 w-24 border border-border bg-muted px-2 py-2 text-left font-medium"
+            >
               {intl.formatMessage({ id: 'horario.columnaHora' })}
             </th>
             {DIAS_LECTIVOS.map((dia) => (
@@ -48,16 +52,20 @@ export function CuadriculaHorario({ horario, editable = false, alPulsarCelda }: 
             <tr key={franja.id}>
               <th
                 scope="row"
-                className="border border-border bg-muted px-2 py-2 text-left text-xs font-medium tabular-nums whitespace-nowrap"
+                className="sticky left-0 z-10 border border-border bg-muted px-2 py-2 text-left text-xs font-medium tabular-nums whitespace-nowrap"
               >
                 {franja.horaInicio} – {franja.horaFin}
               </th>
               {franja.tipo === 'DESCANSO' ? (
                 <td
                   colSpan={DIAS_LECTIVOS.length}
-                  className="border border-border bg-muted/60 px-2 py-2 text-center text-xs font-semibold tracking-[0.5em] text-muted-foreground uppercase"
+                  className="border border-border bg-muted/60 px-2 py-2 text-left text-xs font-semibold tracking-[0.5em] text-muted-foreground uppercase md:text-center"
                 >
-                  {franja.etiqueta || intl.formatMessage({ id: 'horario.descanso' })}
+                  {/* En el móvil, a la izquierda y pegado junto a la columna de
+                      horas: centrado en las 5 columnas quedaría fuera de la vista. */}
+                  <span className="sticky left-28 inline-block md:static">
+                    {franja.etiqueta || intl.formatMessage({ id: 'horario.descanso' })}
+                  </span>
                 </td>
               ) : (
                 DIAS_LECTIVOS.map((dia) => {

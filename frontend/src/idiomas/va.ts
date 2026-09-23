@@ -199,7 +199,6 @@ export const va = {
   'planificador.descripcion': 'Els teus pròxims exàmens, treballs i presentacions, ordenats per data.',
   'planificador.nueva.titulo': 'Afegir examen o lliurament',
   'planificador.nueva.tituloPlaceholder': 'p. ex. Examen del tema 3',
-  'planificador.nueva.asignatura': 'Assignatura (opcional)',
   'planificador.nueva.boton': 'Afegir al planificador',
   'planificador.filtro': 'Filtrar per tipus',
   'planificador.filtro.todos': 'Tot',
@@ -300,4 +299,8 @@ export const va = {
   'comunidad.LA_RIOJA': 'La Rioja',
   'comunidad.CEUTA': 'Ceuta',
   'comunidad.MELILLA': 'Melilla',
+  'tarea.detalle.asignatura': 'Assignatura',
+  'tarea.detalle.sinAsignatura': 'Sense assignatura',
+  'planificador.sinHorario': 'Crea el teu horari de classe per a triar l’assignatura',
+  'agenda.clase.hasta': 'fins a les {hora}',
 };

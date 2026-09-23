@@ -65,6 +65,7 @@ export const crearTarea = createAsyncThunk<
     recurrencia?: Recurrencia;
     ambito?: Ambito;
     tipoEscolar?: TipoEscolar;
+    asignaturaHorarioId?: string;
   },
   { state: EstadoRaiz; rejectValue: string }
 >('tareas/crear', async (datos, { getState, rejectWithValue }) => {
@@ -201,13 +202,13 @@ export const cambiarAmbitoTarea = createAsyncThunk<
   { state: EstadoRaiz; rejectValue: string }
 >('tareas/cambiarAmbito', async ({ id, ambito }, { getState, rejectWithValue }) => {
   try {
-    // El tipo (examen, trabajo...) solo tiene sentido en una tarea escolar: al
-    // pasarla a personal se quita, para que no reaparezca en el planificador
-    // si más adelante se vuelve a marcar como escolar.
+    // El tipo (examen, trabajo...) y la asignatura solo tienen sentido en una
+    // tarea escolar: al pasarla a personal se quitan, para que no reaparezca
+    // en el planificador si más adelante se vuelve a marcar como escolar.
     return await actualizarTareaApi(
       tokenOError(getState()),
       id,
-      ambito === 'PERSONAL' ? { ambito, tipoEscolar: null } : { ambito },
+      ambito === 'PERSONAL' ? { ambito, tipoEscolar: null, asignaturaHorarioId: null } : { ambito },
     );
   } catch (error) {
     return rejectWithValue(
@@ -229,6 +230,23 @@ export const cambiarTipoEscolarTarea = createAsyncThunk<
     );
   }
 });
+
+export const cambiarAsignaturaTarea = createAsyncThunk<
+  Tarea,
+  { id: string; asignaturaHorarioId: string | null },
+  { state: EstadoRaiz; rejectValue: string }
+>(
+  'tareas/cambiarAsignatura',
+  async ({ id, asignaturaHorarioId }, { getState, rejectWithValue }) => {
+    try {
+      return await actualizarTareaApi(tokenOError(getState()), id, { asignaturaHorarioId });
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+      );
+    }
+  },
+);
 
 export const cambiarTiempoEstimadoTarea = createAsyncThunk<
   Tarea,
@@ -370,6 +388,7 @@ const tareasSlice = createSlice({
             cambiarRecurrenciaTarea,
             cambiarAmbitoTarea,
             cambiarTipoEscolarTarea,
+            cambiarAsignaturaTarea,
             cambiarTiempoEstimadoTarea,
           ].some((thunk) => thunk.fulfilled.match(accion)),
         (estado, accion) => {

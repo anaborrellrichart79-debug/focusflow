@@ -2,6 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderizarPagina, SESION_AUTENTICADA, SESION_MODO_ESCOLAR } from '@/pruebas/render';
+import { crearHorarioFalso } from '@/pruebas/horarioFalso';
 import type { Tarea } from '@/servicios/tareas';
 import { DetalleTarea } from './DetalleTarea';
 
@@ -262,7 +263,7 @@ describe('DetalleTarea', () => {
         'http://localhost:3000/tareas/tarea-1',
         expect.objectContaining({
           method: 'PATCH',
-          body: JSON.stringify({ ambito: 'PERSONAL', tipoEscolar: null }),
+          body: JSON.stringify({ ambito: 'PERSONAL', tipoEscolar: null, asignaturaHorarioId: null }),
         }),
       );
     });
@@ -279,6 +280,43 @@ describe('DetalleTarea', () => {
       const dialogo = within(screen.getByRole('dialog'));
       expect(dialogo.queryByRole('combobox', { name: 'Ámbito' })).toBeNull();
       expect(dialogo.queryByRole('combobox', { name: 'Tipo' })).toBeNull();
+    });
+
+    it('en una tarea escolar, elegir la asignatura del horario la guarda con un PATCH', () => {
+      vi.mocked(fetch).mockImplementation(async (entrada) => {
+        const url = String(entrada);
+        if (url.includes('/pomodoro/sesiones')) {
+          return { ok: true, json: async () => [] } as Response;
+        }
+        return { ok: true, json: async () => crearTareaFalsa({ ambito: 'ESCOLAR' }) } as Response;
+      });
+
+      renderizarPagina(<DetalleTarea tarea={crearTareaFalsa({ ambito: 'ESCOLAR' })} />, {
+        estadoPrecargado: {
+          sesion: SESION_MODO_ESCOLAR,
+          horario: {
+            cursos: [],
+            lista: [],
+            activo: crearHorarioFalso(),
+            cargado: true,
+            guardando: false,
+            error: null,
+          },
+        },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
+
+      const selector = within(screen.getByRole('dialog')).getByRole('combobox', { name: 'Asignatura' });
+      expect(selector).toHaveValue('');
+      fireEvent.change(selector, { target: { value: 'ah-lengua' } });
+
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/tareas/tarea-1',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ asignaturaHorarioId: 'ah-lengua' }),
+        }),
+      );
     });
   });
 });
