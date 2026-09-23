@@ -5,7 +5,12 @@ import type { EstadoRaiz } from './store';
 // el resto de vistas: el backend siempre devuelve todas las tareas y objetivos
 // del usuario y cada página se queda solo con los del ámbito activo.
 
-const seleccionarAmbitoActivo = (estado: EstadoRaiz) => estado.interfaz.ambitoActivo;
+// Con el modo escolar desactivado (Ajustes) no hay selector de ámbito a la
+// vista, así que se ignora el ámbito guardado y se muestra todo: si no, alguien
+// que lo dejó en "Escolar" y luego apagó el modo vería listas a medias sin
+// saber por qué.
+export const seleccionarAmbitoActivo = (estado: EstadoRaiz) =>
+  estado.sesion.usuario?.modoEscolarActivo ? estado.interfaz.ambitoActivo : 'TODOS';
 
 export const seleccionarTareasDelAmbito = createSelector(
   [(estado: EstadoRaiz) => estado.tareas.lista, seleccionarAmbitoActivo],
@@ -42,6 +47,6 @@ export const seleccionarHistorialPomodoroDelAmbito = createSelector(
 // para que no "desaparezca" nada más crearlo al estar filtrando por Escolar.
 // Con "Todos" se deja sin indicar y el backend aplica su default (PERSONAL).
 export function ambitoParaNuevoElemento(estado: EstadoRaiz) {
-  const ambito = estado.interfaz.ambitoActivo;
+  const ambito = seleccionarAmbitoActivo(estado);
   return ambito === 'TODOS' ? undefined : ambito;
 }

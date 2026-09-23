@@ -1,14 +1,16 @@
+import { useIntl } from 'react-intl';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cambiarIdioma } from '@/almacen/interfazSlice';
 import { IDIOMAS_DISPONIBLES, type CodigoIdioma } from '@/idiomas';
 
 export function SelectorIdioma() {
+  const intl = useIntl();
   const despachar = usarDespachador();
   const idiomaActual = usarSelector((estado) => estado.interfaz.idioma);
 
   return (
     <select
-      aria-label="Idioma"
+      aria-label={intl.formatMessage({ id: 'selector.idioma.etiqueta' })}
       value={idiomaActual}
       onChange={(evento) =>
         despachar(cambiarIdioma(evento.target.value as CodigoIdioma))

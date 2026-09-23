@@ -55,6 +55,14 @@ export const SESION_AUTENTICADA: EstadoRaiz['sesion'] = {
   error: null,
 };
 
+// Igual que SESION_AUTENTICADA pero con el modo escolar activado en Ajustes:
+// hace falta para todo lo que depende del ámbito (selector, filtros, campos
+// de ámbito y tipo del detalle de una tarea).
+export const SESION_MODO_ESCOLAR: EstadoRaiz['sesion'] = {
+  ...SESION_AUTENTICADA,
+  usuario: { ...SESION_AUTENTICADA.usuario!, modoEscolarActivo: true },
+};
+
 export function renderizarPagina(
   ui: ReactElement,
   {

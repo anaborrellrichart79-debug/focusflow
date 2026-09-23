@@ -26,6 +26,7 @@ interface EnlaceNavegacion {
   ruta: string;
   clave: string;
   icono: LucideIcon;
+  soloModoEscolar?: boolean;
 }
 
 const SECCIONES: { clave: string; enlaces: EnlaceNavegacion[] }[] = [
@@ -37,7 +38,12 @@ const SECCIONES: { clave: string; enlaces: EnlaceNavegacion[] }[] = [
       { ruta: '/agenda', clave: 'nav.agenda', icono: CalendarDays },
       { ruta: '/kanban', clave: 'nav.kanban', icono: Columns3 },
       { ruta: '/eisenhower', clave: 'nav.eisenhower', icono: Grid2x2 },
-      { ruta: '/planificador', clave: 'nav.planificador', icono: GraduationCap },
+      {
+        ruta: '/planificador',
+        clave: 'nav.planificador',
+        icono: GraduationCap,
+        soloModoEscolar: true,
+      },
     ],
   },
   {
@@ -55,7 +61,7 @@ const SECCIONES: { clave: string; enlaces: EnlaceNavegacion[] }[] = [
 
 function claseEnlace({ isActive }: { isActive: boolean }) {
   return cn(
-    'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+    'flex items-center gap-3 rounded-md px-3 py-1.5 text-sm transition-colors',
     isActive
       ? 'bg-primary/10 font-medium text-primary'
       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -67,9 +73,10 @@ export function BarraLateral({ alNavegar }: { alNavegar?: () => void }) {
   const intl = useIntl();
   const despachar = usarDespachador();
   const usuario = usarSelector((estado) => estado.sesion.usuario);
+  const modoEscolar = usuario?.modoEscolarActivo ?? false;
 
   return (
-    <div className="flex h-full flex-col gap-6 overflow-y-auto p-4">
+    <div className="flex h-full flex-col gap-5 overflow-y-auto p-4">
       <Link
         to="/"
         onClick={alNavegar}
@@ -78,20 +85,22 @@ export function BarraLateral({ alNavegar }: { alNavegar?: () => void }) {
         {intl.formatMessage({ id: 'app.titulo' })}
       </Link>
 
-      <SelectorAmbito />
+      {modoEscolar && <SelectorAmbito />}
 
-      <nav aria-label={intl.formatMessage({ id: 'nav.principal' })} className="flex flex-col gap-5">
+      <nav aria-label={intl.formatMessage({ id: 'nav.principal' })} className="flex flex-col gap-4">
         {SECCIONES.map((seccion) => (
           <div key={seccion.clave} className="flex flex-col gap-1">
             <p className="px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {intl.formatMessage({ id: seccion.clave })}
             </p>
-            {seccion.enlaces.map(({ ruta, clave, icono: Icono }) => (
-              <NavLink key={ruta} to={ruta} end onClick={alNavegar} className={claseEnlace}>
-                <Icono aria-hidden className="size-4" />
-                {intl.formatMessage({ id: clave })}
-              </NavLink>
-            ))}
+            {seccion.enlaces
+              .filter((enlace) => modoEscolar || !enlace.soloModoEscolar)
+              .map(({ ruta, clave, icono: Icono }) => (
+                <NavLink key={ruta} to={ruta} end onClick={alNavegar} className={claseEnlace}>
+                  <Icono aria-hidden className="size-4" />
+                  {intl.formatMessage({ id: clave })}
+                </NavLink>
+              ))}
           </div>
         ))}
       </nav>

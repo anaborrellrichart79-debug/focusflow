@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
 import { PaginaAjustes } from './PaginaAjustes';
 
@@ -48,5 +49,49 @@ describe('PaginaAjustes', () => {
     });
 
     expect(screen.getByText('No se pudo completar la conexión con Google.')).toBeInTheDocument();
+  });
+
+  describe('modo escolar', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('activarlo guarda la preferencia en el servidor y actualiza la sesión', async () => {
+      const usuario = userEvent.setup();
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, opciones?: RequestInit) => {
+          if (url.endsWith('/autenticacion/preferencias')) {
+            return {
+              ok: true,
+              json: async () => ({
+                ...SESION_AUTENTICADA.usuario,
+                ...JSON.parse(opciones!.body as string),
+              }),
+            } as Response;
+          }
+          return { ok: true, json: async () => ({ conectado: false }) } as Response;
+        }),
+      );
+
+      const { tienda } = renderizarPagina(<PaginaAjustes />, {
+        estadoPrecargado: { sesion: SESION_AUTENTICADA },
+      });
+
+      const casilla = screen.getByRole('checkbox', { name: 'Activar el modo escolar' });
+      expect(casilla).not.toBeChecked();
+
+      await usuario.click(casilla);
+
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/autenticacion/preferencias',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ modoEscolarActivo: true }),
+        }),
+      );
+      expect(tienda.getState().sesion.usuario?.modoEscolarActivo).toBe(true);
+      expect(await screen.findByRole('checkbox', { name: 'Activar el modo escolar' })).toBeChecked();
+    });
   });
 });

@@ -210,4 +210,8 @@ export const en = {
   'planificador.seccion.vacia': 'Nothing here.',
   'planificador.vacio': 'You have no pending exams, assignments or presentations. Add the first one!',
   'planificador.marcarHecha': 'Mark “{titulo}” as done',
+  'ajustes.modoEscolar.titulo': 'School mode',
+  'ajustes.modoEscolar.descripcion':
+    'Adds the scope selector (Personal/School) and the planner for exams, assignments and presentations, so you can keep school separate from everything else. Turning it off deletes nothing: you simply see all your tasks together again.',
+  'ajustes.modoEscolar.activar': 'Turn on school mode',
 };

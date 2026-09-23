@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
+import { renderizarPagina, SESION_AUTENTICADA, SESION_MODO_ESCOLAR } from '@/pruebas/render';
 import type { Tarea } from '@/servicios/tareas';
 import { DetalleTarea } from './DetalleTarea';
 
@@ -182,7 +182,7 @@ describe('DetalleTarea', () => {
       });
 
       renderizarPagina(<DetalleTarea tarea={crearTareaFalsa({})} />, {
-        estadoPrecargado: { sesion: SESION_AUTENTICADA },
+        estadoPrecargado: { sesion: SESION_MODO_ESCOLAR },
       });
       fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
 
@@ -214,14 +214,14 @@ describe('DetalleTarea', () => {
       });
 
       const { unmount } = renderizarPagina(<DetalleTarea tarea={crearTareaFalsa({})} />, {
-        estadoPrecargado: { sesion: SESION_AUTENTICADA },
+        estadoPrecargado: { sesion: SESION_MODO_ESCOLAR },
       });
       fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
       expect(within(screen.getByRole('dialog')).queryByRole('combobox', { name: 'Tipo' })).toBeNull();
       unmount();
 
       renderizarPagina(<DetalleTarea tarea={crearTareaFalsa({ ambito: 'ESCOLAR' })} />, {
-        estadoPrecargado: { sesion: SESION_AUTENTICADA },
+        estadoPrecargado: { sesion: SESION_MODO_ESCOLAR },
       });
       fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
       const selectorTipo = within(screen.getByRole('dialog')).getByRole('combobox', {
@@ -250,7 +250,7 @@ describe('DetalleTarea', () => {
 
       renderizarPagina(
         <DetalleTarea tarea={crearTareaFalsa({ ambito: 'ESCOLAR', tipoEscolar: 'TRABAJO' })} />,
-        { estadoPrecargado: { sesion: SESION_AUTENTICADA } },
+        { estadoPrecargado: { sesion: SESION_MODO_ESCOLAR } },
       );
       fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
       fireEvent.change(
@@ -265,6 +265,20 @@ describe('DetalleTarea', () => {
           body: JSON.stringify({ ambito: 'PERSONAL', tipoEscolar: null }),
         }),
       );
+    });
+
+    it('sin el modo escolar, no muestra los campos de ámbito ni de tipo', () => {
+      vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
+
+      renderizarPagina(
+        <DetalleTarea tarea={crearTareaFalsa({ ambito: 'ESCOLAR', tipoEscolar: 'EXAMEN' })} />,
+        { estadoPrecargado: { sesion: SESION_AUTENTICADA } },
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
+
+      const dialogo = within(screen.getByRole('dialog'));
+      expect(dialogo.queryByRole('combobox', { name: 'Ámbito' })).toBeNull();
+      expect(dialogo.queryByRole('combobox', { name: 'Tipo' })).toBeNull();
     });
   });
 });

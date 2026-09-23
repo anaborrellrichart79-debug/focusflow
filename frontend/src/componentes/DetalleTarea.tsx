@@ -45,6 +45,7 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
   const despachar = usarDespachador();
   const etiquetasConocidas = usarSelector((estado) => estado.etiquetas.lista);
   const historialPomodoro = usarSelector((estado) => estado.pomodoro.historial);
+  const modoEscolar = usarSelector((estado) => estado.sesion.usuario?.modoEscolarActivo ?? false);
   const idDatalist = useId();
 
   const [abierto, setAbierto] = useState(false);
@@ -203,26 +204,28 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
               )}
             </div>
 
-            <label className="flex flex-col gap-1.5 text-sm">
-              {intl.formatMessage({ id: 'tarea.detalle.ambito' })}
-              <select
-                value={tarea.ambito}
-                onChange={(evento) =>
-                  despachar(
-                    cambiarAmbitoTarea({ id: tarea.id, ambito: evento.target.value as Ambito }),
-                  )
-                }
-                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm transition-shadow hover:shadow-md"
-              >
-                {OPCIONES_AMBITO.map((opcion) => (
-                  <option key={opcion.valor} value={opcion.valor}>
-                    {intl.formatMessage({ id: opcion.clave })}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {modoEscolar && (
+              <label className="flex flex-col gap-1.5 text-sm">
+                {intl.formatMessage({ id: 'tarea.detalle.ambito' })}
+                <select
+                  value={tarea.ambito}
+                  onChange={(evento) =>
+                    despachar(
+                      cambiarAmbitoTarea({ id: tarea.id, ambito: evento.target.value as Ambito }),
+                    )
+                  }
+                  className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm transition-shadow hover:shadow-md"
+                >
+                  {OPCIONES_AMBITO.map((opcion) => (
+                    <option key={opcion.valor} value={opcion.valor}>
+                      {intl.formatMessage({ id: opcion.clave })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
-            {tarea.ambito === 'ESCOLAR' && (
+            {modoEscolar && tarea.ambito === 'ESCOLAR' && (
               <label className="flex flex-col gap-1.5 text-sm">
                 {intl.formatMessage({ id: 'tarea.detalle.tipoEscolar' })}
                 <select

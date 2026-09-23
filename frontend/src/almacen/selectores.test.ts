@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { crearTiendaDePrueba } from '@/pruebas/render';
+import { crearTiendaDePrueba, SESION_AUTENTICADA, SESION_MODO_ESCOLAR } from '@/pruebas/render';
 import type { Objetivo } from '@/servicios/objetivos';
 import type { SesionPomodoro } from '@/servicios/pomodoro';
 import type { Ambito, Tarea } from '@/servicios/tareas';
@@ -23,8 +23,9 @@ function sesion(id: string, tareaId: string | null) {
   return { id, fase: 'TRABAJO', duracionSegundos: 1500, tareaId } as SesionPomodoro;
 }
 
-function estadoCon(ambitoActivo: AmbitoActivo) {
+function estadoCon(ambitoActivo: AmbitoActivo, modoEscolar = true) {
   return crearTiendaDePrueba({
+    sesion: modoEscolar ? SESION_MODO_ESCOLAR : SESION_AUTENTICADA,
     interfaz: { idioma: 'es', tema: 'claro', ambitoActivo },
     tareas: {
       lista: [tarea('personal', 'PERSONAL'), tarea('escolar', 'ESCOLAR')],
@@ -77,5 +78,12 @@ describe('selectores de ámbito', () => {
   it('ambitoParaNuevoElemento usa el ámbito activo, o nada con "Todos"', () => {
     expect(ambitoParaNuevoElemento(estadoCon('ESCOLAR'))).toBe('ESCOLAR');
     expect(ambitoParaNuevoElemento(estadoCon('TODOS'))).toBeUndefined();
+  });
+
+  it('con el modo escolar desactivado ignora el ámbito guardado y lo muestra todo', () => {
+    const estado = estadoCon('ESCOLAR', false);
+    expect(seleccionarTareasDelAmbito(estado)).toHaveLength(2);
+    expect(seleccionarObjetivosDelAmbito(estado)).toHaveLength(2);
+    expect(ambitoParaNuevoElemento(estado)).toBeUndefined();
   });
 });

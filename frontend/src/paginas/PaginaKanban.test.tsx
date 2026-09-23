@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SelectorAmbito } from '@/componentes/SelectorAmbito';
 import type { Tarea } from '@/servicios/tareas';
-import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
+import { renderizarPagina, SESION_MODO_ESCOLAR } from '@/pruebas/render';
 import { PaginaKanban } from './PaginaKanban';
 
 function crearTareaFalsa(datos: Partial<Tarea>): Tarea {
@@ -117,7 +117,12 @@ describe('PaginaKanban', () => {
           <SelectorAmbito />
           <PaginaKanban />
         </>,
-        { estadoPrecargado: { tareas: { lista: tareas, cargando: false, error: null } } },
+        {
+          estadoPrecargado: {
+            sesion: SESION_MODO_ESCOLAR,
+            tareas: { lista: tareas, cargando: false, error: null },
+          },
+        },
       );
 
       expect(screen.getByText('Hacer la compra')).toBeInTheDocument();
@@ -147,7 +152,7 @@ describe('PaginaKanban', () => {
 
       renderizarPagina(<PaginaKanban />, {
         estadoPrecargado: {
-          sesion: SESION_AUTENTICADA,
+          sesion: SESION_MODO_ESCOLAR,
           interfaz: { idioma: 'es', tema: 'claro', ambitoActivo: 'ESCOLAR' },
         },
       });

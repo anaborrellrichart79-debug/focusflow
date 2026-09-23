@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useSearchParams } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
@@ -8,9 +8,11 @@ import {
   desconectarGoogle,
   sincronizarGoogle,
 } from '@/almacen/googleSlice';
+import { cambiarModoEscolar } from '@/almacen/sesionSlice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export function PaginaAjustes() {
   const intl = useIntl();
@@ -19,6 +21,12 @@ export function PaginaAjustes() {
   const { conectado, ultimaSincronizacion, sincronizando, ultimoResumen, error } = usarSelector(
     (estado) => estado.google,
   );
+
+  const modoEscolarActivo = usarSelector(
+    (estado) => estado.sesion.usuario?.modoEscolarActivo ?? false,
+  );
+  const [guardandoModoEscolar, setGuardandoModoEscolar] = useState(false);
+  const [errorModoEscolar, setErrorModoEscolar] = useState<string | null>(null);
 
   useEffect(() => {
     despachar(cargarEstadoGoogle());
@@ -31,6 +39,16 @@ export function PaginaAjustes() {
     if (conectarConGoogle.fulfilled.match(resultado)) {
       window.location.href = resultado.payload;
     }
+  }
+
+  async function alCambiarModoEscolar(activo: boolean) {
+    setGuardandoModoEscolar(true);
+    setErrorModoEscolar(null);
+    const resultado = await despachar(cambiarModoEscolar(activo));
+    if (cambiarModoEscolar.rejected.match(resultado)) {
+      setErrorModoEscolar(resultado.payload ?? null);
+    }
+    setGuardandoModoEscolar(false);
   }
 
   return (
@@ -51,6 +69,26 @@ export function PaginaAjustes() {
           {intl.formatMessage({ id: 'ajustes.google.errorConexion' })}
         </p>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{intl.formatMessage({ id: 'ajustes.modoEscolar.titulo' })}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            {intl.formatMessage({ id: 'ajustes.modoEscolar.descripcion' })}
+          </p>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={modoEscolarActivo}
+              disabled={guardandoModoEscolar}
+              onCheckedChange={(marcada) => alCambiarModoEscolar(marcada === true)}
+            />
+            {intl.formatMessage({ id: 'ajustes.modoEscolar.activar' })}
+          </label>
+          {errorModoEscolar && <p className="text-sm text-destructive">{errorModoEscolar}</p>}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

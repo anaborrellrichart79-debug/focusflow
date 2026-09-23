@@ -210,4 +210,8 @@ export const ca = {
   'planificador.seccion.vacia': 'Res per aquí.',
   'planificador.vacio': 'No tens exàmens, treballs ni presentacions pendents. Afegeix el primer!',
   'planificador.marcarHecha': 'Marca «{titulo}» com a fet',
+  'ajustes.modoEscolar.titulo': 'Mode escolar',
+  'ajustes.modoEscolar.descripcion':
+    'Afegeix el selector d’àmbit (Personal/Escolar) i el planificador d’exàmens, treballs i presentacions, per separar la vida escolar de la resta. Si el desactives no s’esborra res: simplement tornes a veure totes les tasques juntes.',
+  'ajustes.modoEscolar.activar': 'Activa el mode escolar',
 };

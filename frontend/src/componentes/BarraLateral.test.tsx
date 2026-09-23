@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
+import { renderizarPagina, SESION_AUTENTICADA, SESION_MODO_ESCOLAR } from '@/pruebas/render';
 import { BarraLateral } from './BarraLateral';
 
 describe('BarraLateral', () => {
@@ -28,11 +28,22 @@ describe('BarraLateral', () => {
     expect(screen.getByRole('link', { name: 'Inicio' })).not.toHaveAttribute('aria-current');
   });
 
-  it('incluye el selector de ámbito y muestra el nombre del usuario', () => {
+  it('sin el modo escolar, no muestra el selector de ámbito ni el planificador', () => {
     renderizarPagina(<BarraLateral />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
 
-    expect(screen.getByRole('group', { name: 'Ámbito' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Ámbito' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Planificador escolar' })).not.toBeInTheDocument();
     expect(screen.getByText('Ana')).toBeInTheDocument();
+  });
+
+  it('con el modo escolar, muestra el selector de ámbito y el enlace al planificador', () => {
+    renderizarPagina(<BarraLateral />, { estadoPrecargado: { sesion: SESION_MODO_ESCOLAR } });
+
+    expect(screen.getByRole('group', { name: 'Ámbito' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Planificador escolar' })).toHaveAttribute(
+      'href',
+      '/planificador',
+    );
   });
 
   it('cerrar sesión limpia el estado de la sesión', async () => {

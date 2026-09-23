@@ -18,7 +18,7 @@ export function SelectorAmbito() {
     <div
       role="group"
       aria-label={intl.formatMessage({ id: 'ambito.selector' })}
-      className="inline-flex rounded-full border border-border bg-background p-0.5 shadow-sm"
+      className="flex w-full rounded-full border border-border bg-background p-0.5 shadow-sm"
     >
       {OPCIONES_AMBITO.map((opcion) => (
         <Button
@@ -28,7 +28,7 @@ export function SelectorAmbito() {
           variant={ambitoActivo === opcion.valor ? 'default' : 'ghost'}
           aria-pressed={ambitoActivo === opcion.valor}
           onClick={() => despachar(cambiarAmbitoActivo(opcion.valor))}
-          className="h-7 rounded-full px-3"
+          className="h-7 min-w-0 flex-1 rounded-full px-1"
         >
           {intl.formatMessage({ id: opcion.clave })}
         </Button>

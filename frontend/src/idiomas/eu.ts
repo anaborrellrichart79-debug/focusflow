@@ -210,4 +210,8 @@ export const eu = {
   'planificador.seccion.vacia': 'Ezer ez hemen.',
   'planificador.vacio': 'Ez duzu azterketa, lan edo aurkezpenik zain. Gehitu lehenengoa!',
   'planificador.marcarHecha': 'Markatu «{titulo}» eginda bezala',
+  'ajustes.modoEscolar.titulo': 'Eskola modua',
+  'ajustes.modoEscolar.descripcion':
+    'Eremu-hautatzailea (Pertsonala/Eskolakoa) eta azterketa, lan eta aurkezpenen planifikatzailea gehitzen ditu, eskola-bizitza gainerakotik bereizteko. Desaktibatzen baduzu ez da ezer ezabatzen: zeregin guztiak batera ikusiko dituzu berriro.',
+  'ajustes.modoEscolar.activar': 'Aktibatu eskola modua',
 };

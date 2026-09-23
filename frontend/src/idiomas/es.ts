@@ -210,4 +210,8 @@ export const es = {
   'planificador.seccion.vacia': 'Nada por aquí.',
   'planificador.vacio': 'No tienes exámenes, trabajos ni presentaciones pendientes. ¡Añade el primero!',
   'planificador.marcarHecha': 'Marcar «{titulo}» como hecho',
+  'ajustes.modoEscolar.titulo': 'Modo escolar',
+  'ajustes.modoEscolar.descripcion':
+    'Añade el selector de ámbito (Personal/Escolar) y el planificador de exámenes, trabajos y presentaciones, para separar la vida escolar del resto. Si lo desactivas no se borra nada: simplemente vuelves a ver todas tus tareas juntas.',
+  'ajustes.modoEscolar.activar': 'Activar el modo escolar',
 };

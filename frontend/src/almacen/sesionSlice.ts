@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import {
+  actualizarPreferencias,
   iniciarSesion as iniciarSesionApi,
   obtenerPerfil,
   registrarUsuario as registrarUsuarioApi,
@@ -86,6 +87,22 @@ export const iniciarSesionUsuario = createAsyncThunk(
   },
 );
 
+export const cambiarModoEscolar = createAsyncThunk<
+  UsuarioSesion,
+  boolean,
+  { state: { sesion: EstadoSesion }; rejectValue: string }
+>('sesion/cambiarModoEscolar', async (modoEscolarActivo, { getState, rejectWithValue }) => {
+  const tokenAcceso = getState().sesion.tokenAcceso;
+  if (!tokenAcceso) return rejectWithValue('No autenticado');
+  try {
+    return await actualizarPreferencias(tokenAcceso, { modoEscolarActivo });
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo guardar la preferencia',
+    );
+  }
+});
+
 const sesionSlice = createSlice({
   name: 'sesion',
   initialState: estadoInicial,
@@ -140,6 +157,9 @@ const sesionSlice = createSlice({
         estado.restaurando = false;
         estado.usuario = accion.payload.usuario;
         estado.tokenAcceso = accion.payload.tokenAcceso;
+      })
+      .addCase(cambiarModoEscolar.fulfilled, (estado, accion) => {
+        estado.usuario = accion.payload;
       })
       .addCase(restaurarSesion.rejected, (estado) => {
         estado.restaurando = false;
