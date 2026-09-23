@@ -12,6 +12,7 @@ import { PaginaAjustes } from '@/paginas/PaginaAjustes';
 import { PaginaConfirmarConsentimiento } from '@/paginas/PaginaConfirmarConsentimiento';
 import { PaginaEisenhower } from '@/paginas/PaginaEisenhower';
 import { PaginaEstadisticas } from '@/paginas/PaginaEstadisticas';
+import { PaginaHorario } from '@/paginas/PaginaHorario';
 import { PaginaInicio } from '@/paginas/PaginaInicio';
 import { PaginaKanban } from '@/paginas/PaginaKanban';
 import { PaginaLogin } from '@/paginas/PaginaLogin';
@@ -135,6 +136,14 @@ export function Aplicacion() {
               element={
                 <RutaProtegida>
                   <PaginaAgenda />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/horario"
+              element={
+                <RutaProtegida>
+                  <PaginaHorario />
                 </RutaProtegida>
               }
             />

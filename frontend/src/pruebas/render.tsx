@@ -6,6 +6,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import etiquetasReducer from '@/almacen/etiquetasSlice';
 import googleReducer from '@/almacen/googleSlice';
+import horarioReducer from '@/almacen/horarioSlice';
 import interfazReducer from '@/almacen/interfazSlice';
 import objetivosReducer from '@/almacen/objetivosSlice';
 import pomodoroReducer from '@/almacen/pomodoroSlice';
@@ -22,6 +23,7 @@ const reductorRaiz = {
   etiquetas: etiquetasReducer,
   pomodoro: pomodoroReducer,
   google: googleReducer,
+  horario: horarioReducer,
 };
 
 export function crearTiendaDePrueba(estadoPrecargado?: Partial<EstadoRaiz>) {

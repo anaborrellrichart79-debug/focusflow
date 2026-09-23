@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import etiquetasReducer from './etiquetasSlice';
 import googleReducer from './googleSlice';
+import horarioReducer from './horarioSlice';
 import interfazReducer from './interfazSlice';
 import objetivosReducer from './objetivosSlice';
 import pomodoroReducer from './pomodoroSlice';
@@ -16,6 +17,7 @@ export const store = configureStore({
     etiquetas: etiquetasReducer,
     pomodoro: pomodoroReducer,
     google: googleReducer,
+    horario: horarioReducer,
   },
 });
 
