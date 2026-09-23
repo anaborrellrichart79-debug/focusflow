@@ -10,6 +10,7 @@ import {
   cambiarRecurrenciaTarea,
   cambiarSubtarea,
   cambiarTiempoEstimadoTarea,
+  cambiarTipoEscolarTarea,
   crearSubtareaTarea,
   eliminarSubtareaTarea,
 } from '@/almacen/tareasSlice';
@@ -19,7 +20,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Ambito, Recurrencia, Tarea } from '@/servicios/tareas';
+import type { Ambito, Recurrencia, Tarea, TipoEscolar } from '@/servicios/tareas';
+import { OPCIONES_TIPO_ESCOLAR } from '@/utilidades/planificador';
 import {
   DURACION_MINUTOS_POR_DEFECTO,
   combinarFechaYHora,
@@ -219,6 +221,31 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
                 ))}
               </select>
             </label>
+
+            {tarea.ambito === 'ESCOLAR' && (
+              <label className="flex flex-col gap-1.5 text-sm">
+                {intl.formatMessage({ id: 'tarea.detalle.tipoEscolar' })}
+                <select
+                  value={tarea.tipoEscolar ?? ''}
+                  onChange={(evento) =>
+                    despachar(
+                      cambiarTipoEscolarTarea({
+                        id: tarea.id,
+                        tipoEscolar: (evento.target.value || null) as TipoEscolar | null,
+                      }),
+                    )
+                  }
+                  className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm transition-shadow hover:shadow-md"
+                >
+                  <option value="">{intl.formatMessage({ id: 'tipoEscolar.ninguno' })}</option>
+                  {OPCIONES_TIPO_ESCOLAR.map((opcion) => (
+                    <option key={opcion.valor} value={opcion.valor}>
+                      {opcion.icono} {intl.formatMessage({ id: opcion.clave })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <label className="flex flex-col gap-1.5 text-sm">
               {intl.formatMessage({ id: 'tarea.detalle.recurrencia' })}

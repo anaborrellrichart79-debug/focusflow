@@ -16,6 +16,7 @@ import { PaginaInicio } from '@/paginas/PaginaInicio';
 import { PaginaKanban } from '@/paginas/PaginaKanban';
 import { PaginaLogin } from '@/paginas/PaginaLogin';
 import { PaginaObjetivos } from '@/paginas/PaginaObjetivos';
+import { PaginaPlanificador } from '@/paginas/PaginaPlanificador';
 import { PaginaPomodoro } from '@/paginas/PaginaPomodoro';
 import { PaginaRegistro } from '@/paginas/PaginaRegistro';
 import { PaginaRevision } from '@/paginas/PaginaRevision';
@@ -134,6 +135,14 @@ export function Aplicacion() {
               element={
                 <RutaProtegida>
                   <PaginaAgenda />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/planificador"
+              element={
+                <RutaProtegida>
+                  <PaginaPlanificador />
                 </RutaProtegida>
               }
             />

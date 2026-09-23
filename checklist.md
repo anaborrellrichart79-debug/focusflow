@@ -4,7 +4,7 @@ Este fichero recoge en todo momento qué está hecho y qué queda pendiente en e
 
 ## 👉 Empezar aquí la próxima sesión
 
-Las Fases 1, 2, 3 y 4 están completas. Toda la ampliación de funcionalidades propuesta (bloques 1 a 4: **Fase 5 — Planificación temporal**, **Bloque 2 — Estructura de las tareas**, **Bloque 3 — Revisión y hábitos**, **Bloque 4 — Analítica más profunda**) está completa, y además se ha añadido **Sincronización con Google Calendar** (ver su sección más abajo). Batería de tests: **backend 76 tests unitarios / frontend 154 tests** (el recuento del backend es anterior al Modo Escolar y no se ha vuelto a contar en esta sesión). **Modo Escolar**: hechas las fases A, B, C y D; siguiente paso, la **Fase E** (página "Planificador escolar").
+Las Fases 1, 2, 3 y 4 están completas. Toda la ampliación de funcionalidades propuesta (bloques 1 a 4: **Fase 5 — Planificación temporal**, **Bloque 2 — Estructura de las tareas**, **Bloque 3 — Revisión y hábitos**, **Bloque 4 — Analítica más profunda**) está completa, y además se ha añadido **Sincronización con Google Calendar** (ver su sección más abajo). Batería de tests: **backend 76 tests unitarios / frontend 165 tests** (el recuento del backend es anterior al Modo Escolar y no se ha vuelto a contar en esta sesión). **Modo Escolar**: hechas las fases A a E; siguiente paso, la **Fase F** (interruptor de "Modo escolar" en Ajustes y repaso final de i18n).
 
 Solo queda fuera, deliberadamente, la colaboración multiusuario (compartir objetivos, comentarios) por ser un salto de complejidad mucho mayor (rediseño del modelo de permisos/roles) — retomar solo si se pide explícitamente. La app está en un estado sólido y funcional de principio a fin.
 
@@ -223,9 +223,20 @@ Pedido explícitamente por el usuario para poder usar FocusFlow tanto en el ámb
 - [x] Probado en Chrome: barra lateral en escritorio (Kanban e Inicio, enlace activo resaltado), cajón en el móvil a 420 px de ancho (se abre, navega a Estadísticas y se cierra) y la página de confirmación sin token y con un token falso. Por la API, con una cuenta de menor de prueba (`menor.fased@example.com`, tutor `tutor.fased@example.com`): queda con `consentimientoConfirmado: false`, "reenviar" responde "El envío de correo no está configurado en el servidor" y `GET /tareas` da `403`.
 - [ ] **Pendiente de ver en el navegador**: la pantalla de cuenta pendiente con una sesión de menor de verdad. Claude no escribe contraseñas en el navegador, así que hay que iniciar sesión a mano con esa cuenta de prueba (contraseña `PruebaMenor1234`). Tampoco se ha podido probar el enlace de confirmación con un token válido, porque ese token solo viaja en el correo y todavía no hay SMTP configurado (ver Fase B).
 
-### Pendiente (Fases E-F, no empezadas todavía)
+### Fase E — Planificador escolar
 
-- [ ] **Fase E**: página "Planificador escolar" (próximos exámenes, trabajos y presentaciones).
+- [x] Solo frontend: el backend ya aceptaba `tipoEscolar` al crear y al actualizar (también `null`, para quitarlo) desde la Fase A.
+- [x] Nueva página `/planificador` (`PaginaPlanificador`), enlazada en la barra lateral dentro de "Planificar" con el icono de birrete. Formulario para añadir un examen, trabajo o presentación con título, tipo, fecha (obligatoria) y asignatura opcional. **La asignatura se guarda como una etiqueta normal** (sin campo nuevo en el modelo), así también se ve y se puede filtrar desde las demás vistas.
+- [x] Las entregas (tareas `ESCOLAR` con `tipoEscolar`, sin hacer) se reparten en **Vencidas**, **Próximos 7 días**, **Más adelante** y **Sin fecha**; Vencidas y Sin fecha solo aparecen si tienen algo. Se ordenan por fecha y se pueden filtrar por tipo (Todo, Exámenes, Trabajos o Presentaciones). Cada una tiene una casilla para marcarla como hecha (y así sale de la lista), y el título abre el `DetalleTarea` de siempre. La lógica de agrupar está aparte, en `utilidades/planificador.ts` (función pura, fácil de testear).
+- [x] La página **no depende del ámbito activo** de la barra lateral: por definición solo muestra cosas escolares, así que aunque el filtro esté en "Personal" sigue mostrándolas. Las tareas escolares sin tipo (p. ej. "repasar apuntes") no aparecen aquí, pero sí en Kanban, Agenda, etc.
+- [x] Nuevo componente `InsigniaTipoEscolar` (📝 Examen, 📚 Trabajo, 🎤 Presentación), que se muestra en `IndicadoresTarea`, así que el tipo se ve también en Kanban, Objetivos, Eisenhower...
+- [x] `DetalleTarea`: nuevo desplegable "Tipo" (Sin tipo, Examen, Trabajo o Presentación), visible solo si la tarea es escolar (thunk `cambiarTipoEscolarTarea`). Además, al pasar una tarea escolar a personal, `cambiarAmbitoTarea` le quita el tipo (`tipoEscolar: null`), para que no reaparezca en el planificador si más adelante se vuelve a marcar como escolar.
+- [x] i18n: claves `planificador.*`, `tipoEscolar.*`, `tarea.detalle.tipoEscolar` y `nav.planificador` en los 6 idiomas.
+- [x] Tests (frontend 154 → 165): `planificador.test.ts` nuevo (4: reparto en grupos, orden por fecha, exclusiones y filtro por tipo), `PaginaPlanificador.test.tsx` nuevo (5: vacío, reparto con tipo, independencia del ámbito activo, filtro y creación con `ambito`/`tipoEscolar`/`fechaLimite`/asignatura como etiqueta) y `DetalleTarea.test.tsx` (+2: el desplegable de tipo solo aparece en tareas escolares; pasar a personal quita el tipo).
+- [x] Probado en Chrome con la cuenta de prueba adulta: añadidos "Examen del tema 3" (Matemáticas, en 2 días → Próximos 7 días) y "Trabajo de historia" (Historia, en 27 días → Más adelante); el filtro "Exámenes" deja solo el examen; en Kanban se ven las insignias de tipo y asignatura; al poner tipo Examen a "Examen de mates" desde su detalle aparece en "Sin fecha", y al marcarlo como hecho sale de la lista.
+
+### Pendiente (Fase F, no empezada todavía)
+
 - [ ] **Fase F**: interruptor de "Modo escolar" en Ajustes, y pulido final de i18n en los 6 idiomas para todo lo introducido en las fases A-E.
 
 ## Roadmap de ampliación (propuesto, sin empezar salvo lo de arriba)

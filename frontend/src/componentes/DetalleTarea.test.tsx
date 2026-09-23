@@ -200,5 +200,71 @@ describe('DetalleTarea', () => {
         }),
       );
     });
+
+    it('el desplegable de tipo solo aparece en tareas escolares y guarda el tipo elegido', async () => {
+      vi.mocked(fetch).mockImplementation(async (entrada) => {
+        const url = String(entrada);
+        if (url.includes('/pomodoro/sesiones')) {
+          return { ok: true, json: async () => [] } as Response;
+        }
+        return {
+          ok: true,
+          json: async () => crearTareaFalsa({ ambito: 'ESCOLAR', tipoEscolar: 'EXAMEN' }),
+        } as Response;
+      });
+
+      const { unmount } = renderizarPagina(<DetalleTarea tarea={crearTareaFalsa({})} />, {
+        estadoPrecargado: { sesion: SESION_AUTENTICADA },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
+      expect(within(screen.getByRole('dialog')).queryByRole('combobox', { name: 'Tipo' })).toBeNull();
+      unmount();
+
+      renderizarPagina(<DetalleTarea tarea={crearTareaFalsa({ ambito: 'ESCOLAR' })} />, {
+        estadoPrecargado: { sesion: SESION_AUTENTICADA },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
+      const selectorTipo = within(screen.getByRole('dialog')).getByRole('combobox', {
+        name: 'Tipo',
+      });
+      expect(selectorTipo).toHaveValue('');
+      fireEvent.change(selectorTipo, { target: { value: 'EXAMEN' } });
+
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/tareas/tarea-1',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ tipoEscolar: 'EXAMEN' }),
+        }),
+      );
+    });
+
+    it('pasar una tarea escolar a personal le quita también el tipo', () => {
+      vi.mocked(fetch).mockImplementation(async (entrada) => {
+        const url = String(entrada);
+        if (url.includes('/pomodoro/sesiones')) {
+          return { ok: true, json: async () => [] } as Response;
+        }
+        return { ok: true, json: async () => crearTareaFalsa({}) } as Response;
+      });
+
+      renderizarPagina(
+        <DetalleTarea tarea={crearTareaFalsa({ ambito: 'ESCOLAR', tipoEscolar: 'TRABAJO' })} />,
+        { estadoPrecargado: { sesion: SESION_AUTENTICADA } },
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
+      fireEvent.change(
+        within(screen.getByRole('dialog')).getByRole('combobox', { name: 'Ámbito' }),
+        { target: { value: 'PERSONAL' } },
+      );
+
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/tareas/tarea-1',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ ambito: 'PERSONAL', tipoEscolar: null }),
+        }),
+      );
+    });
   });
 });

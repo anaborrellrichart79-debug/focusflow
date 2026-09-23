@@ -15,6 +15,7 @@ import {
   type EstadoTarea,
   type Recurrencia,
   type Tarea,
+  type TipoEscolar,
 } from '@/servicios/tareas';
 import { ambitoParaNuevoElemento } from './selectores';
 import type { EstadoRaiz } from './store';
@@ -63,6 +64,7 @@ export const crearTarea = createAsyncThunk<
     etiquetas?: string[];
     recurrencia?: Recurrencia;
     ambito?: Ambito;
+    tipoEscolar?: TipoEscolar;
   },
   { state: EstadoRaiz; rejectValue: string }
 >('tareas/crear', async (datos, { getState, rejectWithValue }) => {
@@ -199,7 +201,28 @@ export const cambiarAmbitoTarea = createAsyncThunk<
   { state: EstadoRaiz; rejectValue: string }
 >('tareas/cambiarAmbito', async ({ id, ambito }, { getState, rejectWithValue }) => {
   try {
-    return await actualizarTareaApi(tokenOError(getState()), id, { ambito });
+    // El tipo (examen, trabajo...) solo tiene sentido en una tarea escolar: al
+    // pasarla a personal se quita, para que no reaparezca en el planificador
+    // si más adelante se vuelve a marcar como escolar.
+    return await actualizarTareaApi(
+      tokenOError(getState()),
+      id,
+      ambito === 'PERSONAL' ? { ambito, tipoEscolar: null } : { ambito },
+    );
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+    );
+  }
+});
+
+export const cambiarTipoEscolarTarea = createAsyncThunk<
+  Tarea,
+  { id: string; tipoEscolar: TipoEscolar | null },
+  { state: EstadoRaiz; rejectValue: string }
+>('tareas/cambiarTipoEscolar', async ({ id, tipoEscolar }, { getState, rejectWithValue }) => {
+  try {
+    return await actualizarTareaApi(tokenOError(getState()), id, { tipoEscolar });
   } catch (error) {
     return rejectWithValue(
       error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
@@ -346,6 +369,7 @@ const tareasSlice = createSlice({
             cambiarEtiquetasTarea,
             cambiarRecurrenciaTarea,
             cambiarAmbitoTarea,
+            cambiarTipoEscolarTarea,
             cambiarTiempoEstimadoTarea,
           ].some((thunk) => thunk.fulfilled.match(accion)),
         (estado, accion) => {

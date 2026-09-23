@@ -3,6 +3,7 @@ import {
   ChartColumn,
   ClipboardCheck,
   Columns3,
+  GraduationCap,
   Grid2x2,
   House,
   LogOut,
@@ -36,6 +37,7 @@ const SECCIONES: { clave: string; enlaces: EnlaceNavegacion[] }[] = [
       { ruta: '/agenda', clave: 'nav.agenda', icono: CalendarDays },
       { ruta: '/kanban', clave: 'nav.kanban', icono: Columns3 },
       { ruta: '/eisenhower', clave: 'nav.eisenhower', icono: Grid2x2 },
+      { ruta: '/planificador', clave: 'nav.planificador', icono: GraduationCap },
     ],
   },
   {

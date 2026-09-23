@@ -75,7 +75,7 @@ export function actualizarTarea(
     recurrencia: Recurrencia;
     tiempoEstimadoMinutos: number;
     ambito: Ambito;
-    tipoEscolar: TipoEscolar;
+    tipoEscolar: TipoEscolar | null;
   }>,
 ) {
   return peticionApi<Tarea>(`/tareas/${id}`, {
