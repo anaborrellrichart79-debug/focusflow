@@ -3,12 +3,10 @@ import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
-import { cerrarSesion } from '@/almacen/sesionSlice';
 import { cargarTareas } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EtiquetaFechaLimite } from '@/componentes/EtiquetaFechaLimite';
-import { SelectorAmbito } from '@/componentes/SelectorAmbito';
 import { SelectorIdioma } from '@/componentes/SelectorIdioma';
 import { SelectorTema } from '@/componentes/SelectorTema';
 import { diasHastaFecha } from '@/utilidades/fechas';
@@ -41,10 +39,12 @@ export function PaginaInicio() {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_50%_0%,color-mix(in_oklch,var(--primary)_18%,transparent),transparent_70%)]"
       />
-      <div className="absolute top-6 right-4 flex items-center gap-3 sm:top-8 sm:right-8">
-        <SelectorTema />
-        <SelectorIdioma />
-      </div>
+      {!usuario && (
+        <div className="absolute top-6 right-4 flex items-center gap-3 sm:top-8 sm:right-8">
+          <SelectorTema />
+          <SelectorIdioma />
+        </div>
+      )}
 
       <div className="flex flex-col items-center gap-4">
         <h1 className="bg-gradient-to-br from-primary to-motivador bg-clip-text text-5xl font-semibold tracking-tight text-transparent lg:text-6xl">
@@ -56,51 +56,13 @@ export function PaginaInicio() {
       </div>
 
       {usuario ? (
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex w-full flex-col items-center gap-6">
           <p className="text-lg">
             {intl.formatMessage(
               { id: 'auth.bienvenidoUsuario' },
               { nombre: usuario.nombre ?? usuario.correo },
             )}
           </p>
-          <SelectorAmbito />
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button asChild>
-              <Link to="/objetivos">
-                {intl.formatMessage({ id: 'inicio.irAObjetivos' })}
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/pomodoro">
-                {intl.formatMessage({ id: 'inicio.irAPomodoro' })}
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/kanban">{intl.formatMessage({ id: 'inicio.irAKanban' })}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/eisenhower">
-                {intl.formatMessage({ id: 'inicio.irAEisenhower' })}
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/estadisticas">
-                {intl.formatMessage({ id: 'inicio.irAEstadisticas' })}
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/revision">{intl.formatMessage({ id: 'inicio.irARevision' })}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/agenda">{intl.formatMessage({ id: 'inicio.irAAgenda' })}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/ajustes">{intl.formatMessage({ id: 'inicio.irAAjustes' })}</Link>
-            </Button>
-            <Button variant="outline" onClick={() => despachar(cerrarSesion())}>
-              {intl.formatMessage({ id: 'auth.cerrarSesion' })}
-            </Button>
-          </div>
 
           <Card className="w-full max-w-sm text-left">
             <CardHeader>

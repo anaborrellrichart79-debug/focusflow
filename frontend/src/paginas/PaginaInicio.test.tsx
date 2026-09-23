@@ -1,5 +1,4 @@
 import { screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Tarea } from '@/servicios/tareas';
 import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
@@ -44,18 +43,13 @@ describe('PaginaInicio', () => {
     );
   });
 
-  it('con sesión, saluda al usuario y cerrar sesión limpia el estado', async () => {
-    const usuario = userEvent.setup();
-    const { tienda } = renderizarPagina(<PaginaInicio />, {
+  it('con sesión, saluda al usuario (la navegación y el cierre de sesión viven en la barra lateral)', () => {
+    renderizarPagina(<PaginaInicio />, {
       estadoPrecargado: { sesion: SESION_AUTENTICADA },
     });
 
     expect(screen.getByText('Hola, Ana')).toBeInTheDocument();
-
-    await usuario.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
-
-    expect(tienda.getState().sesion.usuario).toBeNull();
-    expect(tienda.getState().sesion.tokenAcceso).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Iniciar sesión' })).not.toBeInTheDocument();
   });
 
   describe('widget "Próximos 7 días"', () => {

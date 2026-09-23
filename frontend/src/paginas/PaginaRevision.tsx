@@ -68,9 +68,6 @@ export function PaginaRevision() {
         <h1 className="text-2xl font-semibold tracking-tight">
           {intl.formatMessage({ id: 'revision.titulo' })}
         </h1>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/">{intl.formatMessage({ id: 'app.titulo' })}</Link>
-        </Button>
       </div>
       <p className="text-sm text-muted-foreground">
         {intl.formatMessage({ id: 'revision.eslogan' })}

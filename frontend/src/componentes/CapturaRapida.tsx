@@ -20,7 +20,7 @@ export function CapturaRapida() {
   return (
     <form
       onSubmit={alCapturar}
-      className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-md items-center gap-2 rounded-full border border-border bg-background p-2 shadow-lg sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2"
+      className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-md items-center gap-2 rounded-full border border-border bg-background p-2 shadow-lg sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 md:left-[calc(50%+7.5rem)]"
     >
       <Input
         value={titulo}

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import {
@@ -88,12 +87,6 @@ export function PaginaPomodoro() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center gap-6 px-4 py-10">
-      <div className="flex w-full justify-end">
-        <Button asChild variant="outline" size="sm">
-          <Link to="/">{intl.formatMessage({ id: 'app.titulo' })}</Link>
-        </Button>
-      </div>
-
       <Card className="w-full">
         <CardContent className="flex flex-col items-center gap-4 py-10">
           <span

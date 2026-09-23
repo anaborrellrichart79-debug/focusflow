@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useIntl } from 'react-intl';
-import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cargarEtiquetas } from '@/almacen/etiquetasSlice';
@@ -55,9 +54,6 @@ export function PaginaEisenhower() {
         <h1 className="text-2xl font-semibold tracking-tight">
           {intl.formatMessage({ id: 'eisenhower.titulo' })}
         </h1>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/">{intl.formatMessage({ id: 'app.titulo' })}</Link>
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">

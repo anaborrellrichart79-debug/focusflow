@@ -4,10 +4,12 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cargarEstadoGoogle, sincronizarGoogle } from '@/almacen/googleSlice';
 import { restaurarSesion } from '@/almacen/sesionSlice';
+import { DisenoAplicacion } from '@/componentes/DisenoAplicacion';
 import { RutaProtegida } from '@/componentes/RutaProtegida';
 import { CODIGO_LOCALE_ICU, mensajesPorIdioma } from '@/idiomas';
 import { PaginaAgenda } from '@/paginas/PaginaAgenda';
 import { PaginaAjustes } from '@/paginas/PaginaAjustes';
+import { PaginaConfirmarConsentimiento } from '@/paginas/PaginaConfirmarConsentimiento';
 import { PaginaEisenhower } from '@/paginas/PaginaEisenhower';
 import { PaginaEstadisticas } from '@/paginas/PaginaEstadisticas';
 import { PaginaInicio } from '@/paginas/PaginaInicio';
@@ -62,7 +64,21 @@ export function Aplicacion() {
       <BrowserRouter>
         {restaurandoSesion ? null : (
           <Routes>
-            <Route path="/" element={<PaginaInicio />} />
+            <Route
+              path="/"
+              element={
+                // Sin sesión, "/" es la portada pública; con sesión, el panel de
+                // inicio dentro del mismo marco (barra lateral) que el resto.
+                usuario ? (
+                  <DisenoAplicacion>
+                    <PaginaInicio />
+                  </DisenoAplicacion>
+                ) : (
+                  <PaginaInicio />
+                )
+              }
+            />
+            <Route path="/confirmar-consentimiento" element={<PaginaConfirmarConsentimiento />} />
             <Route path="/login" element={<PaginaLogin />} />
             <Route path="/registro" element={<PaginaRegistro />} />
             <Route

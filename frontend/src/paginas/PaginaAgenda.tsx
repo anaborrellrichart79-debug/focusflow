@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cargarTareas } from '@/almacen/tareasSlice';
@@ -90,9 +89,6 @@ export function PaginaAgenda() {
         <h1 className="text-2xl font-semibold tracking-tight">
           {intl.formatMessage({ id: 'agenda.titulo' })}
         </h1>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/">{intl.formatMessage({ id: 'app.titulo' })}</Link>
-        </Button>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">

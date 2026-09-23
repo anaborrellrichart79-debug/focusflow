@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { usarSelector } from '@/almacen/hooks';
-import { CapturaRapida } from './CapturaRapida';
-import { SelectorAmbito } from './SelectorAmbito';
+import { DisenoAplicacion } from './DisenoAplicacion';
 
 export function RutaProtegida({ children }: { children: ReactNode }) {
   const usuario = usarSelector((estado) => estado.sesion.usuario);
@@ -11,14 +10,5 @@ export function RutaProtegida({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  return (
-    <>
-      {/* Provisional hasta la barra lateral de la Fase D, que lo absorberá. */}
-      <div className="flex justify-center px-4 pt-4">
-        <SelectorAmbito />
-      </div>
-      {children}
-      <CapturaRapida />
-    </>
-  );
+  return <DisenoAplicacion>{children}</DisenoAplicacion>;
 }

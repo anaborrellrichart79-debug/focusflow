@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { seleccionarObjetivosDelAmbito, seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cargarEtiquetas } from '@/almacen/etiquetasSlice';
@@ -72,9 +71,6 @@ export function PaginaKanban() {
         <h1 className="text-2xl font-semibold tracking-tight">
           {intl.formatMessage({ id: 'kanban.titulo' })}
         </h1>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/">{intl.formatMessage({ id: 'app.titulo' })}</Link>
-        </Button>
       </div>
 
       <form onSubmit={alAnadirTarea} className="flex flex-wrap gap-2">

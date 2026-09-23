@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useIntl } from 'react-intl';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import {
   cargarEstadoGoogle,
@@ -39,9 +39,6 @@ export function PaginaAjustes() {
         <h1 className="text-2xl font-semibold tracking-tight">
           {intl.formatMessage({ id: 'ajustes.titulo' })}
         </h1>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/">{intl.formatMessage({ id: 'app.titulo' })}</Link>
-        </Button>
       </div>
 
       {resultadoCallback === 'conectado' && (

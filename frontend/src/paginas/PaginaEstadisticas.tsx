@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from 'react';
 import { useIntl } from 'react-intl';
-import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import {
   seleccionarHistorialPomodoroDelAmbito,
@@ -118,9 +117,6 @@ export function PaginaEstadisticas() {
           </Button>
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             {intl.formatMessage({ id: 'estadisticas.exportar.pdf' })}
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/">{intl.formatMessage({ id: 'app.titulo' })}</Link>
           </Button>
         </div>
       </div>
