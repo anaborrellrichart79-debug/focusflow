@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
+import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cargarEtiquetas } from '@/almacen/etiquetasSlice';
 import { cambiarPrioridadTarea, cargarTareas, eliminarTarea } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ const CUADRANTES: {
 export function PaginaEisenhower() {
   const intl = useIntl();
   const despachar = usarDespachador();
-  const tareas = usarSelector((estado) => estado.tareas.lista);
+  const tareas = usarSelector(seleccionarTareasDelAmbito);
 
   useEffect(() => {
     despachar(cargarTareas());

@@ -2,6 +2,11 @@ import { useEffect, useMemo } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
+import {
+  seleccionarHistorialPomodoroDelAmbito,
+  seleccionarObjetivosDelAmbito,
+  seleccionarTareasDelAmbito,
+} from '@/almacen/selectores';
 import { cargarObjetivos } from '@/almacen/objetivosSlice';
 import { cargarHistorialPomodoro } from '@/almacen/pomodoroSlice';
 import { cargarTareas } from '@/almacen/tareasSlice';
@@ -24,9 +29,9 @@ const COLUMNAS_ESTADO: { estado: EstadoTarea; clave: string; color: string }[] =
 export function PaginaEstadisticas() {
   const intl = useIntl();
   const despachar = usarDespachador();
-  const tareas = usarSelector((estado) => estado.tareas.lista);
-  const objetivos = usarSelector((estado) => estado.objetivos.lista);
-  const historialPomodoro = usarSelector((estado) => estado.pomodoro.historial);
+  const tareas = usarSelector(seleccionarTareasDelAmbito);
+  const objetivos = usarSelector(seleccionarObjetivosDelAmbito);
+  const historialPomodoro = usarSelector(seleccionarHistorialPomodoroDelAmbito);
 
   useEffect(() => {
     despachar(cargarTareas());

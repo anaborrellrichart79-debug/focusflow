@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
+import { seleccionarObjetivosDelAmbito, seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cargarObjetivos } from '@/almacen/objetivosSlice';
 import { cargarTareas } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
@@ -14,8 +15,8 @@ const DIAS_REVISION = 7;
 export function PaginaRevision() {
   const intl = useIntl();
   const despachar = usarDespachador();
-  const tareas = usarSelector((estado) => estado.tareas.lista);
-  const objetivos = usarSelector((estado) => estado.objetivos.lista);
+  const tareas = usarSelector(seleccionarTareasDelAmbito);
+  const objetivos = usarSelector(seleccionarObjetivosDelAmbito);
 
   useEffect(() => {
     despachar(cargarTareas());

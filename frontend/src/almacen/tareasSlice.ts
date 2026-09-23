@@ -11,10 +11,12 @@ import {
   crearTarea as crearTareaApi,
   eliminarTarea as eliminarTareaApi,
   listarTareas as listarTareasApi,
+  type Ambito,
   type EstadoTarea,
   type Recurrencia,
   type Tarea,
 } from '@/servicios/tareas';
+import { ambitoParaNuevoElemento } from './selectores';
 import type { EstadoRaiz } from './store';
 
 interface EstadoTareas {
@@ -60,11 +62,16 @@ export const crearTarea = createAsyncThunk<
     fechaLimite?: string;
     etiquetas?: string[];
     recurrencia?: Recurrencia;
+    ambito?: Ambito;
   },
   { state: EstadoRaiz; rejectValue: string }
 >('tareas/crear', async (datos, { getState, rejectWithValue }) => {
   try {
-    return await crearTareaApi(tokenOError(getState()), datos);
+    const estado = getState();
+    return await crearTareaApi(tokenOError(estado), {
+      ...datos,
+      ambito: datos.ambito ?? ambitoParaNuevoElemento(estado),
+    });
   } catch (error) {
     return rejectWithValue(
       error instanceof ErrorApi ? error.message : 'No se pudo crear la tarea',
@@ -179,6 +186,20 @@ export const cambiarRecurrenciaTarea = createAsyncThunk<
 >('tareas/cambiarRecurrencia', async ({ id, recurrencia }, { getState, rejectWithValue }) => {
   try {
     return await actualizarTareaApi(tokenOError(getState()), id, { recurrencia });
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+    );
+  }
+});
+
+export const cambiarAmbitoTarea = createAsyncThunk<
+  Tarea,
+  { id: string; ambito: Ambito },
+  { state: EstadoRaiz; rejectValue: string }
+>('tareas/cambiarAmbito', async ({ id, ambito }, { getState, rejectWithValue }) => {
+  try {
+    return await actualizarTareaApi(tokenOError(getState()), id, { ambito });
   } catch (error) {
     return rejectWithValue(
       error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
@@ -324,6 +345,7 @@ const tareasSlice = createSlice({
             cambiarDescripcionTarea,
             cambiarEtiquetasTarea,
             cambiarRecurrenciaTarea,
+            cambiarAmbitoTarea,
             cambiarTiempoEstimadoTarea,
           ].some((thunk) => thunk.fulfilled.match(accion)),
         (estado, accion) => {

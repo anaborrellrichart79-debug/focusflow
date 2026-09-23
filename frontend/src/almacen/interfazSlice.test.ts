@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import reductor, { alternarTema, cambiarIdioma } from './interfazSlice';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import reductor, { alternarTema, cambiarAmbitoActivo, cambiarIdioma } from './interfazSlice';
 import { IDIOMA_POR_DEFECTO } from '@/idiomas';
 
 describe('interfazSlice', () => {
@@ -32,5 +32,28 @@ describe('interfazSlice', () => {
   it('alternarTema guarda la preferencia en localStorage', () => {
     const estado = reductor(undefined, alternarTema());
     expect(localStorage.getItem('focusflow.tema')).toBe(estado.tema);
+  });
+
+  it('empieza con el ámbito "Todos" si no hay nada guardado', () => {
+    const estado = reductor(undefined, { type: '@@INIT' });
+    expect(estado.ambitoActivo).toBe('TODOS');
+  });
+
+  it('cambiarAmbitoActivo cambia el ámbito y lo guarda en localStorage', () => {
+    const estado = reductor(undefined, cambiarAmbitoActivo('ESCOLAR'));
+    expect(estado.ambitoActivo).toBe('ESCOLAR');
+    expect(localStorage.getItem('focusflow.ambito')).toBe('ESCOLAR');
+  });
+
+  it('recupera el ámbito guardado al arrancar, e ignora un valor guardado no válido', async () => {
+    localStorage.setItem('focusflow.ambito', 'PERSONAL');
+    vi.resetModules();
+    const { default: reductorFresco } = await import('./interfazSlice');
+    expect(reductorFresco(undefined, { type: '@@INIT' }).ambitoActivo).toBe('PERSONAL');
+
+    localStorage.setItem('focusflow.ambito', 'otro');
+    vi.resetModules();
+    const { default: reductorConValorInvalido } = await import('./interfazSlice');
+    expect(reductorConValorInvalido(undefined, { type: '@@INIT' }).ambitoActivo).toBe('TODOS');
   });
 });

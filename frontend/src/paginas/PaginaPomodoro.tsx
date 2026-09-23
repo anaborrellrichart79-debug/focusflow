@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
+import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import {
   CICLOS_PARA_DESCANSO_LARGO,
   cargarHistorialPomodoro,
@@ -47,8 +48,10 @@ export function PaginaPomodoro() {
     ultimaFaseCompletada,
     historial,
   } = usarSelector((estado) => estado.pomodoro);
-  const tareas = usarSelector((estado) =>
-    estado.tareas.lista.filter((tarea) => tarea.estado !== 'HECHA'),
+  const tareasDelAmbito = usarSelector(seleccionarTareasDelAmbito);
+  const tareas = useMemo(
+    () => tareasDelAmbito.filter((tarea) => tarea.estado !== 'HECHA'),
+    [tareasDelAmbito],
   );
   const [tareaAsociadaId, setTareaAsociadaId] = useState('');
 

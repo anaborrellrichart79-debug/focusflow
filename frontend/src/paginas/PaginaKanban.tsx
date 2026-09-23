@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
+import { seleccionarObjetivosDelAmbito, seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cargarEtiquetas } from '@/almacen/etiquetasSlice';
 import { cargarObjetivos } from '@/almacen/objetivosSlice';
 import {
@@ -28,8 +29,8 @@ const COLUMNAS: { estado: EstadoTarea; clave: string; color: string }[] = [
 export function PaginaKanban() {
   const intl = useIntl();
   const despachar = usarDespachador();
-  const tareas = usarSelector((estado) => estado.tareas.lista);
-  const objetivos = usarSelector((estado) => estado.objetivos.lista);
+  const tareas = usarSelector(seleccionarTareasDelAmbito);
+  const objetivos = usarSelector(seleccionarObjetivosDelAmbito);
   const [tituloNuevaTarea, setTituloNuevaTarea] = useState('');
   const [fechaLimiteNuevaTarea, setFechaLimiteNuevaTarea] = useState('');
   const [idTareaArrastrando, setIdTareaArrastrando] = useState<string | null>(null);

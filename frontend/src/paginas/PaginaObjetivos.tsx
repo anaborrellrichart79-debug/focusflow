@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
+import { seleccionarObjetivosDelAmbito, seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cargarEtiquetas } from '@/almacen/etiquetasSlice';
 import { cargarObjetivos, crearObjetivo } from '@/almacen/objetivosSlice';
 import {
@@ -22,9 +23,11 @@ import { ObjetivoTarjeta } from '@/componentes/ObjetivoTarjeta';
 export function PaginaObjetivos() {
   const intl = useIntl();
   const despachar = usarDespachador();
-  const objetivos = usarSelector((estado) => estado.objetivos.lista);
-  const tareasSueltas = usarSelector((estado) =>
-    estado.tareas.lista.filter((tarea) => tarea.objetivoId === null),
+  const objetivos = usarSelector(seleccionarObjetivosDelAmbito);
+  const tareasDelAmbito = usarSelector(seleccionarTareasDelAmbito);
+  const tareasSueltas = useMemo(
+    () => tareasDelAmbito.filter((tarea) => tarea.objetivoId === null),
+    [tareasDelAmbito],
   );
 
   const [tituloObjetivo, setTituloObjetivo] = useState('');

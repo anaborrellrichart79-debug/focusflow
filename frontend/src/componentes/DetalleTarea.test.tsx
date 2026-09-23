@@ -171,5 +171,34 @@ describe('DetalleTarea', () => {
         }),
       );
     });
+
+    it('cambiar el ámbito a "Escolar" lo guarda con un PATCH', async () => {
+      vi.mocked(fetch).mockImplementation(async (entrada) => {
+        const url = String(entrada);
+        if (url.includes('/pomodoro/sesiones')) {
+          return { ok: true, json: async () => [] } as Response;
+        }
+        return { ok: true, json: async () => crearTareaFalsa({ ambito: 'ESCOLAR' }) } as Response;
+      });
+
+      renderizarPagina(<DetalleTarea tarea={crearTareaFalsa({})} />, {
+        estadoPrecargado: { sesion: SESION_AUTENTICADA },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
+
+      const selectorAmbito = within(screen.getByRole('dialog')).getByRole('combobox', {
+        name: 'Ámbito',
+      });
+      expect(selectorAmbito).toHaveValue('PERSONAL');
+      fireEvent.change(selectorAmbito, { target: { value: 'ESCOLAR' } });
+
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/tareas/tarea-1',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ ambito: 'ESCOLAR' }),
+        }),
+      );
+    });
   });
 });

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
+import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cargarTareas } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,7 +19,7 @@ function alInicioDelDiaUtc(fecha: Date): Date {
 export function PaginaAgenda() {
   const intl = useIntl();
   const despachar = usarDespachador();
-  const tareas = usarSelector((estado) => estado.tareas.lista);
+  const tareas = usarSelector(seleccionarTareasDelAmbito);
   const idiomaIcu = intl.locale;
 
   const [modo, setModo] = useState<ModoVista>('semana');

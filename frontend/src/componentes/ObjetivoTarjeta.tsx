@@ -33,6 +33,7 @@ export function ObjetivoTarjeta({ objetivo }: { objetivo: Objetivo }) {
       crearTarea({
         titulo: tituloTarea,
         objetivoId: objetivo.id,
+        ambito: objetivo.ambito,
         fechaLimite: fechaLimiteTarea || undefined,
       }),
     );

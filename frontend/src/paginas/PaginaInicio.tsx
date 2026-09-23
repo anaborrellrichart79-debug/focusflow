@@ -2,11 +2,13 @@ import { useEffect, useMemo } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
+import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cerrarSesion } from '@/almacen/sesionSlice';
 import { cargarTareas } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EtiquetaFechaLimite } from '@/componentes/EtiquetaFechaLimite';
+import { SelectorAmbito } from '@/componentes/SelectorAmbito';
 import { SelectorIdioma } from '@/componentes/SelectorIdioma';
 import { SelectorTema } from '@/componentes/SelectorTema';
 import { diasHastaFecha } from '@/utilidades/fechas';
@@ -15,7 +17,7 @@ export function PaginaInicio() {
   const intl = useIntl();
   const despachar = usarDespachador();
   const { usuario } = usarSelector((estado) => estado.sesion);
-  const tareas = usarSelector((estado) => estado.tareas.lista);
+  const tareas = usarSelector(seleccionarTareasDelAmbito);
 
   useEffect(() => {
     if (usuario) despachar(cargarTareas());
@@ -61,6 +63,7 @@ export function PaginaInicio() {
               { nombre: usuario.nombre ?? usuario.correo },
             )}
           </p>
+          <SelectorAmbito />
           <div className="flex flex-wrap justify-center gap-4">
             <Button asChild>
               <Link to="/objetivos">

@@ -1,7 +1,9 @@
 import { screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SelectorAmbito } from '@/componentes/SelectorAmbito';
 import type { Tarea } from '@/servicios/tareas';
-import { renderizarPagina } from '@/pruebas/render';
+import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
 import { PaginaKanban } from './PaginaKanban';
 
 function crearTareaFalsa(datos: Partial<Tarea>): Tarea {
@@ -95,5 +97,72 @@ describe('PaginaKanban', () => {
     });
 
     expect(screen.getByText('Mi objetivo')).toBeInTheDocument();
+  });
+
+  describe('filtro por ámbito', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      localStorage.clear();
+    });
+
+    it('al elegir "Escolar" en el selector, oculta las tareas personales', async () => {
+      const usuario = userEvent.setup();
+      const tareas = [
+        crearTareaFalsa({ id: 'a', titulo: 'Hacer la compra', ambito: 'PERSONAL' }),
+        crearTareaFalsa({ id: 'b', titulo: 'Examen de mates', ambito: 'ESCOLAR' }),
+      ];
+
+      renderizarPagina(
+        <>
+          <SelectorAmbito />
+          <PaginaKanban />
+        </>,
+        { estadoPrecargado: { tareas: { lista: tareas, cargando: false, error: null } } },
+      );
+
+      expect(screen.getByText('Hacer la compra')).toBeInTheDocument();
+      expect(screen.getByText('Examen de mates')).toBeInTheDocument();
+
+      await usuario.click(screen.getByRole('button', { name: 'Escolar' }));
+
+      expect(screen.queryByText('Hacer la compra')).not.toBeInTheDocument();
+      expect(screen.getByText('Examen de mates')).toBeInTheDocument();
+    });
+
+    it('una tarea creada con el ámbito "Escolar" activo se envía como escolar', async () => {
+      const usuario = userEvent.setup();
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, opciones?: RequestInit) => {
+          if (url.endsWith('/tareas') && opciones?.method === 'POST') {
+            return {
+              ok: true,
+              json: async () =>
+                crearTareaFalsa({ id: 'nueva', ...JSON.parse(opciones.body as string) }),
+            } as Response;
+          }
+          return { ok: true, json: async () => [] } as Response;
+        }),
+      );
+
+      renderizarPagina(<PaginaKanban />, {
+        estadoPrecargado: {
+          sesion: SESION_AUTENTICADA,
+          interfaz: { idioma: 'es', tema: 'claro', ambitoActivo: 'ESCOLAR' },
+        },
+      });
+
+      await usuario.type(screen.getByPlaceholderText('Nueva tarea'), 'Trabajo de historia');
+      await usuario.click(screen.getByRole('button', { name: 'Añadir' }));
+
+      const llamadaPost = vi
+        .mocked(fetch)
+        .mock.calls.find(([, opciones]) => opciones?.method === 'POST');
+      expect(JSON.parse(llamadaPost![1]!.body as string)).toMatchObject({
+        titulo: 'Trabajo de historia',
+        ambito: 'ESCOLAR',
+      });
+      expect(await screen.findByText('Trabajo de historia')).toBeInTheDocument();
+    });
   });
 });

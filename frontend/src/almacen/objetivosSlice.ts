@@ -6,6 +6,8 @@ import {
   listarObjetivos as listarObjetivosApi,
   type Objetivo,
 } from '@/servicios/objetivos';
+import type { Ambito } from '@/servicios/tareas';
+import { ambitoParaNuevoElemento } from './selectores';
 import type { EstadoRaiz } from './store';
 
 interface EstadoObjetivos {
@@ -44,11 +46,15 @@ export const cargarObjetivos = createAsyncThunk<
 
 export const crearObjetivo = createAsyncThunk<
   Objetivo,
-  { titulo: string; descripcion?: string; fechaLimite?: string },
+  { titulo: string; descripcion?: string; fechaLimite?: string; ambito?: Ambito },
   { state: EstadoRaiz; rejectValue: string }
 >('objetivos/crear', async (datos, { getState, rejectWithValue }) => {
   try {
-    return await crearObjetivoApi(tokenOError(getState()), datos);
+    const estado = getState();
+    return await crearObjetivoApi(tokenOError(estado), {
+      ...datos,
+      ambito: datos.ambito ?? ambitoParaNuevoElemento(estado),
+    });
   } catch (error) {
     return rejectWithValue(
       error instanceof ErrorApi ? error.message : 'No se pudo crear el objetivo',

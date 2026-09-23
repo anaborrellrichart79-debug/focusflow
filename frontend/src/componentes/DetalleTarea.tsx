@@ -3,6 +3,7 @@ import { useIntl } from 'react-intl';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cargarHistorialPomodoro } from '@/almacen/pomodoroSlice';
 import {
+  cambiarAmbitoTarea,
   cambiarDescripcionTarea,
   cambiarEtiquetasTarea,
   cambiarFechaLimiteTarea,
@@ -18,13 +19,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Recurrencia, Tarea } from '@/servicios/tareas';
+import type { Ambito, Recurrencia, Tarea } from '@/servicios/tareas';
 import {
   DURACION_MINUTOS_POR_DEFECTO,
   combinarFechaYHora,
   obtenerSoloFecha,
   obtenerSoloHora,
 } from '@/utilidades/fechas';
+
+const OPCIONES_AMBITO: { valor: Ambito; clave: string }[] = [
+  { valor: 'PERSONAL', clave: 'ambito.personal' },
+  { valor: 'ESCOLAR', clave: 'ambito.escolar' },
+];
 
 const OPCIONES_RECURRENCIA: { valor: Recurrencia; clave: string }[] = [
   { valor: 'NINGUNA', clave: 'tarea.recurrencia.ninguna' },
@@ -194,6 +200,25 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
                 </label>
               )}
             </div>
+
+            <label className="flex flex-col gap-1.5 text-sm">
+              {intl.formatMessage({ id: 'tarea.detalle.ambito' })}
+              <select
+                value={tarea.ambito}
+                onChange={(evento) =>
+                  despachar(
+                    cambiarAmbitoTarea({ id: tarea.id, ambito: evento.target.value as Ambito }),
+                  )
+                }
+                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm transition-shadow hover:shadow-md"
+              >
+                {OPCIONES_AMBITO.map((opcion) => (
+                  <option key={opcion.valor} value={opcion.valor}>
+                    {intl.formatMessage({ id: opcion.clave })}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <label className="flex flex-col gap-1.5 text-sm">
               {intl.formatMessage({ id: 'tarea.detalle.recurrencia' })}
