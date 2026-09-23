@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import etiquetasReducer from './etiquetasSlice';
 import familiaReducer from './familiaSlice';
 import googleReducer from './googleSlice';
+import notasReducer from './notasSlice';
 import horarioReducer from './horarioSlice';
 import interfazReducer from './interfazSlice';
 import objetivosReducer from './objetivosSlice';
@@ -20,6 +21,7 @@ export const store = configureStore({
     familia: familiaReducer,
     pomodoro: pomodoroReducer,
     google: googleReducer,
+    notas: notasReducer,
     horario: horarioReducer,
     recordatorios: recordatoriosReducer,
   },

@@ -42,6 +42,10 @@ model Usuario {
   consentimientoConfirmado   Boolean                  @default(true)
   consentimientoReenviadoEn  DateTime?
   modoEscolarActivo          Boolean                  @default(false)
+  // Perfiles elegidos en Ajustes (pueden ser varios); vacío = el Inicio usa
+  // los que sugiere la app según lo que se usa.
+  perfiles                   PerfilUsuario[]          @default([])
+  notas                      Nota[]
   // Modo emergencia: alarma cuando una tarea pendiente lleva emergenciaDias
   // sin tocarse. Desactivado por defecto para no disparar de golpe alarmas
   // por todas las tareas antiguas de una cuenta ya existente.
@@ -79,6 +83,7 @@ model Objetivo {
   usuarioId     String
   usuario       Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   tareas        Tarea[]
+  notas         Nota[]
   creadoEn      DateTime  @default(now())
   actualizadoEn DateTime  @updatedAt
 
@@ -164,6 +169,7 @@ model Tarea {
   asignaturaHorarioId   String?
   asignaturaHorario     AsignaturaHorario?      @relation(fields: [asignaturaHorarioId], references: [id], onDelete: SetNull)
   avisos                Aviso[]
+  notas                 Nota[]
   creadoEn              DateTime                @default(now())
   actualizadoEn         DateTime                @updatedAt
 
@@ -188,13 +194,19 @@ model Subtarea {
 // Etiquetas libres por usuario (no por tarea): "nombre" es único por usuario
 // para poder reutilizar la misma etiqueta en varias tareas vía connectOrCreate
 // sin duplicados, y para poder ofrecer un listado de "mis etiquetas" en la UI.
+// Jerarquía de hasta 3 niveles (MAXIMO_NIVELES_ETIQUETA en etiquetas.service):
+// Estudio › Matemáticas › Cálculo. El nombre sigue siendo único por usuario,
+// así que una tarea se sigue etiquetando por nombre sin ambigüedad.
 model Etiqueta {
-  id        String   @id @default(uuid())
+  id        String     @id @default(uuid())
   nombre    String
+  padreId   String?
+  padre     Etiqueta?  @relation("EtiquetaJerarquia", fields: [padreId], references: [id], onDelete: SetNull)
+  hijas     Etiqueta[] @relation("EtiquetaJerarquia")
   usuarioId String
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  tareas    Tarea[]  @relation("TareaEtiquetas")
-  creadoEn  DateTime @default(now())
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tareas    Tarea[]    @relation("TareaEtiquetas")
+  creadoEn  DateTime   @default(now())
 
   @@unique([usuarioId, nombre])
   @@map("etiquetas")
@@ -486,4 +498,37 @@ model DiaNoLectivoPropio {
   creadoEn  DateTime @default(now())
 
   @@map("dias_no_lectivos_propios")
+}
+
+enum PerfilUsuario {
+  ESTUDIANTE
+  PROFESIONAL
+  PADRE
+}
+
+// NOTA: texto libre, con casilla opcional. TODO: elemento corto que siempre se
+// marca como hecho. Los dos pueden asociarse a una tarea o a un objetivo
+// (SetNull: si se borra la tarea, la nota se conserva suelta).
+enum TipoNota {
+  NOTA
+  TODO
+}
+
+model Nota {
+  id            String    @id @default(uuid())
+  tipo          TipoNota
+  contenido     String
+  conCasilla    Boolean   @default(false)
+  completada    Boolean   @default(false)
+  tareaId       String?
+  tarea         Tarea?    @relation(fields: [tareaId], references: [id], onDelete: SetNull)
+  objetivoId    String?
+  objetivo      Objetivo? @relation(fields: [objetivoId], references: [id], onDelete: SetNull)
+  usuarioId     String
+  usuario       Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  @@index([usuarioId, tipo])
+  @@map("notas")
 }

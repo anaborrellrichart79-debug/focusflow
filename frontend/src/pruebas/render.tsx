@@ -7,6 +7,7 @@ import { MemoryRouter } from 'react-router-dom';
 import etiquetasReducer from '@/almacen/etiquetasSlice';
 import familiaReducer from '@/almacen/familiaSlice';
 import googleReducer from '@/almacen/googleSlice';
+import notasReducer from '@/almacen/notasSlice';
 import horarioReducer from '@/almacen/horarioSlice';
 import interfazReducer from '@/almacen/interfazSlice';
 import objetivosReducer from '@/almacen/objetivosSlice';
@@ -26,6 +27,7 @@ const reductorRaiz = {
   familia: familiaReducer,
   pomodoro: pomodoroReducer,
   google: googleReducer,
+  notas: notasReducer,
   horario: horarioReducer,
   recordatorios: recordatoriosReducer,
 };

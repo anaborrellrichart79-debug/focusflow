@@ -8,11 +8,13 @@ import {
   desconectarGoogle,
   sincronizarGoogle,
 } from '@/almacen/googleSlice';
-import { cambiarModoEscolar } from '@/almacen/sesionSlice';
+import { cambiarModoEscolar, cambiarPerfiles } from '@/almacen/sesionSlice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import type { PerfilUsuario } from '@/servicios/autenticacion';
+import { PERFILES, perfilesEfectivos } from '@/utilidades/perfiles';
 
 export function PaginaAjustes() {
   const intl = useIntl();
@@ -24,6 +26,10 @@ export function PaginaAjustes() {
 
   const modoEscolarActivo = usarSelector(
     (estado) => estado.sesion.usuario?.modoEscolarActivo ?? false,
+  );
+  const usuario = usarSelector((estado) => estado.sesion.usuario);
+  const numeroSupervisados = usarSelector(
+    (estado) => estado.familia.datos?.supervisados.length ?? 0,
   );
   const [guardandoModoEscolar, setGuardandoModoEscolar] = useState(false);
   const [errorModoEscolar, setErrorModoEscolar] = useState<string | null>(null);
@@ -39,6 +45,16 @@ export function PaginaAjustes() {
     if (conectarConGoogle.fulfilled.match(resultado)) {
       window.location.href = resultado.payload;
     }
+  }
+
+  const { perfiles, sugeridos } = usuario
+    ? perfilesEfectivos(usuario, numeroSupervisados)
+    : { perfiles: [], sugeridos: false };
+
+  // Marcar el primero con perfiles sugeridos los convierte en elegidos.
+  function alCambiarPerfil(perfil: PerfilUsuario, marcado: boolean) {
+    const nuevos = marcado ? [...perfiles, perfil] : perfiles.filter((p) => p !== perfil);
+    despachar(cambiarPerfiles(PERFILES.filter((p) => nuevos.includes(p))));
   }
 
   async function alCambiarModoEscolar(activo: boolean) {
@@ -69,6 +85,33 @@ export function PaginaAjustes() {
           {intl.formatMessage({ id: 'ajustes.google.errorConexion' })}
         </p>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{intl.formatMessage({ id: 'ajustes.perfil.titulo' })}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground">
+            {intl.formatMessage({ id: 'ajustes.perfil.descripcion' })}
+          </p>
+          <div className="flex flex-wrap gap-4">
+            {PERFILES.map((perfil) => (
+              <label key={perfil} className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={perfiles.includes(perfil)}
+                  onCheckedChange={(marcada) => alCambiarPerfil(perfil, marcada === true)}
+                />
+                {intl.formatMessage({ id: `perfil.${perfil}` })}
+              </label>
+            ))}
+          </div>
+          {sugeridos && (
+            <p className="text-xs text-muted-foreground">
+              {intl.formatMessage({ id: 'ajustes.perfil.sugeridos' })}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

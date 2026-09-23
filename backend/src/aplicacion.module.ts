@@ -7,6 +7,7 @@ import { ModuloAutenticacion } from './autenticacion/autenticacion.module.js';
 import { ModuloEtiquetas } from './etiquetas/etiquetas.module.js';
 import { ModuloFamilia } from './familia/familia.module.js';
 import { ModuloGoogle } from './google/google.module.js';
+import { ModuloNotas } from './notas/notas.module.js';
 import { ModuloHorarios } from './horarios/horarios.module.js';
 import { ModuloObjetivos } from './objetivos/objetivos.module.js';
 import { ModuloPomodoro } from './pomodoro/pomodoro.module.js';
@@ -32,6 +33,7 @@ import { ModuloTareas } from './tareas/tareas.module.js';
     ModuloHorarios,
     ModuloRecordatorios,
     ModuloFamilia,
+    ModuloNotas,
   ],
   controllers: [AplicacionController],
   providers: [AplicacionService],

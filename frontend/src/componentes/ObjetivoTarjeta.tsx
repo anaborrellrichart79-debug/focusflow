@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useIntl } from 'react-intl';
+import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { eliminarObjetivo } from '@/almacen/objetivosSlice';
 import { cambiarEstadoTarea, crearTarea, eliminarTarea } from '@/almacen/tareasSlice';
@@ -20,6 +21,9 @@ export function ObjetivoTarjeta({ objetivo }: { objetivo: Objetivo }) {
     estado.tareas.lista.filter(
       (tarea) => tarea.objetivoId === objetivo.id && tarea.estado !== 'ARCHIVADA',
     ),
+  );
+  const numeroNotas = usarSelector(
+    (estado) => estado.notas.lista.filter((nota) => nota.objetivoId === objetivo.id).length,
   );
   const [tituloTarea, setTituloTarea] = useState('');
   const [fechaLimiteTarea, setFechaLimiteTarea] = useState('');
@@ -75,6 +79,12 @@ export function ObjetivoTarjeta({ objetivo }: { objetivo: Objetivo }) {
               { completadas: tareasCompletadas, total: totalTareas },
             )}
           </span>
+          <Link
+            to={`/notas?objetivo=${objetivo.id}`}
+            className="w-fit text-xs text-primary underline-offset-2 hover:underline"
+          >
+            {intl.formatMessage({ id: 'objetivos.notas' }, { cantidad: numeroNotas })}
+          </Link>
         </div>
 
         <ul className="flex flex-col gap-2">

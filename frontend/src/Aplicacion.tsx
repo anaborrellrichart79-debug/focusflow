@@ -2,7 +2,9 @@ import { useEffect } from 'react';
 import { IntlProvider } from 'react-intl';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
+import { cargarEtiquetas } from '@/almacen/etiquetasSlice';
 import { cargarFamilia } from '@/almacen/familiaSlice';
+import { cargarNotas } from '@/almacen/notasSlice';
 import { cargarEstadoGoogle, sincronizarGoogle } from '@/almacen/googleSlice';
 import { cargarHorarios } from '@/almacen/horarioSlice';
 import { cargarCalendarioEscolar } from '@/almacen/recordatoriosSlice';
@@ -16,11 +18,13 @@ import { PaginaAjustes } from '@/paginas/PaginaAjustes';
 import { PaginaConfirmarConsentimiento } from '@/paginas/PaginaConfirmarConsentimiento';
 import { PaginaEisenhower } from '@/paginas/PaginaEisenhower';
 import { PaginaEstadisticas } from '@/paginas/PaginaEstadisticas';
+import { PaginaEtiquetas } from '@/paginas/PaginaEtiquetas';
 import { PaginaFamilia } from '@/paginas/PaginaFamilia';
 import { PaginaHorario } from '@/paginas/PaginaHorario';
 import { PaginaInicio } from '@/paginas/PaginaInicio';
 import { PaginaKanban } from '@/paginas/PaginaKanban';
 import { PaginaLogin } from '@/paginas/PaginaLogin';
+import { PaginaNotas } from '@/paginas/PaginaNotas';
 import { PaginaObjetivos } from '@/paginas/PaginaObjetivos';
 import { PaginaPlanificador } from '@/paginas/PaginaPlanificador';
 import { PaginaPomodoro } from '@/paginas/PaginaPomodoro';
@@ -52,7 +56,12 @@ export function Aplicacion() {
   // (para elegir quién la revisa), así que se cargan al entrar.
   const puedeUsarApi = usuario?.consentimientoConfirmado ?? false;
   useEffect(() => {
-    if (puedeUsarApi) despachar(cargarFamilia());
+    if (!puedeUsarApi) return;
+    despachar(cargarFamilia());
+    // El filtro de etiquetas de la barra lateral y las notas del detalle de
+    // cada tarea y objetivo se usan en todas partes.
+    despachar(cargarEtiquetas());
+    despachar(cargarNotas());
   }, [puedeUsarApi, despachar]);
 
   // El horario activo lo usan la Agenda (clases), el Planificador y el detalle
@@ -185,6 +194,22 @@ export function Aplicacion() {
               element={
                 <RutaProtegida>
                   <PaginaRecordatorios />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/notas"
+              element={
+                <RutaProtegida>
+                  <PaginaNotas />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/etiquetas"
+              element={
+                <RutaProtegida>
+                  <PaginaEtiquetas />
                 </RutaProtegida>
               }
             />

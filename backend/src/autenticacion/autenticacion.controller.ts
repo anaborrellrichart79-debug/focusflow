@@ -60,6 +60,6 @@ export class AutenticacionController {
     @UsuarioActual() usuario: UsuarioPeticion,
     @Body() datos: ActualizarPreferenciasDto,
   ) {
-    return this.autenticacionService.actualizarPreferencias(usuario.id, datos.modoEscolarActivo);
+    return this.autenticacionService.actualizarPreferencias(usuario.id, datos);
   }
 }

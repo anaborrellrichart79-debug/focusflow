@@ -110,6 +110,7 @@ describe('AutenticacionService', () => {
         nombre: 'Nueva',
         consentimientoConfirmado: true,
         modoEscolarActivo: false,
+        perfiles: [],
       });
     });
 
@@ -228,6 +229,7 @@ describe('AutenticacionService', () => {
         nombre: 'Ana',
         consentimientoConfirmado: true,
         modoEscolarActivo: false,
+        perfiles: [],
       });
       expect(resultado).not.toHaveProperty('contrasena');
       expect(resultado).not.toHaveProperty('correoTutor');
@@ -327,13 +329,29 @@ describe('AutenticacionService', () => {
     it('actualiza modoEscolarActivo y devuelve los datos públicos del usuario', async () => {
       prismaFalso.usuario.update.mockResolvedValue(crearUsuarioFalso({ modoEscolarActivo: true }));
 
-      const resultado = await servicio.actualizarPreferencias('usuario-1', true);
+      const resultado = await servicio.actualizarPreferencias('usuario-1', { modoEscolarActivo: true });
 
       expect(prismaFalso.usuario.update).toHaveBeenCalledWith({
         where: { id: 'usuario-1' },
-        data: { modoEscolarActivo: true },
+        data: { modoEscolarActivo: true, perfiles: undefined },
       });
       expect(resultado.modoEscolarActivo).toBe(true);
+    });
+
+    it('guarda los perfiles sin repetidos y los devuelve', async () => {
+      prismaFalso.usuario.update.mockResolvedValue(
+        crearUsuarioFalso({ perfiles: ['PADRE', 'PROFESIONAL'] }),
+      );
+
+      const resultado = await servicio.actualizarPreferencias('usuario-1', {
+        perfiles: ['PADRE', 'PROFESIONAL', 'PADRE'],
+      });
+
+      expect(prismaFalso.usuario.update).toHaveBeenCalledWith({
+        where: { id: 'usuario-1' },
+        data: { modoEscolarActivo: undefined, perfiles: ['PADRE', 'PROFESIONAL'] },
+      });
+      expect(resultado.perfiles).toEqual(['PADRE', 'PROFESIONAL']);
     });
   });
 });

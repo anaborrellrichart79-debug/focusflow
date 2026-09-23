@@ -17,7 +17,7 @@ import {
   type Tarea,
   type TipoEscolar,
 } from '@/servicios/tareas';
-import { ambitoParaNuevoElemento } from './selectores';
+import { ambitoParaNuevoElemento, etiquetasParaNuevaTarea } from './selectores';
 import type { EstadoRaiz } from './store';
 
 interface EstadoTareas {
@@ -74,6 +74,7 @@ export const crearTarea = createAsyncThunk<
     return await crearTareaApi(tokenOError(estado), {
       ...datos,
       ambito: datos.ambito ?? ambitoParaNuevoElemento(estado),
+      etiquetas: datos.etiquetas ?? etiquetasParaNuevaTarea(estado),
     });
   } catch (error) {
     return rejectWithValue(

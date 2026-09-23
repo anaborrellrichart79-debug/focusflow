@@ -1,4 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
+import { idsConDescendientes } from '@/utilidades/etiquetas';
 import type { EstadoRaiz } from './store';
 
 // El filtro por ámbito (Personal/Escolar/Todos) es 100% client-side, igual que
@@ -14,11 +15,25 @@ export const seleccionarAmbitoActivo = (estado: EstadoRaiz) =>
     ? 'TODOS'
     : estado.interfaz.ambitoActivo;
 
+// Ids de la etiqueta del filtro y de todas sus subetiquetas (null = sin filtro).
+const seleccionarIdsEtiquetaFiltro = createSelector(
+  [
+    (estado: EstadoRaiz) => estado.interfaz.etiquetaFiltro ?? null,
+    (estado: EstadoRaiz) => estado.etiquetas.lista,
+  ],
+  (etiquetaFiltro, etiquetas) =>
+    etiquetaFiltro ? idsConDescendientes(etiquetas, etiquetaFiltro) : null,
+);
+
 // Con archivadas: solo para el Kanban, que tiene su columna.
 export const seleccionarTareasDelAmbitoConArchivadas = createSelector(
-  [(estado: EstadoRaiz) => estado.tareas.lista, seleccionarAmbitoActivo],
-  (tareas, ambito) =>
-    ambito === 'TODOS' ? tareas : tareas.filter((tarea) => tarea.ambito === ambito),
+  [(estado: EstadoRaiz) => estado.tareas.lista, seleccionarAmbitoActivo, seleccionarIdsEtiquetaFiltro],
+  (tareas, ambito, idsEtiqueta) =>
+    tareas.filter(
+      (tarea) =>
+        (ambito === 'TODOS' || tarea.ambito === ambito) &&
+        (!idsEtiqueta || tarea.etiquetas.some((etiqueta) => idsEtiqueta.has(etiqueta.id))),
+    ),
 );
 
 // Las tareas archivadas están cerradas: desaparecen de todas las demás vistas
@@ -56,6 +71,13 @@ export const seleccionarHistorialPomodoroDelAmbito = createSelector(
 // Una tarea u objetivo nuevo creado sin ámbito explícito toma el ámbito activo,
 // para que no "desaparezca" nada más crearlo al estar filtrando por Escolar.
 // Con "Todos" se deja sin indicar y el backend aplica su default (PERSONAL).
+// Igual con el filtro de etiqueta: la tarea nueva la lleva puesta.
+export function etiquetasParaNuevaTarea(estado: EstadoRaiz) {
+  const id = estado.interfaz.etiquetaFiltro;
+  const etiqueta = id ? estado.etiquetas.lista.find((e) => e.id === id) : undefined;
+  return etiqueta ? [etiqueta.nombre] : undefined;
+}
+
 export function ambitoParaNuevoElemento(estado: EstadoRaiz) {
   const ambito = seleccionarAmbitoActivo(estado);
   return ambito === 'TODOS' ? undefined : ambito;

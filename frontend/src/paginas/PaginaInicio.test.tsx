@@ -106,4 +106,59 @@ describe('PaginaInicio', () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe('Inicio según el perfil', () => {
+    it('sin perfiles elegidos usa los sugeridos (Profesional sin modo escolar) y lo dice', () => {
+      renderizarPagina(<PaginaInicio />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
+
+      expect(screen.getByText(/Inicio pensado para: Profesional \(sugerido;/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'cámbialo en Ajustes' })).toHaveAttribute('href', '/ajustes');
+      expect(screen.getByText('Prioridades')).toBeInTheDocument();
+      expect(screen.getByText('Pomodoros de hoy')).toBeInTheDocument();
+      expect(screen.queryByText('Clases de hoy')).not.toBeInTheDocument();
+      // Comunes a todos los perfiles.
+      expect(screen.getByText('Próximos 7 días')).toBeInTheDocument();
+      expect(screen.getByText('To-Do pendientes')).toBeInTheDocument();
+    });
+
+    it('con Estudiante y Padre elegidos, enseña sus tarjetas y no las de Profesional', () => {
+      renderizarPagina(<PaginaInicio />, {
+        estadoPrecargado: {
+          sesion: {
+            ...SESION_AUTENTICADA,
+            usuario: { ...SESION_AUTENTICADA.usuario!, perfiles: ['ESTUDIANTE', 'PADRE'] },
+          },
+        },
+      });
+
+      expect(screen.getByText(/Inicio pensado para: Estudiante y Padre o madre/)).toBeInTheDocument();
+      expect(screen.getByText('Clases de hoy')).toBeInTheDocument();
+      expect(screen.getByText('Próximas entregas')).toBeInTheDocument();
+      expect(screen.getByText('Revisiones pendientes')).toBeInTheDocument();
+      expect(screen.queryByText('Prioridades')).not.toBeInTheDocument();
+    });
+
+    it('las prioridades son lo urgente e importante y lo de alto impacto sin terminar', () => {
+      renderizarPagina(<PaginaInicio />, {
+        estadoPrecargado: {
+          sesion: SESION_AUTENTICADA,
+          tareas: {
+            lista: [
+              crearTareaFalsa({ id: 'a', titulo: 'Informe urgente', urgente: true, importante: true }),
+              crearTareaFalsa({ id: 'b', titulo: 'Propuesta clave', esAltoImpacto: true }),
+              crearTareaFalsa({ id: 'c', titulo: 'Solo urgente', urgente: true }),
+              crearTareaFalsa({ id: 'd', titulo: 'Ya hecha', esAltoImpacto: true, estado: 'HECHA' }),
+            ],
+            cargando: false,
+            error: null,
+          },
+        },
+      });
+
+      expect(screen.getByText('Informe urgente')).toBeInTheDocument();
+      expect(screen.getByText('Propuesta clave')).toBeInTheDocument();
+      expect(screen.queryByText('Solo urgente')).not.toBeInTheDocument();
+      expect(screen.queryByText('Ya hecha')).not.toBeInTheDocument();
+    });
+  });
 });

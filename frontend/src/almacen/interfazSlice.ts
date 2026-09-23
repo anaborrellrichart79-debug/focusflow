@@ -24,12 +24,16 @@ interface EstadoInterfaz {
   idioma: CodigoIdioma;
   tema: Tema;
   ambitoActivo: AmbitoActivo;
+  // Etiqueta por la que se filtran todas las vistas (incluye sus
+  // subetiquetas); null = sin filtro. No se guarda entre sesiones.
+  etiquetaFiltro?: string | null;
 }
 
 const estadoInicial: EstadoInterfaz = {
   idioma: IDIOMA_POR_DEFECTO,
   tema: obtenerTemaInicial(),
   ambitoActivo: obtenerAmbitoInicial(),
+  etiquetaFiltro: null,
 };
 
 const interfazSlice = createSlice({
@@ -47,8 +51,12 @@ const interfazSlice = createSlice({
       estado.ambitoActivo = accion.payload;
       localStorage.setItem(CLAVE_AMBITO_LOCALSTORAGE, accion.payload);
     },
+    cambiarEtiquetaFiltro(estado, accion: PayloadAction<string | null>) {
+      estado.etiquetaFiltro = accion.payload;
+    },
   },
 });
 
-export const { cambiarIdioma, alternarTema, cambiarAmbitoActivo } = interfazSlice.actions;
+export const { cambiarIdioma, alternarTema, cambiarAmbitoActivo, cambiarEtiquetaFiltro } =
+  interfazSlice.actions;
 export default interfazSlice.reducer;

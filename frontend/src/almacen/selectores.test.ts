@@ -6,6 +6,7 @@ import type { Ambito, Tarea } from '@/servicios/tareas';
 import type { AmbitoActivo } from './interfazSlice';
 import {
   ambitoParaNuevoElemento,
+  etiquetasParaNuevaTarea,
   seleccionarHistorialPomodoroDelAmbito,
   seleccionarObjetivosDelAmbito,
   seleccionarTareasDelAmbito,
@@ -121,5 +122,36 @@ describe('selectores de ámbito', () => {
 
     expect(seleccionarTareasDelAmbito(estado).map((t) => t.id)).toEqual(['boda']);
     expect(ambitoParaNuevoElemento(estado)).toBe('EVENTUAL');
+  });
+
+  it('el filtro de etiqueta incluye las subetiquetas', () => {
+    const etiqueta = (id: string, padreId: string | null) =>
+      ({ id, nombre: id, padreId, usuarioId: 'u', creadoEn: '' });
+    const conEtiqueta = (id: string, etiquetaId: string) =>
+      ({ ...tarea(id, 'PERSONAL'), estado: 'POR_HACER', etiquetas: [etiqueta(etiquetaId, null)] }) as Tarea;
+
+    const estado = crearTiendaDePrueba({
+      sesion: SESION_AUTENTICADA,
+      interfaz: { idioma: 'es', tema: 'claro', ambitoActivo: 'TODOS', etiquetaFiltro: 'mates' },
+      etiquetas: {
+        lista: [etiqueta('mates', null), etiqueta('calculo', 'mates'), etiqueta('lengua', null)],
+        cargando: false,
+        error: null,
+      },
+      tareas: {
+        lista: [
+          conEtiqueta('integrales', 'calculo'),
+          conEtiqueta('ecuaciones', 'mates'),
+          conEtiqueta('redaccion', 'lengua'),
+          { ...tarea('sin-etiqueta', 'PERSONAL'), estado: 'POR_HACER', etiquetas: [] } as Tarea,
+        ],
+        cargando: false,
+        error: null,
+      },
+    }).getState();
+
+    expect(seleccionarTareasDelAmbito(estado).map((t) => t.id)).toEqual(['integrales', 'ecuaciones']);
+    // Una tarea nueva creada con el filtro puesto lleva esa etiqueta.
+    expect(etiquetasParaNuevaTarea(estado)).toEqual(['mates']);
   });
 });

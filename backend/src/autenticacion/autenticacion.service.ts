@@ -11,6 +11,7 @@ import bcrypt from 'bcrypt';
 import { calcularEdad } from '../comun/edad.util.js';
 import { CorreoService } from '../correo/correo.service.js';
 import type { Usuario } from '../generated/prisma/client.js';
+import type { PerfilUsuario } from '../generated/prisma/enums.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import type { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
 import type { RegistrarUsuarioDto } from './dto/registrar-usuario.dto.js';
@@ -153,10 +154,16 @@ export class AutenticacionService {
     });
   }
 
-  async actualizarPreferencias(usuarioId: string, modoEscolarActivo: boolean) {
+  async actualizarPreferencias(
+    usuarioId: string,
+    datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[] },
+  ) {
     const usuario = await this.prisma.usuario.update({
       where: { id: usuarioId },
-      data: { modoEscolarActivo },
+      data: {
+        modoEscolarActivo: datos.modoEscolarActivo,
+        perfiles: datos.perfiles ? [...new Set(datos.perfiles)] : undefined,
+      },
     });
 
     return this.aDatosPublicos(usuario);
@@ -180,6 +187,7 @@ export class AutenticacionService {
       nombre: usuario.nombre,
       consentimientoConfirmado: usuario.consentimientoConfirmado,
       modoEscolarActivo: usuario.modoEscolarActivo,
+      perfiles: usuario.perfiles ?? [],
     };
   }
 

@@ -1,40 +1,31 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
-import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import { cargarTareas } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { EtiquetaFechaLimite } from '@/componentes/EtiquetaFechaLimite';
+import { InicioPersonalizado } from '@/componentes/InicioPersonalizado';
 import { SelectorIdioma } from '@/componentes/SelectorIdioma';
 import { SelectorTema } from '@/componentes/SelectorTema';
-import { diasHastaFecha } from '@/utilidades/fechas';
+import { cn } from '@/lib/utils';
 
 export function PaginaInicio() {
   const intl = useIntl();
   const despachar = usarDespachador();
   const { usuario } = usarSelector((estado) => estado.sesion);
-  const tareas = usarSelector(seleccionarTareasDelAmbito);
 
   useEffect(() => {
     if (usuario) despachar(cargarTareas());
   }, [usuario, despachar]);
 
-  const tareasProximas = useMemo(
-    () =>
-      tareas
-        .filter((tarea) => tarea.estado !== 'HECHA' && tarea.fechaLimite)
-        .filter((tarea) => {
-          const dias = diasHastaFecha(tarea.fechaLimite!);
-          return dias >= 0 && dias <= 7;
-        })
-        .sort((a, b) => diasHastaFecha(a.fechaLimite!) - diasHastaFecha(b.fechaLimite!)),
-    [tareas],
-  );
-
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-12 overflow-hidden px-4 py-16 text-center sm:py-24">
+    <main
+      className={cn(
+        'relative mx-auto flex min-h-screen flex-col items-center gap-12 overflow-hidden px-4 text-center',
+        // Con sesión, panel de tarjetas; sin sesión, portada centrada.
+        usuario ? 'max-w-4xl gap-8 py-10' : 'max-w-2xl justify-center py-16 sm:py-24',
+      )}
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_50%_0%,color-mix(in_oklch,var(--primary)_18%,transparent),transparent_70%)]"
@@ -64,29 +55,7 @@ export function PaginaInicio() {
             )}
           </p>
 
-          <Card className="w-full max-w-sm text-left">
-            <CardHeader>
-              <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">
-                {intl.formatMessage({ id: 'inicio.proximos.titulo' })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {tareasProximas.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {intl.formatMessage({ id: 'inicio.proximos.vacio' })}
-                </p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {tareasProximas.map((tarea) => (
-                    <li key={tarea.id} className="flex items-center justify-between gap-2">
-                      <span className="text-sm">{tarea.titulo}</span>
-                      <EtiquetaFechaLimite fechaLimite={tarea.fechaLimite!} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <InicioPersonalizado usuario={usuario} />
         </div>
       ) : (
         <div className="flex gap-4">

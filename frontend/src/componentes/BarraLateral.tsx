@@ -4,6 +4,8 @@ import {
   CalendarDays,
   ChartColumn,
   ClipboardCheck,
+  NotebookPen,
+  Tags,
   UsersRound,
   Columns3,
   GraduationCap,
@@ -21,6 +23,7 @@ import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cerrarSesion } from '@/almacen/sesionSlice';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { FiltroEtiqueta } from './FiltroEtiqueta';
 import { SelectorAmbito } from './SelectorAmbito';
 import { SelectorIdioma } from './SelectorIdioma';
 import { SelectorTema } from './SelectorTema';
@@ -41,6 +44,8 @@ const SECCIONES: { clave: string; enlaces: EnlaceNavegacion[] }[] = [
       { ruta: '/agenda', clave: 'nav.agenda', icono: CalendarDays },
       { ruta: '/kanban', clave: 'nav.kanban', icono: Columns3 },
       { ruta: '/eisenhower', clave: 'nav.eisenhower', icono: Grid2x2 },
+      { ruta: '/notas', clave: 'nav.notas', icono: NotebookPen },
+      { ruta: '/etiquetas', clave: 'nav.etiquetas', icono: Tags },
       {
         ruta: '/horario',
         clave: 'nav.horario',
@@ -99,7 +104,10 @@ export function BarraLateral({ alNavegar }: { alNavegar?: () => void }) {
         {intl.formatMessage({ id: 'app.titulo' })}
       </Link>
 
-      <SelectorAmbito />
+      <div className="flex flex-col gap-2">
+        <SelectorAmbito />
+        <FiltroEtiqueta />
+      </div>
 
       <nav aria-label={intl.formatMessage({ id: 'nav.principal' })} className="flex flex-col gap-4">
         {SECCIONES.map((seccion) => (

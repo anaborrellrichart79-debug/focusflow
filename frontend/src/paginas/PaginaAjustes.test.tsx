@@ -94,4 +94,42 @@ describe('PaginaAjustes', () => {
       expect(await screen.findByRole('checkbox', { name: 'Activar el modo escolar' })).toBeChecked();
     });
   });
+
+  describe('perfil', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('sin elegir, marca los sugeridos; marcar otro los guarda como elegidos', async () => {
+      const usuario = userEvent.setup();
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string, opciones?: RequestInit) => ({
+          ok: true,
+          json: async () =>
+            url.endsWith('/autenticacion/preferencias')
+              ? { ...SESION_AUTENTICADA.usuario, ...JSON.parse(opciones!.body as string) }
+              : { conectado: false },
+        })),
+      );
+
+      const { tienda } = renderizarPagina(<PaginaAjustes />, {
+        estadoPrecargado: { sesion: SESION_AUTENTICADA },
+      });
+
+      expect(screen.getByRole('checkbox', { name: 'Profesional' })).toBeChecked();
+      expect(screen.getByText(/perfiles que sugiere la app/)).toBeInTheDocument();
+
+      await usuario.click(screen.getByRole('checkbox', { name: 'Padre o madre' }));
+
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/autenticacion/preferencias',
+        expect.objectContaining({ body: JSON.stringify({ perfiles: ['PROFESIONAL', 'PADRE'] }) }),
+      );
+      await vi.waitFor(() =>
+        expect(tienda.getState().sesion.usuario?.perfiles).toEqual(['PROFESIONAL', 'PADRE']),
+      );
+      expect(screen.queryByText(/perfiles que sugiere la app/)).not.toBeInTheDocument();
+    });
+  });
 });

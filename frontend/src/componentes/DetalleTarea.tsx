@@ -25,6 +25,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Ambito, EstadoTarea, Recurrencia, Tarea, TipoEscolar } from '@/servicios/tareas';
 import { ESTADOS_TAREA } from '@/utilidades/estados';
+import { rutaEtiqueta } from '@/utilidades/etiquetas';
+import { NotasVinculadas } from './NotasVinculadas';
 import { OPCIONES_TIPO_ESCOLAR } from '@/utilidades/planificador';
 import {
   DURACION_MINUTOS_POR_DEFECTO,
@@ -452,7 +454,11 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
                 />
                 <datalist id={idDatalist}>
                   {etiquetasConocidas.map((etiqueta) => (
-                    <option key={etiqueta.id} value={etiqueta.nombre} />
+                    <option
+                      key={etiqueta.id}
+                      value={etiqueta.nombre}
+                      label={rutaEtiqueta(etiquetasConocidas, etiqueta.id)}
+                    />
                   ))}
                 </datalist>
                 <Button type="submit" size="sm">
@@ -522,6 +528,8 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
                 </Button>
               </form>
             </div>
+
+            <NotasVinculadas tareaId={tarea.id} />
           </div>
         </DialogContent>
       </Dialog>

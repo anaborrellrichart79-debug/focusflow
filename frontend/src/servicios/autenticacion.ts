@@ -1,11 +1,16 @@
 import { peticionApi } from './api';
 
+export type PerfilUsuario = 'ESTUDIANTE' | 'PROFESIONAL' | 'PADRE';
+
 export interface UsuarioSesion {
   id: string;
   correo: string;
   nombre: string | null;
   consentimientoConfirmado: boolean;
   modoEscolarActivo: boolean;
+  // Perfiles elegidos en Ajustes; vacío = el Inicio usa los sugeridos.
+  // Opcional en el tipo para no obligar a cada dato de prueba a incluirlo.
+  perfiles?: PerfilUsuario[];
 }
 
 export interface RespuestaAutenticacion {
@@ -57,7 +62,10 @@ export function reenviarConfirmacion(tokenAcceso: string) {
   });
 }
 
-export function actualizarPreferencias(tokenAcceso: string, datos: { modoEscolarActivo: boolean }) {
+export function actualizarPreferencias(
+  tokenAcceso: string,
+  datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[] },
+) {
   return peticionApi<UsuarioSesion>('/autenticacion/preferencias', {
     method: 'PATCH',
     headers: cabeceras(tokenAcceso),

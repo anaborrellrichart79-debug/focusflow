@@ -75,6 +75,8 @@ describe('AutenticacionController', () => {
       { modoEscolarActivo: true },
     );
 
-    expect(servicioFalso.actualizarPreferencias).toHaveBeenCalledWith('usuario-1', true);
+    expect(servicioFalso.actualizarPreferencias).toHaveBeenCalledWith('usuario-1', {
+      modoEscolarActivo: true,
+    });
   });
 });

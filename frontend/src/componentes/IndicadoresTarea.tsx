@@ -1,7 +1,9 @@
 import { useIntl } from 'react-intl';
+import { usarSelector } from '@/almacen/hooks';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Tarea } from '@/servicios/tareas';
+import { rutaEtiqueta } from '@/utilidades/etiquetas';
 import { InsigniaAsignatura } from './InsigniaAsignatura';
 import { InsigniaTipoEscolar } from './InsigniaTipoEscolar';
 
@@ -15,6 +17,8 @@ const CLASE_REVISION = {
 
 export function IndicadoresTarea({ tarea }: { tarea: Tarea }) {
   const intl = useIntl();
+  // Para enseñar la ruta completa (Matemáticas › Cálculo) al pasar el ratón.
+  const todasLasEtiquetas = usarSelector((estado) => estado.etiquetas.lista);
   if (
     !tarea.estadoRevision &&
     !tarea.creadaPor &&
@@ -51,7 +55,7 @@ export function IndicadoresTarea({ tarea }: { tarea: Tarea }) {
         />
       )}
       {tarea.etiquetas.map((etiqueta) => (
-        <Badge key={etiqueta.id} variant="outline">
+        <Badge key={etiqueta.id} variant="outline" title={rutaEtiqueta(todasLasEtiquetas, etiqueta.id)}>
           {etiqueta.nombre}
         </Badge>
       ))}

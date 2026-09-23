@@ -4,6 +4,7 @@ import {
   iniciarSesion as iniciarSesionApi,
   obtenerPerfil,
   registrarUsuario as registrarUsuarioApi,
+  type PerfilUsuario,
   type UsuarioSesion,
 } from '@/servicios/autenticacion';
 import { ErrorApi } from '@/servicios/api';
@@ -103,6 +104,22 @@ export const cambiarModoEscolar = createAsyncThunk<
   }
 });
 
+export const cambiarPerfiles = createAsyncThunk<
+  UsuarioSesion,
+  PerfilUsuario[],
+  { state: { sesion: EstadoSesion }; rejectValue: string }
+>('sesion/cambiarPerfiles', async (perfiles, { getState, rejectWithValue }) => {
+  const tokenAcceso = getState().sesion.tokenAcceso;
+  if (!tokenAcceso) return rejectWithValue('No autenticado');
+  try {
+    return await actualizarPreferencias(tokenAcceso, { perfiles });
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo guardar la preferencia',
+    );
+  }
+});
+
 const sesionSlice = createSlice({
   name: 'sesion',
   initialState: estadoInicial,
@@ -159,6 +176,9 @@ const sesionSlice = createSlice({
         estado.tokenAcceso = accion.payload.tokenAcceso;
       })
       .addCase(cambiarModoEscolar.fulfilled, (estado, accion) => {
+        estado.usuario = accion.payload;
+      })
+      .addCase(cambiarPerfiles.fulfilled, (estado, accion) => {
         estado.usuario = accion.payload;
       })
       .addCase(restaurarSesion.rejected, (estado) => {
