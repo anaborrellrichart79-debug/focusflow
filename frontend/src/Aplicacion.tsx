@@ -2,17 +2,21 @@ import { useEffect } from 'react';
 import { IntlProvider } from 'react-intl';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
+import { cargarFamilia } from '@/almacen/familiaSlice';
 import { cargarEstadoGoogle, sincronizarGoogle } from '@/almacen/googleSlice';
 import { cargarHorarios } from '@/almacen/horarioSlice';
+import { cargarCalendarioEscolar } from '@/almacen/recordatoriosSlice';
 import { restaurarSesion } from '@/almacen/sesionSlice';
 import { DisenoAplicacion } from '@/componentes/DisenoAplicacion';
 import { RutaProtegida } from '@/componentes/RutaProtegida';
+import { VigilanteAvisos } from '@/componentes/VigilanteAvisos';
 import { CODIGO_LOCALE_ICU, mensajesPorIdioma } from '@/idiomas';
 import { PaginaAgenda } from '@/paginas/PaginaAgenda';
 import { PaginaAjustes } from '@/paginas/PaginaAjustes';
 import { PaginaConfirmarConsentimiento } from '@/paginas/PaginaConfirmarConsentimiento';
 import { PaginaEisenhower } from '@/paginas/PaginaEisenhower';
 import { PaginaEstadisticas } from '@/paginas/PaginaEstadisticas';
+import { PaginaFamilia } from '@/paginas/PaginaFamilia';
 import { PaginaHorario } from '@/paginas/PaginaHorario';
 import { PaginaInicio } from '@/paginas/PaginaInicio';
 import { PaginaKanban } from '@/paginas/PaginaKanban';
@@ -20,6 +24,7 @@ import { PaginaLogin } from '@/paginas/PaginaLogin';
 import { PaginaObjetivos } from '@/paginas/PaginaObjetivos';
 import { PaginaPlanificador } from '@/paginas/PaginaPlanificador';
 import { PaginaPomodoro } from '@/paginas/PaginaPomodoro';
+import { PaginaRecordatorios } from '@/paginas/PaginaRecordatorios';
 import { PaginaRegistro } from '@/paginas/PaginaRegistro';
 import { PaginaRevision } from '@/paginas/PaginaRevision';
 
@@ -43,11 +48,21 @@ export function Aplicacion() {
     if (usuario) despachar(cargarEstadoGoogle());
   }, [usuario, despachar]);
 
+  // Los responsables vinculados hacen falta en el detalle de cualquier tarea
+  // (para elegir quién la revisa), así que se cargan al entrar.
+  const puedeUsarApi = usuario?.consentimientoConfirmado ?? false;
+  useEffect(() => {
+    if (puedeUsarApi) despachar(cargarFamilia());
+  }, [puedeUsarApi, despachar]);
+
   // El horario activo lo usan la Agenda (clases), el Planificador y el detalle
-  // de las tareas (asignatura), así que se carga una vez al entrar.
+  // de las tareas (asignatura), así que se carga una vez al entrar. El
+  // calendario escolar, para no pintar clases en días no lectivos.
   const modoEscolar = usuario?.modoEscolarActivo ?? false;
   useEffect(() => {
-    if (modoEscolar) despachar(cargarHorarios());
+    if (!modoEscolar) return;
+    despachar(cargarHorarios());
+    despachar(cargarCalendarioEscolar());
   }, [modoEscolar, despachar]);
 
   useEffect(() => {
@@ -72,6 +87,8 @@ export function Aplicacion() {
   return (
     <IntlProvider locale={CODIGO_LOCALE_ICU[idiomaActual]} messages={mensajesPorIdioma[idiomaActual]}>
       <BrowserRouter>
+        {/* Un menor sin consentimiento confirmado recibe 403 de la API. */}
+        {usuario?.consentimientoConfirmado && <VigilanteAvisos />}
         {restaurandoSesion ? null : (
           <Routes>
             <Route
@@ -160,6 +177,22 @@ export function Aplicacion() {
               element={
                 <RutaProtegida>
                   <PaginaPlanificador />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/recordatorios"
+              element={
+                <RutaProtegida>
+                  <PaginaRecordatorios />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/familia"
+              element={
+                <RutaProtegida>
+                  <PaginaFamilia />
                 </RutaProtegida>
               }
             />

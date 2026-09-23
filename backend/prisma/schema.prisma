@@ -18,7 +18,7 @@ model Usuario {
   contrasena                 String
   nombre                     String?
   objetivos                  Objetivo[]
-  tareas                     Tarea[]
+  tareas                     Tarea[]                  @relation("TareaPropietario")
   sesionesPomodoro           SesionPomodoro[]
   etiquetas                  Etiqueta[]
   eventosGoogle              EventoCalendarioGoogle[]
@@ -42,6 +42,25 @@ model Usuario {
   consentimientoConfirmado   Boolean                  @default(true)
   consentimientoReenviadoEn  DateTime?
   modoEscolarActivo          Boolean                  @default(false)
+  // Modo emergencia: alarma cuando una tarea pendiente lleva emergenciaDias
+  // sin tocarse. Desactivado por defecto para no disparar de golpe alarmas
+  // por todas las tareas antiguas de una cuenta ya existente.
+  emergenciaActiva           Boolean                  @default(false)
+  emergenciaDias             Int                      @default(3)
+  emergenciaPorCorreo        Boolean                  @default(false)
+  recordatorios              Recordatorio[]
+  avisos                     Aviso[]
+  diasNoLectivosPropios      DiaNoLectivoPropio[]
+  // Vínculo familiar: el supervisado genera un código de un solo uso y el
+  // responsable (padre, madre, tutor) lo introduce en su cuenta. Así no hace
+  // falta confiar en el correo (el registro no lo verifica) y los dos dan su
+  // conformidad.
+  codigoVinculo              String?                  @unique
+  codigoVinculoExpiraEn      DateTime?
+  vinculosComoResponsable    VinculoFamiliar[]        @relation("VinculoResponsable")
+  vinculosComoSupervisado    VinculoFamiliar[]        @relation("VinculoSupervisado")
+  tareasARevisar             Tarea[]                  @relation("TareaRevisor")
+  tareasAsignadas            Tarea[]                  @relation("TareaCreadaPor")
   creadoEn                   DateTime                 @default(now())
   actualizadoEn              DateTime                 @updatedAt
 
@@ -66,10 +85,16 @@ model Objetivo {
   @@map("objetivos")
 }
 
+// BAJO_CONTROL: empezada y encarrilada, no hace falta mirarla cada día (no
+// dispara el modo emergencia). POSPUESTA: aparcada a propósito. ARCHIVADA:
+// cerrada y fuera de todas las vistas salvo su columna del Kanban.
 enum EstadoTarea {
   POR_HACER
   EN_PROCESO
+  BAJO_CONTROL
+  POSPUESTA
   HECHA
+  ARCHIVADA
 }
 
 enum Recurrencia {
@@ -84,6 +109,7 @@ enum Recurrencia {
 enum Ambito {
   PERSONAL
   ESCOLAR
+  EVENTUAL
 }
 
 // Solo relevante cuando Tarea.ambito = ESCOLAR; no se fuerza con una
@@ -115,7 +141,17 @@ model Tarea {
   ambito                Ambito                  @default(PERSONAL)
   tipoEscolar           TipoEscolar?
   usuarioId             String
-  usuario               Usuario                 @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario               Usuario                 @relation("TareaPropietario", fields: [usuarioId], references: [id], onDelete: Cascade)
+  // Revisión familiar: un responsable vinculado revisa la tarea cuando el
+  // propietario la marca como hecha (PENDIENTE) y la aprueba o la devuelve
+  // con un comentario. creadaPorId: el responsable que la asignó, si la creó
+  // él desde su cuenta.
+  revisorId             String?
+  revisor               Usuario?                @relation("TareaRevisor", fields: [revisorId], references: [id], onDelete: SetNull)
+  estadoRevision        EstadoRevision?
+  comentarioRevision    String?
+  creadaPorId           String?
+  creadaPor             Usuario?                @relation("TareaCreadaPor", fields: [creadaPorId], references: [id], onDelete: SetNull)
   objetivoId            String?
   objetivo              Objetivo?               @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
   sesionesPomodoro      SesionPomodoro[]
@@ -127,6 +163,7 @@ model Tarea {
   // se conserva, solo pierde el enlace.
   asignaturaHorarioId   String?
   asignaturaHorario     AsignaturaHorario?      @relation(fields: [asignaturaHorarioId], references: [id], onDelete: SetNull)
+  avisos                Aviso[]
   creadoEn              DateTime                @default(now())
   actualizadoEn         DateTime                @updatedAt
 
@@ -356,4 +393,97 @@ model SesionClase {
 
   @@unique([franjaId, diaSemana])
   @@map("sesiones_clase")
+}
+
+enum TipoRecordatorio {
+  REVISION_SEMANAL
+  ENTREGA
+  VACACIONES
+}
+
+enum TipoAviso {
+  REVISION_SEMANAL
+  ENTREGA
+  VACACIONES
+  EMERGENCIA
+  REVISION_SOLICITADA
+  REVISION_RESUELTA
+}
+
+enum EstadoRevision {
+  PENDIENTE
+  APROBADA
+  DEVUELTA
+}
+
+model VinculoFamiliar {
+  id            String   @id @default(uuid())
+  responsableId String
+  responsable   Usuario  @relation("VinculoResponsable", fields: [responsableId], references: [id], onDelete: Cascade)
+  supervisadoId String
+  supervisado   Usuario  @relation("VinculoSupervisado", fields: [supervisadoId], references: [id], onDelete: Cascade)
+  creadoEn      DateTime @default(now())
+
+  @@unique([responsableId, supervisadoId])
+  @@map("vinculos_familiares")
+}
+
+// Alarma configurada por el usuario. Cada tipo usa solo sus campos:
+// REVISION_SEMANAL (diaSemana 0=domingo..6 + hora "HH:mm"), ENTREGA
+// (horasAntes de la fecha límite, opcionalmente solo tareas escolares) y
+// VACACIONES (diasAntes del inicio de un periodo no lectivo).
+model Recordatorio {
+  id            String           @id @default(uuid())
+  tipo          TipoRecordatorio
+  activo        Boolean          @default(true)
+  diaSemana     Int?
+  hora          String?
+  horasAntes    Int?
+  diasAntes     Int?
+  soloEscolar   Boolean          @default(false)
+  porCorreo     Boolean          @default(false)
+  usuarioId     String
+  usuario       Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  creadoEn      DateTime         @default(now())
+  actualizadoEn DateTime         @updatedAt
+
+  @@map("recordatorios")
+}
+
+// Aviso ya generado por el proceso programado. "clave" evita repetirlo (p. ej.
+// "entrega:<recordatorio>:<tarea>:<fecha límite>"). El texto visible lo
+// compone el frontend a partir de tipo + datos (traducido); mensajeIa es un
+// texto opcional redactado por Ollama, solo en castellano.
+model Aviso {
+  id              String    @id @default(uuid())
+  tipo            TipoAviso
+  clave           String
+  datos           Json
+  mensajeIa       String?
+  mostradoEn      DateTime?
+  leidoEn         DateTime?
+  correoEnviadoEn DateTime?
+  usuarioId       String
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tareaId         String?
+  tarea           Tarea?    @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+  creadoEn        DateTime  @default(now())
+
+  @@unique([usuarioId, clave])
+  @@index([usuarioId, creadoEn])
+  @@map("avisos")
+}
+
+// Días no lectivos que el calendario precargado no conoce (fiestas locales,
+// días de libre disposición del centro). Fechas "YYYY-MM-DD" sin zona horaria.
+model DiaNoLectivoPropio {
+  id        String   @id @default(uuid())
+  nombre    String
+  inicio    String
+  fin       String
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  creadoEn  DateTime @default(now())
+
+  @@map("dias_no_lectivos_propios")
 }

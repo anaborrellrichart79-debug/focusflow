@@ -16,7 +16,7 @@ function obtenerTemaInicial(): Tema {
 
 function obtenerAmbitoInicial(): AmbitoActivo {
   const guardado = localStorage.getItem(CLAVE_AMBITO_LOCALSTORAGE);
-  if (guardado === 'PERSONAL' || guardado === 'ESCOLAR') return guardado;
+  if (guardado === 'PERSONAL' || guardado === 'ESCOLAR' || guardado === 'EVENTUAL') return guardado;
   return 'TODOS';
 }
 

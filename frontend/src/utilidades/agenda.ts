@@ -1,5 +1,7 @@
 import type { Horario } from '@/servicios/horarios';
+import type { CalendarioEscolar } from '@/servicios/recordatorios';
 import type { Tarea } from '@/servicios/tareas';
+import { esDiaNoLectivo } from './avisos';
 import { obtenerSoloFecha, obtenerSoloHora, tieneHoraInicio } from './fechas';
 
 // Todo el cálculo de días/semanas/meses de la Agenda se hace en UTC, no en
@@ -77,8 +79,14 @@ export interface ClaseAgenda {
 // Clases del horario activo que caen en `fecha` (lunes a viernes; los fines
 // de semana no hay). El horario se repite igual todas las semanas: no sabe de
 // festivos ni vacaciones.
-export function clasesDelDia(horario: Horario | null, fecha: Date): ClaseAgenda[] {
-  if (!horario) return [];
+// Con el calendario escolar, los días no lectivos (vacaciones, festivos, fuera
+// del curso) no tienen clases.
+export function clasesDelDia(
+  horario: Horario | null,
+  fecha: Date,
+  calendario: CalendarioEscolar | null = null,
+): ClaseAgenda[] {
+  if (!horario || esDiaNoLectivo(calendario, fecha)) return [];
   const diaSemana = fecha.getUTCDay();
   if (diaSemana < 1 || diaSemana > 5) return [];
 

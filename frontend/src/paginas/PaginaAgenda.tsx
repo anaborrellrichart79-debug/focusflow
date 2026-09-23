@@ -33,6 +33,7 @@ export function PaginaAgenda() {
   const modoEscolar = usarSelector((estado) => estado.sesion.usuario?.modoEscolarActivo ?? false);
   const horarioActivo = usarSelector((estado) => estado.horario.activo);
   const horario = modoEscolar && ambito !== 'PERSONAL' ? horarioActivo : null;
+  const calendario = usarSelector((estado) => estado.recordatorios.calendario);
   const idiomaIcu = intl.locale;
 
   const [modo, setModo] = useState<ModoVista>('semana');
@@ -90,8 +91,12 @@ export function PaginaAgenda() {
   }
 
   const elementosDia = useMemo(
-    () => combinarDia(tareasDelDia(tareas, fechaReferencia), clasesDelDia(horario, fechaReferencia)),
-    [tareas, horario, fechaReferencia],
+    () =>
+      combinarDia(
+        tareasDelDia(tareas, fechaReferencia),
+        clasesDelDia(horario, fechaReferencia, calendario),
+      ),
+    [tareas, horario, fechaReferencia, calendario],
   );
 
   function renderizarClase(clase: ClaseAgenda, compacta: boolean) {
@@ -197,7 +202,10 @@ export function PaginaAgenda() {
       {modo === 'semana' && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-7">
           {diasSemana.map((dia) => {
-            const elementosDelDia = combinarDia(tareasDelDia(tareas, dia), clasesDelDia(horario, dia));
+            const elementosDelDia = combinarDia(
+              tareasDelDia(tareas, dia),
+              clasesDelDia(horario, dia, calendario),
+            );
             const esHoy = dia.getTime() === alInicioDelDiaUtc(new Date()).getTime();
             return (
               <Card key={dia.toISOString()} className={esHoy ? 'border-primary' : undefined}>

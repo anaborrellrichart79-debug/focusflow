@@ -9,6 +9,7 @@ import {
   seleccionarHistorialPomodoroDelAmbito,
   seleccionarObjetivosDelAmbito,
   seleccionarTareasDelAmbito,
+  seleccionarTareasDelAmbitoConArchivadas,
 } from './selectores';
 
 function tarea(id: string, ambito: Ambito) {
@@ -85,5 +86,40 @@ describe('selectores de ámbito', () => {
     expect(seleccionarTareasDelAmbito(estado)).toHaveLength(2);
     expect(seleccionarObjetivosDelAmbito(estado)).toHaveLength(2);
     expect(ambitoParaNuevoElemento(estado)).toBeUndefined();
+  });
+
+  it('las archivadas salen de todas las vistas salvo del Kanban', () => {
+    const estado = crearTiendaDePrueba({
+      sesion: SESION_AUTENTICADA,
+      tareas: {
+        lista: [
+          { ...tarea('abierta', 'PERSONAL'), estado: 'POR_HACER' },
+          { ...tarea('archivada', 'PERSONAL'), estado: 'ARCHIVADA' },
+        ],
+        cargando: false,
+        error: null,
+      },
+    }).getState();
+
+    expect(seleccionarTareasDelAmbito(estado).map((t) => t.id)).toEqual(['abierta']);
+    expect(seleccionarTareasDelAmbitoConArchivadas(estado).map((t) => t.id)).toEqual([
+      'abierta',
+      'archivada',
+    ]);
+  });
+
+  it('"Eventual" filtra también sin el modo escolar', () => {
+    const estado = crearTiendaDePrueba({
+      sesion: SESION_AUTENTICADA,
+      interfaz: { idioma: 'es', tema: 'claro', ambitoActivo: 'EVENTUAL' },
+      tareas: {
+        lista: [tarea('personal', 'PERSONAL'), tarea('boda', 'EVENTUAL')],
+        cargando: false,
+        error: null,
+      },
+    }).getState();
+
+    expect(seleccionarTareasDelAmbito(estado).map((t) => t.id)).toEqual(['boda']);
+    expect(ambitoParaNuevoElemento(estado)).toBe('EVENTUAL');
   });
 });

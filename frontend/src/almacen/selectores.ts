@@ -5,17 +5,27 @@ import type { EstadoRaiz } from './store';
 // el resto de vistas: el backend siempre devuelve todas las tareas y objetivos
 // del usuario y cada página se queda solo con los del ámbito activo.
 
-// Con el modo escolar desactivado (Ajustes) no hay selector de ámbito a la
-// vista, así que se ignora el ámbito guardado y se muestra todo: si no, alguien
-// que lo dejó en "Escolar" y luego apagó el modo vería listas a medias sin
-// saber por qué.
+// Con el modo escolar desactivado (Ajustes) el selector no ofrece "Escolar",
+// así que se ignora ese ámbito si quedó guardado y se muestra todo: si no,
+// alguien que lo dejó en "Escolar" y luego apagó el modo vería listas a
+// medias sin saber por qué.
 export const seleccionarAmbitoActivo = (estado: EstadoRaiz) =>
-  estado.sesion.usuario?.modoEscolarActivo ? estado.interfaz.ambitoActivo : 'TODOS';
+  estado.interfaz.ambitoActivo === 'ESCOLAR' && !estado.sesion.usuario?.modoEscolarActivo
+    ? 'TODOS'
+    : estado.interfaz.ambitoActivo;
 
-export const seleccionarTareasDelAmbito = createSelector(
+// Con archivadas: solo para el Kanban, que tiene su columna.
+export const seleccionarTareasDelAmbitoConArchivadas = createSelector(
   [(estado: EstadoRaiz) => estado.tareas.lista, seleccionarAmbitoActivo],
   (tareas, ambito) =>
     ambito === 'TODOS' ? tareas : tareas.filter((tarea) => tarea.ambito === ambito),
+);
+
+// Las tareas archivadas están cerradas: desaparecen de todas las demás vistas
+// (Agenda, Eisenhower, Revisión, Estadísticas, Pomodoro...).
+export const seleccionarTareasDelAmbito = createSelector(
+  [seleccionarTareasDelAmbitoConArchivadas],
+  (tareas) => tareas.filter((tarea) => tarea.estado !== 'ARCHIVADA'),
 );
 
 export const seleccionarObjetivosDelAmbito = createSelector(

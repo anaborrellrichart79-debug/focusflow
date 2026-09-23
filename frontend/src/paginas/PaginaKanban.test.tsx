@@ -51,10 +51,27 @@ describe('PaginaKanban', () => {
     });
 
     expect(obtenerColumna('Por hacer').getByText('Por hacer 1')).toBeInTheDocument();
-    expect(obtenerColumna('En proceso').getByText('En proceso 1')).toBeInTheDocument();
+    expect(obtenerColumna('En progreso').getByText('En proceso 1')).toBeInTheDocument();
     expect(obtenerColumna('Hecha').getByText('Hecha 1')).toBeInTheDocument();
 
     expect(obtenerColumna('Por hacer').queryByText('En proceso 1')).not.toBeInTheDocument();
+  });
+
+  it('tiene una columna por estado, y las archivadas solo aparecen en la suya', () => {
+    const tareas = [
+      crearTareaFalsa({ id: 'a', titulo: 'Encarrilada', estado: 'BAJO_CONTROL' }),
+      crearTareaFalsa({ id: 'b', titulo: 'Aparcada', estado: 'POSPUESTA' }),
+      crearTareaFalsa({ id: 'c', titulo: 'Vieja', estado: 'ARCHIVADA' }),
+    ];
+
+    renderizarPagina(<PaginaKanban />, {
+      estadoPrecargado: { tareas: { lista: tareas, cargando: false, error: null } },
+    });
+
+    expect(obtenerColumna('Bajo control').getByText('Encarrilada')).toBeInTheDocument();
+    expect(obtenerColumna('Pospuesta').getByText('Aparcada')).toBeInTheDocument();
+    expect(obtenerColumna('Archivada').getByText('Vieja')).toBeInTheDocument();
+    expect(screen.getAllByText('Vieja')).toHaveLength(1);
   });
 
   it('en la primera columna, el botón de mover a la anterior está deshabilitado', () => {

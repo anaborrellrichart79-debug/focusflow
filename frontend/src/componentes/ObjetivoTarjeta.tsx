@@ -17,7 +17,9 @@ export function ObjetivoTarjeta({ objetivo }: { objetivo: Objetivo }) {
   const intl = useIntl();
   const despachar = usarDespachador();
   const tareas = usarSelector((estado) =>
-    estado.tareas.lista.filter((tarea) => tarea.objetivoId === objetivo.id),
+    estado.tareas.lista.filter(
+      (tarea) => tarea.objetivoId === objetivo.id && tarea.estado !== 'ARCHIVADA',
+    ),
   );
   const [tituloTarea, setTituloTarea] = useState('');
   const [fechaLimiteTarea, setFechaLimiteTarea] = useState('');

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { crearHorarioFalso } from '@/pruebas/horarioFalso';
+import type { CalendarioEscolar } from '@/servicios/recordatorios';
 import type { Tarea } from '@/servicios/tareas';
 import {
   clasesDelDia,
@@ -106,6 +107,23 @@ describe('utilidades/agenda', () => {
         },
       ]);
       expect(clasesDelDia(crearHorarioFalso(), martes)).toEqual([]);
+    });
+
+    it('no hay clases en un día no lectivo ni fuera del curso escolar', () => {
+      const calendario: CalendarioEscolar = {
+        curso: '2025-2026',
+        comunidad: 'COMUNITAT_VALENCIANA',
+        inicioClases: '2025-09-08',
+        finClases: '2026-06-19',
+        periodos: [],
+        propios: [{ id: 'p-1', nombre: 'Fiesta local', inicio: '2026-06-15', fin: '2026-06-15' }],
+      };
+
+      expect(clasesDelDia(crearHorarioFalso(), lunes, calendario)).toEqual([]);
+      expect(clasesDelDia(crearHorarioFalso(), lunes, { ...calendario, propios: [] })).toHaveLength(1);
+      expect(
+        clasesDelDia(crearHorarioFalso(), lunes, { ...calendario, propios: [], finClases: '2026-06-12' }),
+      ).toEqual([]);
     });
 
     it('no hay clases en fin de semana ni sin horario', () => {

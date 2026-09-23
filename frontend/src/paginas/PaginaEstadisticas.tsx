@@ -13,17 +13,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { MapaActividad } from '@/componentes/MapaActividad';
-import type { EstadoTarea } from '@/servicios/tareas';
+import { ESTADOS_SIN_ARCHIVADA } from '@/utilidades/estados';
 import { calcularRachaDias } from '@/utilidades/rachas';
 import { construirFilaCsv, descargarCsv } from '@/utilidades/exportar';
 
 const MILISEGUNDOS_POR_DIA = 24 * 60 * 60 * 1000;
 
-const COLUMNAS_ESTADO: { estado: EstadoTarea; clave: string; color: string }[] = [
-  { estado: 'POR_HACER', clave: 'kanban.columna.porHacer', color: 'var(--chart-1)' },
-  { estado: 'EN_PROCESO', clave: 'kanban.columna.enProceso', color: 'var(--chart-2)' },
-  { estado: 'HECHA', clave: 'kanban.columna.hecha', color: 'var(--chart-3)' },
-];
+// Las archivadas no llegan aquí (seleccionarTareasDelAmbito las excluye).
+const COLUMNAS_ESTADO = ESTADOS_SIN_ARCHIVADA;
 
 export function PaginaEstadisticas() {
   const intl = useIntl();

@@ -15,3 +15,13 @@ if (!window.matchMedia) {
       dispatchEvent: () => false,
     }) as unknown as MediaQueryList;
 }
+
+// jsdom tampoco implementa ResizeObserver, que la casilla de Radix usa cuando
+// está dentro de un <form> (para medir su input oculto).
+if (!window.ResizeObserver) {
+  window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}

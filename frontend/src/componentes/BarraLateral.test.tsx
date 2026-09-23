@@ -28,10 +28,12 @@ describe('BarraLateral', () => {
     expect(screen.getByRole('link', { name: 'Inicio' })).not.toHaveAttribute('aria-current');
   });
 
-  it('sin el modo escolar, no muestra el selector de ámbito ni el planificador', () => {
+  it('sin el modo escolar, el selector de ámbito no ofrece "Escolar" y no hay planificador', () => {
     renderizarPagina(<BarraLateral />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
 
-    expect(screen.queryByRole('group', { name: 'Ámbito' })).not.toBeInTheDocument();
+    const selector = within(screen.getByRole('group', { name: 'Ámbito' }));
+    expect(selector.getByRole('button', { name: 'Eventual' })).toBeInTheDocument();
+    expect(selector.queryByRole('button', { name: 'Escolar' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Planificador escolar' })).not.toBeInTheDocument();
     expect(screen.getByText('Ana')).toBeInTheDocument();
   });

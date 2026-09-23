@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoTarea, Recurrencia } from '../generated/prisma/enums.js';
+import { EstadoRevision, EstadoTarea, Recurrencia } from '../generated/prisma/enums.js';
 import type { TareaModel } from '../generated/prisma/models.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import type { ActualizarTareaDto } from './dto/actualizar-tarea.dto.js';
@@ -12,6 +12,8 @@ const INCLUIR_RELACIONES = {
   asignaturaHorario: {
     select: { id: true, color: true, asignatura: { select: { nombre: true } } },
   },
+  revisor: { select: { id: true, nombre: true, correo: true } },
+  creadaPor: { select: { id: true, nombre: true, correo: true } },
 };
 
 @Injectable()
@@ -75,17 +77,26 @@ export class TareasService {
     if (datos.asignaturaHorarioId) {
       await this.verificarPropiedadAsignaturaHorario(usuarioId, datos.asignaturaHorarioId);
     }
+    if (datos.revisorId) {
+      await this.verificarVinculoRevisor(usuarioId, datos.revisorId);
+    }
 
     const { etiquetas, ...resto } = datos;
+    const revision = this.calcularRevision(tareaOriginal, datos);
 
     const tareaActualizada = await this.prisma.tarea.update({
       where: { id },
       data: {
         ...resto,
+        ...revision,
         etiquetas: this.construirEtiquetasActualizar(usuarioId, etiquetas),
       },
       include: INCLUIR_RELACIONES,
     });
+
+    if (revision.estadoRevision === EstadoRevision.PENDIENTE && tareaActualizada.revisorId) {
+      await this.avisarRevisor(usuarioId, tareaActualizada.revisorId, tareaActualizada);
+    }
 
     if (
       datos.estado === EstadoTarea.HECHA &&
@@ -101,6 +112,60 @@ export class TareasService {
   async eliminar(usuarioId: string, id: string) {
     await this.obtenerUna(usuarioId, id);
     await this.prisma.tarea.delete({ where: { id } });
+  }
+
+  // Cambios en la revisión familiar que provoca esta actualización:
+  // - cambiar de revisor borra la revisión anterior;
+  // - marcarla como hecha con revisor la deja pendiente de revisión;
+  // - sacarla de "hecha" mientras esperaba revisión cancela la petición.
+  private calcularRevision(tareaOriginal: TareaModel, datos: ActualizarTareaDto) {
+    const revisor = datos.revisorId !== undefined ? datos.revisorId : tareaOriginal.revisorId;
+    const pasaAHecha =
+      datos.estado === EstadoTarea.HECHA && tareaOriginal.estado !== EstadoTarea.HECHA;
+
+    if (revisor && pasaAHecha) {
+      return { estadoRevision: EstadoRevision.PENDIENTE, comentarioRevision: null };
+    }
+    if (datos.revisorId !== undefined && datos.revisorId !== tareaOriginal.revisorId) {
+      return { estadoRevision: null, comentarioRevision: null };
+    }
+    if (
+      datos.estado &&
+      datos.estado !== EstadoTarea.HECHA &&
+      tareaOriginal.estadoRevision === EstadoRevision.PENDIENTE
+    ) {
+      return { estadoRevision: null };
+    }
+    return {};
+  }
+
+  private async avisarRevisor(
+    usuarioId: string,
+    revisorId: string,
+    tarea: { id: string; titulo: string },
+  ) {
+    const propietario = await this.prisma.usuario.findUniqueOrThrow({
+      where: { id: usuarioId },
+      select: { nombre: true, correo: true },
+    });
+    await this.prisma.aviso.create({
+      data: {
+        usuarioId: revisorId,
+        tareaId: tarea.id,
+        tipo: 'REVISION_SOLICITADA',
+        clave: `revision-solicitada:${tarea.id}:${Date.now()}`,
+        datos: { titulo: tarea.titulo, nombre: propietario.nombre ?? propietario.correo },
+      },
+    });
+  }
+
+  private async verificarVinculoRevisor(usuarioId: string, revisorId: string) {
+    const vinculo = await this.prisma.vinculoFamiliar.findUnique({
+      where: { responsableId_supervisadoId: { responsableId: revisorId, supervisadoId: usuarioId } },
+    });
+    if (!vinculo) {
+      throw new NotFoundException('Esa persona no está vinculada contigo');
+    }
   }
 
   private construirEtiquetasCrear(usuarioId: string, nombres: string[] | undefined) {

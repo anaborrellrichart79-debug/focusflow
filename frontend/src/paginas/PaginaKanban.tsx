@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
-import { seleccionarObjetivosDelAmbito, seleccionarTareasDelAmbito } from '@/almacen/selectores';
+import {
+  seleccionarObjetivosDelAmbito,
+  seleccionarTareasDelAmbitoConArchivadas,
+} from '@/almacen/selectores';
 import { cargarEtiquetas } from '@/almacen/etiquetasSlice';
 import { cargarObjetivos } from '@/almacen/objetivosSlice';
 import {
@@ -18,17 +21,13 @@ import { DetalleTarea } from '@/componentes/DetalleTarea';
 import { EtiquetaFechaLimite } from '@/componentes/EtiquetaFechaLimite';
 import { IndicadoresTarea } from '@/componentes/IndicadoresTarea';
 import type { EstadoTarea } from '@/servicios/tareas';
-
-const COLUMNAS: { estado: EstadoTarea; clave: string; color: string }[] = [
-  { estado: 'POR_HACER', clave: 'kanban.columna.porHacer', color: 'var(--chart-1)' },
-  { estado: 'EN_PROCESO', clave: 'kanban.columna.enProceso', color: 'var(--chart-2)' },
-  { estado: 'HECHA', clave: 'kanban.columna.hecha', color: 'var(--chart-3)' },
-];
+import { ESTADOS_TAREA as COLUMNAS } from '@/utilidades/estados';
 
 export function PaginaKanban() {
   const intl = useIntl();
   const despachar = usarDespachador();
-  const tareas = usarSelector(seleccionarTareasDelAmbito);
+  // El Kanban es la única vista que enseña las archivadas (en su columna).
+  const tareas = usarSelector(seleccionarTareasDelAmbitoConArchivadas);
   const objetivos = usarSelector(seleccionarObjetivosDelAmbito);
   const [tituloNuevaTarea, setTituloNuevaTarea] = useState('');
   const [fechaLimiteNuevaTarea, setFechaLimiteNuevaTarea] = useState('');
@@ -66,7 +65,7 @@ export function PaginaKanban() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-10">
+    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">
           {intl.formatMessage({ id: 'kanban.titulo' })}
@@ -92,7 +91,7 @@ export function PaginaKanban() {
         </Button>
       </form>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
         {COLUMNAS.map((columna, indiceColumna) => (
           <Card key={columna.estado} className="flex flex-col">
             <CardHeader>

@@ -5,11 +5,13 @@ import { IntlProvider } from 'react-intl';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import etiquetasReducer from '@/almacen/etiquetasSlice';
+import familiaReducer from '@/almacen/familiaSlice';
 import googleReducer from '@/almacen/googleSlice';
 import horarioReducer from '@/almacen/horarioSlice';
 import interfazReducer from '@/almacen/interfazSlice';
 import objetivosReducer from '@/almacen/objetivosSlice';
 import pomodoroReducer from '@/almacen/pomodoroSlice';
+import recordatoriosReducer from '@/almacen/recordatoriosSlice';
 import sesionReducer from '@/almacen/sesionSlice';
 import type { EstadoRaiz } from '@/almacen/store';
 import tareasReducer from '@/almacen/tareasSlice';
@@ -21,9 +23,11 @@ const reductorRaiz = {
   objetivos: objetivosReducer,
   tareas: tareasReducer,
   etiquetas: etiquetasReducer,
+  familia: familiaReducer,
   pomodoro: pomodoroReducer,
   google: googleReducer,
   horario: horarioReducer,
+  recordatorios: recordatoriosReducer,
 };
 
 export function crearTiendaDePrueba(estadoPrecargado?: Partial<EstadoRaiz>) {

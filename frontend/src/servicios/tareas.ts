@@ -2,9 +2,22 @@ import type { Etiqueta } from './etiquetas';
 import { peticionApi } from './api';
 import type { Subtarea } from './subtareas';
 
-export type EstadoTarea = 'POR_HACER' | 'EN_PROCESO' | 'HECHA';
+export type EstadoTarea =
+  | 'POR_HACER'
+  | 'EN_PROCESO'
+  | 'BAJO_CONTROL'
+  | 'POSPUESTA'
+  | 'HECHA'
+  | 'ARCHIVADA';
 export type Recurrencia = 'NINGUNA' | 'DIARIA' | 'SEMANAL';
-export type Ambito = 'PERSONAL' | 'ESCOLAR';
+export type Ambito = 'PERSONAL' | 'ESCOLAR' | 'EVENTUAL';
+export type EstadoRevision = 'PENDIENTE' | 'APROBADA' | 'DEVUELTA';
+
+export interface Persona {
+  id: string;
+  nombre: string | null;
+  correo: string;
+}
 export type TipoEscolar = 'EXAMEN' | 'TRABAJO' | 'PRESENTACION';
 
 export interface Tarea {
@@ -26,6 +39,13 @@ export interface Tarea {
   // el backend siempre las devuelve (null si no hay).
   asignaturaHorarioId?: string | null;
   asignaturaHorario?: { id: string; color: string; asignatura: { nombre: string } } | null;
+  // Revisión familiar (ver PaginaFamilia). Opcionales por la misma razón.
+  revisorId?: string | null;
+  revisor?: Persona | null;
+  estadoRevision?: EstadoRevision | null;
+  comentarioRevision?: string | null;
+  creadaPorId?: string | null;
+  creadaPor?: Persona | null;
   objetivoId: string | null;
   usuarioId: string;
   subtareas: Subtarea[];
@@ -83,6 +103,7 @@ export function actualizarTarea(
     ambito: Ambito;
     tipoEscolar: TipoEscolar | null;
     asignaturaHorarioId: string | null;
+    revisorId: string | null;
   }>,
 ) {
   return peticionApi<Tarea>(`/tareas/${id}`, {

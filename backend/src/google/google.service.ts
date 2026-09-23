@@ -181,7 +181,8 @@ export class GoogleService {
 
     for (const tarea of tareas) {
       try {
-        if (tarea.estado === 'HECHA') {
+        // Una tarea archivada tampoco debe seguir ocupando el calendario.
+        if (tarea.estado === 'HECHA' || tarea.estado === 'ARCHIVADA') {
           if (tarea.eventoGoogle) {
             await calendar.events
               .delete({ calendarId: 'primary', eventId: tarea.eventoGoogle.googleEventId })

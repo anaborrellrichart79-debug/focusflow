@@ -10,6 +10,8 @@ const INCLUIR_RELACIONES = {
   asignaturaHorario: {
     select: { id: true, color: true, asignatura: { select: { nombre: true } } },
   },
+  revisor: { select: { id: true, nombre: true, correo: true } },
+  creadaPor: { select: { id: true, nombre: true, correo: true } },
 };
 
 describe('TareasService', () => {
@@ -28,6 +30,9 @@ describe('TareasService', () => {
     asignaturaHorario: {
       findFirst: vi.fn(),
     },
+    vinculoFamiliar: { findUnique: vi.fn() },
+    usuario: { findUniqueOrThrow: vi.fn() },
+    aviso: { create: vi.fn() },
   };
 
   beforeEach(async () => {
@@ -404,5 +409,104 @@ describe('TareasService', () => {
       servicio.crear('usuario-1', { titulo: 'Examen', asignaturaHorarioId: 'ah-ajena' }),
     ).rejects.toThrow(NotFoundException);
     expect(prismaFalso.tarea.create).not.toHaveBeenCalled();
+  });
+
+  describe('revisión familiar', () => {
+    const tareaConRevisor = {
+      id: 'tarea-1',
+      titulo: 'Maqueta del sistema solar',
+      estado: 'EN_PROCESO',
+      recurrencia: 'NINGUNA',
+      revisorId: 'mama',
+      estadoRevision: null,
+    };
+
+    beforeEach(() => {
+      prismaFalso.usuario.findUniqueOrThrow.mockResolvedValue({ nombre: 'Lucía', correo: 'l@example.com' });
+      prismaFalso.tarea.update.mockImplementation(async ({ data }: { data: object }) => ({
+        ...tareaConRevisor,
+        ...data,
+      }));
+    });
+
+    it('marcarla como hecha con revisor la deja pendiente y avisa al revisor', async () => {
+      prismaFalso.tarea.findFirst.mockResolvedValue(tareaConRevisor);
+
+      await servicio.actualizar('hija', 'tarea-1', { estado: 'HECHA' });
+
+      expect(prismaFalso.tarea.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            estado: 'HECHA',
+            estadoRevision: 'PENDIENTE',
+            comentarioRevision: null,
+          }),
+        }),
+      );
+      expect(prismaFalso.aviso.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          usuarioId: 'mama',
+          tareaId: 'tarea-1',
+          tipo: 'REVISION_SOLICITADA',
+          datos: { titulo: 'Maqueta del sistema solar', nombre: 'Lucía' },
+        }),
+      });
+    });
+
+    it('sin revisor, marcarla como hecha no pide revisión', async () => {
+      prismaFalso.tarea.findFirst.mockResolvedValue({ ...tareaConRevisor, revisorId: null });
+
+      await servicio.actualizar('hija', 'tarea-1', { estado: 'HECHA' });
+
+      expect(prismaFalso.tarea.update.mock.calls[0][0].data.estadoRevision).toBeUndefined();
+      expect(prismaFalso.aviso.create).not.toHaveBeenCalled();
+    });
+
+    it('solo deja elegir como revisor a alguien vinculado', async () => {
+      prismaFalso.tarea.findFirst.mockResolvedValue({ ...tareaConRevisor, revisorId: null });
+      prismaFalso.vinculoFamiliar.findUnique.mockResolvedValue(null);
+
+      await expect(
+        servicio.actualizar('hija', 'tarea-1', { revisorId: '6a1f2c3d-0000-4000-8000-000000000000' }),
+      ).rejects.toThrow(NotFoundException);
+      expect(prismaFalso.vinculoFamiliar.findUnique).toHaveBeenCalledWith({
+        where: {
+          responsableId_supervisadoId: {
+            responsableId: '6a1f2c3d-0000-4000-8000-000000000000',
+            supervisadoId: 'hija',
+          },
+        },
+      });
+      expect(prismaFalso.tarea.update).not.toHaveBeenCalled();
+    });
+
+    it('cambiar de revisor borra la revisión anterior', async () => {
+      prismaFalso.tarea.findFirst.mockResolvedValue({
+        ...tareaConRevisor,
+        estado: 'HECHA',
+        estadoRevision: 'APROBADA',
+      });
+
+      await servicio.actualizar('hija', 'tarea-1', { revisorId: null });
+
+      expect(prismaFalso.tarea.update.mock.calls[0][0].data).toMatchObject({
+        revisorId: null,
+        estadoRevision: null,
+        comentarioRevision: null,
+      });
+    });
+
+    it('sacarla de "hecha" mientras esperaba revisión cancela la petición', async () => {
+      prismaFalso.tarea.findFirst.mockResolvedValue({
+        ...tareaConRevisor,
+        estado: 'HECHA',
+        estadoRevision: 'PENDIENTE',
+      });
+
+      await servicio.actualizar('hija', 'tarea-1', { estado: 'EN_PROCESO' });
+
+      expect(prismaFalso.tarea.update.mock.calls[0][0].data).toMatchObject({ estadoRevision: null });
+      expect(prismaFalso.aviso.create).not.toHaveBeenCalled();
+    });
   });
 });

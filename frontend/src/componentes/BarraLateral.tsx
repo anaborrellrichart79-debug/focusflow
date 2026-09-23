@@ -1,8 +1,10 @@
 import {
+  BellRing,
   CalendarClock,
   CalendarDays,
   ChartColumn,
   ClipboardCheck,
+  UsersRound,
   Columns3,
   GraduationCap,
   Grid2x2,
@@ -61,6 +63,8 @@ const SECCIONES: { clave: string; enlaces: EnlaceNavegacion[] }[] = [
     clave: 'nav.seccion.revisar',
     enlaces: [
       { ruta: '/revision', clave: 'nav.revision', icono: ClipboardCheck },
+      { ruta: '/recordatorios', clave: 'nav.recordatorios', icono: BellRing },
+      { ruta: '/familia', clave: 'nav.familia', icono: UsersRound },
       { ruta: '/estadisticas', clave: 'nav.estadisticas', icono: ChartColumn },
     ],
   },
@@ -81,6 +85,9 @@ export function BarraLateral({ alNavegar }: { alNavegar?: () => void }) {
   const despachar = usarDespachador();
   const usuario = usarSelector((estado) => estado.sesion.usuario);
   const modoEscolar = usuario?.modoEscolarActivo ?? false;
+  const avisosSinLeer = usarSelector(
+    (estado) => estado.recordatorios.avisos.filter((aviso) => !aviso.leidoEn).length,
+  );
 
   return (
     <div className="flex h-full flex-col gap-5 overflow-y-auto p-4">
@@ -92,7 +99,7 @@ export function BarraLateral({ alNavegar }: { alNavegar?: () => void }) {
         {intl.formatMessage({ id: 'app.titulo' })}
       </Link>
 
-      {modoEscolar && <SelectorAmbito />}
+      <SelectorAmbito />
 
       <nav aria-label={intl.formatMessage({ id: 'nav.principal' })} className="flex flex-col gap-4">
         {SECCIONES.map((seccion) => (
@@ -106,6 +113,17 @@ export function BarraLateral({ alNavegar }: { alNavegar?: () => void }) {
                 <NavLink key={ruta} to={ruta} end onClick={alNavegar} className={claseEnlace}>
                   <Icono aria-hidden className="size-4" />
                   {intl.formatMessage({ id: clave })}
+                  {ruta === '/recordatorios' && avisosSinLeer > 0 && (
+                    <span
+                      className="ml-auto rounded-full bg-destructive px-1.5 text-xs font-medium text-white"
+                      aria-label={intl.formatMessage(
+                        { id: 'nav.avisosSinLeer' },
+                        { cantidad: avisosSinLeer },
+                      )}
+                    >
+                      {avisosSinLeer}
+                    </span>
+                  )}
                 </NavLink>
               ))}
           </div>

@@ -5,6 +5,8 @@ import { cargarHistorialPomodoro } from '@/almacen/pomodoroSlice';
 import {
   cambiarAmbitoTarea,
   cambiarAsignaturaTarea,
+  cambiarEstadoTarea,
+  cambiarRevisorTarea,
   cambiarDescripcionTarea,
   cambiarEtiquetasTarea,
   cambiarFechaLimiteTarea,
@@ -21,7 +23,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Ambito, Recurrencia, Tarea, TipoEscolar } from '@/servicios/tareas';
+import type { Ambito, EstadoTarea, Recurrencia, Tarea, TipoEscolar } from '@/servicios/tareas';
+import { ESTADOS_TAREA } from '@/utilidades/estados';
 import { OPCIONES_TIPO_ESCOLAR } from '@/utilidades/planificador';
 import {
   DURACION_MINUTOS_POR_DEFECTO,
@@ -33,7 +36,11 @@ import {
 const OPCIONES_AMBITO: { valor: Ambito; clave: string }[] = [
   { valor: 'PERSONAL', clave: 'ambito.personal' },
   { valor: 'ESCOLAR', clave: 'ambito.escolar' },
+  { valor: 'EVENTUAL', clave: 'ambito.eventual' },
 ];
+
+const CLASE_SELECT =
+  'rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm transition-shadow hover:shadow-md';
 
 const OPCIONES_RECURRENCIA: { valor: Recurrencia; clave: string }[] = [
   { valor: 'NINGUNA', clave: 'tarea.recurrencia.ninguna' },
@@ -48,6 +55,7 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
   const historialPomodoro = usarSelector((estado) => estado.pomodoro.historial);
   const modoEscolar = usarSelector((estado) => estado.sesion.usuario?.modoEscolarActivo ?? false);
   const asignaturasHorario = usarSelector((estado) => estado.horario.activo?.asignaturas);
+  const responsables = usarSelector((estado) => estado.familia.datos?.responsables ?? []);
   const idDatalist = useId();
 
   // Asignaturas del horario activo; si la tarea tiene una de otro horario
@@ -176,6 +184,25 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
 
           <div className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5 text-sm">
+              {intl.formatMessage({ id: 'tarea.detalle.estado' })}
+              <select
+                value={tarea.estado}
+                onChange={(evento) =>
+                  despachar(
+                    cambiarEstadoTarea({ id: tarea.id, estado: evento.target.value as EstadoTarea }),
+                  )
+                }
+                className={CLASE_SELECT}
+              >
+                {ESTADOS_TAREA.map((opcion) => (
+                  <option key={opcion.estado} value={opcion.estado}>
+                    {intl.formatMessage({ id: opcion.clave })}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-sm">
               {intl.formatMessage({ id: 'tarea.detalle.descripcion' })}
               <Textarea
                 value={descripcion}
@@ -222,26 +249,28 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
               )}
             </div>
 
-            {modoEscolar && (
-              <label className="flex flex-col gap-1.5 text-sm">
-                {intl.formatMessage({ id: 'tarea.detalle.ambito' })}
-                <select
-                  value={tarea.ambito}
-                  onChange={(evento) =>
-                    despachar(
-                      cambiarAmbitoTarea({ id: tarea.id, ambito: evento.target.value as Ambito }),
-                    )
-                  }
-                  className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm transition-shadow hover:shadow-md"
-                >
-                  {OPCIONES_AMBITO.map((opcion) => (
-                    <option key={opcion.valor} value={opcion.valor}>
-                      {intl.formatMessage({ id: opcion.clave })}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
+            {/* "Escolar" solo con el modo escolar (o si la tarea ya lo es). */}
+            <label className="flex flex-col gap-1.5 text-sm">
+              {intl.formatMessage({ id: 'tarea.detalle.ambito' })}
+              <select
+                value={tarea.ambito}
+                onChange={(evento) =>
+                  despachar(
+                    cambiarAmbitoTarea({ id: tarea.id, ambito: evento.target.value as Ambito }),
+                  )
+                }
+                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm transition-shadow hover:shadow-md"
+              >
+                {OPCIONES_AMBITO.filter(
+                  (opcion) =>
+                    opcion.valor !== 'ESCOLAR' || modoEscolar || tarea.ambito === 'ESCOLAR',
+                ).map((opcion) => (
+                  <option key={opcion.valor} value={opcion.valor}>
+                    {intl.formatMessage({ id: opcion.clave })}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             {modoEscolar && tarea.ambito === 'ESCOLAR' && (
               <label className="flex flex-col gap-1.5 text-sm">
@@ -291,6 +320,51 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
                   ))}
                 </select>
               </label>
+            )}
+
+            {(responsables.length > 0 || tarea.revisor) && (
+              <div className="flex flex-col gap-1.5">
+                <label className="flex flex-col gap-1.5 text-sm">
+                  {intl.formatMessage({ id: 'tarea.detalle.revisor' })}
+                  <select
+                    value={tarea.revisorId ?? ''}
+                    onChange={(evento) =>
+                      despachar(
+                        cambiarRevisorTarea({ id: tarea.id, revisorId: evento.target.value || null }),
+                      )
+                    }
+                    className={CLASE_SELECT}
+                  >
+                    <option value="">{intl.formatMessage({ id: 'tarea.detalle.sinRevisor' })}</option>
+                    {responsables.map((persona) => (
+                      <option key={persona.id} value={persona.id}>
+                        {persona.nombre ?? persona.correo}
+                      </option>
+                    ))}
+                    {/* Revisor que ya no está en la lista (p. ej. vínculo recién deshecho). */}
+                    {tarea.revisor && !responsables.some((p) => p.id === tarea.revisor!.id) && (
+                      <option value={tarea.revisor.id}>
+                        {tarea.revisor.nombre ?? tarea.revisor.correo}
+                      </option>
+                    )}
+                  </select>
+                </label>
+                {tarea.revisorId && !tarea.estadoRevision && (
+                  <p className="text-xs text-muted-foreground">
+                    {intl.formatMessage({ id: 'tarea.detalle.revisorAyuda' })}
+                  </p>
+                )}
+                {tarea.estadoRevision && (
+                  <p className="text-sm">
+                    {intl.formatMessage({ id: `revision.estado.${tarea.estadoRevision}` })}
+                    {tarea.comentarioRevision && (
+                      <span className="block italic text-muted-foreground">
+                        «{tarea.comentarioRevision}»
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
             )}
 
             <label className="flex flex-col gap-1.5 text-sm">

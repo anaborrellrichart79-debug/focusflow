@@ -89,6 +89,65 @@ describe('DetalleTarea', () => {
       vi.unstubAllGlobals();
     });
 
+    it('elegir quién la revisa lo guarda con un PATCH y muestra el estado de la revisión', async () => {
+      const usuario = userEvent.setup();
+      vi.mocked(fetch).mockImplementation(async (url) => {
+        const tareaDevuelta = crearTareaFalsa({
+          revisorId: 'mama',
+          revisor: { id: 'mama', nombre: 'Mamá', correo: 'mama@example.com' },
+        });
+        return {
+          ok: true,
+          json: async () => (String(url).includes('/tareas/') ? tareaDevuelta : []),
+        } as Response;
+      });
+
+      renderizarPagina(<DetalleTarea tarea={crearTareaFalsa({})} />, {
+        estadoPrecargado: {
+          sesion: SESION_AUTENTICADA,
+          familia: {
+            datos: {
+              codigo: null,
+              supervisados: [],
+              responsables: [
+                { vinculoId: 'v-1', id: 'mama', nombre: 'Mamá', correo: 'mama@example.com' },
+              ],
+            },
+            tareasPorSupervisado: {},
+            error: null,
+          },
+        },
+      });
+      await usuario.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
+      await usuario.selectOptions(screen.getByRole('combobox', { name: 'Revisión' }), 'mama');
+
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/tareas/tarea-1',
+        expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ revisorId: 'mama' }) }),
+      );
+    });
+
+    it('una tarea devuelta enseña el comentario de quien la revisó', async () => {
+      const usuario = userEvent.setup();
+      vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
+
+      renderizarPagina(
+        <DetalleTarea
+          tarea={crearTareaFalsa({
+            revisorId: 'mama',
+            revisor: { id: 'mama', nombre: 'Mamá', correo: 'mama@example.com' },
+            estadoRevision: 'DEVUELTA',
+            comentarioRevision: 'Falta la conclusión',
+          })}
+        />,
+        { estadoPrecargado: { sesion: SESION_AUTENTICADA } },
+      );
+      await usuario.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
+
+      expect(screen.getByText(/Devuelta para corregir/)).toBeInTheDocument();
+      expect(screen.getByText('«Falta la conclusión»')).toBeInTheDocument();
+    });
+
     it('añadir un paso nuevo llama a la API de subtareas con el título escrito', async () => {
       // Al abrir el diálogo también se carga el historial de Pomodoro (para el
       // tiempo real): el mock debe distinguir esa petición de la de crear la
@@ -268,7 +327,7 @@ describe('DetalleTarea', () => {
       );
     });
 
-    it('sin el modo escolar, no muestra los campos de ámbito ni de tipo', () => {
+    it('sin el modo escolar, el ámbito no ofrece "Escolar" (salvo si la tarea ya lo es) ni hay tipo', () => {
       vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
 
       renderizarPagina(
@@ -278,7 +337,12 @@ describe('DetalleTarea', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Preparar la presentación' }));
 
       const dialogo = within(screen.getByRole('dialog'));
-      expect(dialogo.queryByRole('combobox', { name: 'Ámbito' })).toBeNull();
+      const ambito = within(dialogo.getByRole('combobox', { name: 'Ámbito' }));
+      expect(ambito.getAllByRole('option').map((opcion) => opcion.textContent)).toEqual([
+        'Personal',
+        'Escolar',
+        'Eventual',
+      ]);
       expect(dialogo.queryByRole('combobox', { name: 'Tipo' })).toBeNull();
     });
 

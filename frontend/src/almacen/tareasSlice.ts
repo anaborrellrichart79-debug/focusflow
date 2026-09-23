@@ -248,6 +248,22 @@ export const cambiarAsignaturaTarea = createAsyncThunk<
   },
 );
 
+// Responsable vinculado (ver PaginaFamilia) que revisará la tarea al marcarla
+// como hecha; null la deja sin revisor.
+export const cambiarRevisorTarea = createAsyncThunk<
+  Tarea,
+  { id: string; revisorId: string | null },
+  { state: EstadoRaiz; rejectValue: string }
+>('tareas/cambiarRevisor', async ({ id, revisorId }, { getState, rejectWithValue }) => {
+  try {
+    return await actualizarTareaApi(tokenOError(getState()), id, { revisorId });
+  } catch (error) {
+    return rejectWithValue(
+      error instanceof ErrorApi ? error.message : 'No se pudo actualizar la tarea',
+    );
+  }
+});
+
 export const cambiarTiempoEstimadoTarea = createAsyncThunk<
   Tarea,
   { id: string; tiempoEstimadoMinutos: number },
@@ -390,6 +406,7 @@ const tareasSlice = createSlice({
             cambiarTipoEscolarTarea,
             cambiarAsignaturaTarea,
             cambiarTiempoEstimadoTarea,
+            cambiarRevisorTarea,
           ].some((thunk) => thunk.fulfilled.match(accion)),
         (estado, accion) => {
           const indice = estado.lista.findIndex((tarea) => tarea.id === accion.payload.id);

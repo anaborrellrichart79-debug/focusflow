@@ -31,6 +31,7 @@ export function agruparEntregasEscolares(
         tarea.ambito === 'ESCOLAR' &&
         tarea.tipoEscolar !== null &&
         tarea.estado !== 'HECHA' &&
+        tarea.estado !== 'ARCHIVADA' &&
         (tipo === 'TODOS' || tarea.tipoEscolar === tipo),
     )
     .sort((a, b) => {
