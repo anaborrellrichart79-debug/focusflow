@@ -7,6 +7,9 @@ import { TareasService } from './tareas.service.js';
 const INCLUIR_RELACIONES = {
   subtareas: { orderBy: { creadoEn: 'asc' as const } },
   etiquetas: true,
+  asignaturaHorario: {
+    select: { id: true, color: true, asignatura: { select: { nombre: true } } },
+  },
 };
 
 describe('TareasService', () => {
@@ -20,6 +23,9 @@ describe('TareasService', () => {
       delete: vi.fn(),
     },
     objetivo: {
+      findFirst: vi.fn(),
+    },
+    asignaturaHorario: {
       findFirst: vi.fn(),
     },
   };
@@ -48,6 +54,7 @@ describe('TareasService', () => {
         duracionMinutos: undefined,
         ambito: undefined,
         tipoEscolar: undefined,
+        asignaturaHorarioId: undefined,
         usuarioId: 'usuario-1',
         etiquetas: undefined,
       },
@@ -70,6 +77,7 @@ describe('TareasService', () => {
         duracionMinutos: undefined,
         ambito: undefined,
         tipoEscolar: undefined,
+        asignaturaHorarioId: undefined,
         usuarioId: 'usuario-1',
         etiquetas: undefined,
       },
@@ -92,6 +100,7 @@ describe('TareasService', () => {
         duracionMinutos: 45,
         ambito: undefined,
         tipoEscolar: undefined,
+        asignaturaHorarioId: undefined,
         usuarioId: 'usuario-1',
         etiquetas: undefined,
       },
@@ -370,5 +379,30 @@ describe('TareasService', () => {
       include: INCLUIR_RELACIONES,
       orderBy: { creadoEn: 'desc' },
     });
+  });
+
+  it('crear una tarea con asignatura comprueba que la asignatura es de un horario del usuario', async () => {
+    prismaFalso.asignaturaHorario.findFirst.mockResolvedValue({ id: 'ah-1' });
+
+    await servicio.crear('usuario-1', { titulo: 'Examen', asignaturaHorarioId: 'ah-1' });
+
+    expect(prismaFalso.asignaturaHorario.findFirst).toHaveBeenCalledWith({
+      where: { id: 'ah-1', horario: { usuarioId: 'usuario-1' } },
+      select: { id: true },
+    });
+    expect(prismaFalso.tarea.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ asignaturaHorarioId: 'ah-1' }),
+      }),
+    );
+  });
+
+  it('crear una tarea con la asignatura de otro usuario da 404 y no la crea', async () => {
+    prismaFalso.asignaturaHorario.findFirst.mockResolvedValue(null);
+
+    await expect(
+      servicio.crear('usuario-1', { titulo: 'Examen', asignaturaHorarioId: 'ah-ajena' }),
+    ).rejects.toThrow(NotFoundException);
+    expect(prismaFalso.tarea.create).not.toHaveBeenCalled();
   });
 });

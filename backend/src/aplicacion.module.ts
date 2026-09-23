@@ -5,6 +5,7 @@ import { AplicacionService } from './aplicacion.service.js';
 import { ModuloAutenticacion } from './autenticacion/autenticacion.module.js';
 import { ModuloEtiquetas } from './etiquetas/etiquetas.module.js';
 import { ModuloGoogle } from './google/google.module.js';
+import { ModuloHorarios } from './horarios/horarios.module.js';
 import { ModuloObjetivos } from './objetivos/objetivos.module.js';
 import { ModuloPomodoro } from './pomodoro/pomodoro.module.js';
 import { ModuloPrisma } from './prisma/prisma.module.js';
@@ -24,6 +25,7 @@ import { ModuloTareas } from './tareas/tareas.module.js';
     ModuloEtiquetas,
     ModuloPomodoro,
     ModuloGoogle,
+    ModuloHorarios,
   ],
   controllers: [AplicacionController],
   providers: [AplicacionService],

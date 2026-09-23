@@ -69,4 +69,9 @@ export class CrearTareaDto {
   @IsOptional()
   @IsEnum(TipoEscolar)
   tipoEscolar?: TipoEscolar;
+
+  // Asignatura de un horario del usuario (con su color). null la quita.
+  @IsOptional()
+  @IsUUID()
+  asignaturaHorarioId?: string | null;
 }

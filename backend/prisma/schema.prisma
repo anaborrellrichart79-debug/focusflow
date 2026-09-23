@@ -22,6 +22,8 @@ model Usuario {
   sesionesPomodoro           SesionPomodoro[]
   etiquetas                  Etiqueta[]
   eventosGoogle              EventoCalendarioGoogle[]
+  horarios                   Horario[]
+  asignaturasPropias         Asignatura[]
   // Tokens de la cuenta de Google Calendar conectada (si la hay). Sin cifrar:
   // misma postura de seguridad que el resto del proyecto (JWT_SECRET en claro
   // en .env, sin cifrado adicional en la base de datos), aceptable para un
@@ -120,6 +122,11 @@ model Tarea {
   subtareas             Subtarea[]
   etiquetas             Etiqueta[]              @relation("TareaEtiquetas")
   eventoGoogle          EventoCalendarioGoogle?
+  // Asignatura (de un horario concreto, con su color) a la que pertenece una
+  // tarea escolar. SetNull: si se quita la asignatura del horario, la tarea
+  // se conserva, solo pierde el enlace.
+  asignaturaHorarioId   String?
+  asignaturaHorario     AsignaturaHorario?      @relation(fields: [asignaturaHorarioId], references: [id], onDelete: SetNull)
   creadoEn              DateTime                @default(now())
   actualizadoEn         DateTime                @updatedAt
 
@@ -197,4 +204,156 @@ model EventoCalendarioGoogle {
 
   @@unique([usuarioId, googleEventId])
   @@map("eventos_calendario_google")
+}
+
+// ---------------------------------------------------------------------------
+// Horario de clase y catálogo de asignaturas (LOMLOE)
+// ---------------------------------------------------------------------------
+
+enum Etapa {
+  PRIMARIA
+  ESO
+  BACHILLERATO
+}
+
+// OBLIGATORIA: común a todo el alumnado del curso. DE_OPCION: materias entre
+// las que se elige (4º de ESO, materias de modalidad de Bachillerato).
+// OPTATIVA: oferta complementaria (segunda lengua extranjera, religión...).
+// AUTONOMICA: lengua propia de una comunidad autónoma (ver `comunidad`).
+enum CategoriaAsignatura {
+  OBLIGATORIA
+  DE_OPCION
+  OPTATIVA
+  AUTONOMICA
+}
+
+enum ComunidadAutonoma {
+  ANDALUCIA
+  ARAGON
+  ASTURIAS
+  BALEARES
+  CANARIAS
+  CANTABRIA
+  CASTILLA_LA_MANCHA
+  CASTILLA_Y_LEON
+  CATALUNA
+  COMUNITAT_VALENCIANA
+  EXTREMADURA
+  GALICIA
+  MADRID
+  MURCIA
+  NAVARRA
+  PAIS_VASCO
+  LA_RIOJA
+  CEUTA
+  MELILLA
+}
+
+enum TipoFranja {
+  CLASE
+  DESCANSO
+}
+
+// Catálogo fijo de cursos, cargado al arrancar el backend desde
+// src/horarios/catalogo-lomloe.ts (ids legibles y estables, p. ej. "eso-3").
+model Curso {
+  id          String       @id
+  etapa       Etapa
+  numero      Int
+  nombre      String
+  asignaturas Asignatura[]
+  horarios    Horario[]
+
+  @@map("cursos")
+}
+
+// Asignatura oficial del catálogo (usuarioId null, id fijo como
+// "eso-3-matematicas") u optativa añadida por un usuario (usuarioId suyo,
+// id uuid). `comunidad` solo se usa en las lenguas propias de cada comunidad
+// autónoma, para ofrecer a cada horario solo la de su comunidad.
+model Asignatura {
+  id         String              @id @default(uuid())
+  nombre     String
+  categoria  CategoriaAsignatura
+  modalidad  String?
+  comunidad  ComunidadAutonoma?
+  cursoId    String
+  curso      Curso               @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  usuarioId  String?
+  usuario    Usuario?            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  enHorarios AsignaturaHorario[]
+  creadoEn   DateTime            @default(now())
+
+  @@index([cursoId])
+  @@map("asignaturas")
+}
+
+// Un usuario puede tener varios horarios (uno por curso/periodo) y solo uno
+// activo, que es el que se muestra en la Agenda.
+model Horario {
+  id            String              @id @default(uuid())
+  titulo        String
+  periodo       String
+  activo        Boolean             @default(false)
+  comunidad     ComunidadAutonoma
+  cursoId       String
+  curso         Curso               @relation(fields: [cursoId], references: [id])
+  usuarioId     String
+  usuario       Usuario             @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  franjas       FranjaHorario[]
+  asignaturas   AsignaturaHorario[]
+  sesiones      SesionClase[]
+  creadoEn      DateTime            @default(now())
+  actualizadoEn DateTime            @updatedAt
+
+  @@map("horarios")
+}
+
+// Fila de la cuadrícula. Las horas se guardan como texto "HH:mm" (hora de
+// reloj, sin fecha ni zona horaria): se repiten igual todas las semanas.
+model FranjaHorario {
+  id         String        @id @default(uuid())
+  orden      Int
+  horaInicio String
+  horaFin    String
+  tipo       TipoFranja    @default(CLASE)
+  etiqueta   String?
+  horarioId  String
+  horario    Horario       @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+  sesiones   SesionClase[]
+
+  @@map("franjas_horario")
+}
+
+// Asignatura elegida para un horario concreto, con el color con que se pinta.
+model AsignaturaHorario {
+  id           String        @id @default(uuid())
+  color        String
+  horarioId    String
+  horario      Horario       @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+  asignaturaId String
+  asignatura   Asignatura    @relation(fields: [asignaturaId], references: [id], onDelete: Cascade)
+  sesiones     SesionClase[]
+  tareas       Tarea[]
+  creadoEn     DateTime      @default(now())
+
+  @@unique([horarioId, asignaturaId])
+  @@map("asignaturas_horario")
+}
+
+// Celda de la cuadrícula: qué asignatura hay en una franja un día de la semana
+// (1 = lunes ... 5 = viernes). Una celda vacía simplemente no tiene fila.
+model SesionClase {
+  id                  String            @id @default(uuid())
+  diaSemana           Int
+  aula                String?
+  horarioId           String
+  horario             Horario           @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+  franjaId            String
+  franja              FranjaHorario     @relation(fields: [franjaId], references: [id], onDelete: Cascade)
+  asignaturaHorarioId String
+  asignaturaHorario   AsignaturaHorario @relation(fields: [asignaturaHorarioId], references: [id], onDelete: Cascade)
+
+  @@unique([franjaId, diaSemana])
+  @@map("sesiones_clase")
 }

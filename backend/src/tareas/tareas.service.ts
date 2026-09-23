@@ -9,6 +9,9 @@ import type { FiltrarTareasDto } from './dto/filtrar-tareas.dto.js';
 const INCLUIR_RELACIONES = {
   subtareas: { orderBy: { creadoEn: 'asc' as const } },
   etiquetas: true,
+  asignaturaHorario: {
+    select: { id: true, color: true, asignatura: { select: { nombre: true } } },
+  },
 };
 
 @Injectable()
@@ -18,6 +21,9 @@ export class TareasService {
   async crear(usuarioId: string, datos: CrearTareaDto) {
     if (datos.objetivoId) {
       await this.verificarPropiedadObjetivo(usuarioId, datos.objetivoId);
+    }
+    if (datos.asignaturaHorarioId) {
+      await this.verificarPropiedadAsignaturaHorario(usuarioId, datos.asignaturaHorarioId);
     }
 
     return this.prisma.tarea.create({
@@ -30,6 +36,7 @@ export class TareasService {
         duracionMinutos: datos.duracionMinutos,
         ambito: datos.ambito,
         tipoEscolar: datos.tipoEscolar,
+        asignaturaHorarioId: datos.asignaturaHorarioId,
         usuarioId,
         etiquetas: this.construirEtiquetasCrear(usuarioId, datos.etiquetas),
       },
@@ -64,6 +71,9 @@ export class TareasService {
 
     if (datos.objetivoId) {
       await this.verificarPropiedadObjetivo(usuarioId, datos.objetivoId);
+    }
+    if (datos.asignaturaHorarioId) {
+      await this.verificarPropiedadAsignaturaHorario(usuarioId, datos.asignaturaHorarioId);
     }
 
     const { etiquetas, ...resto } = datos;
@@ -143,6 +153,7 @@ export class TareasService {
         recurrencia: tareaOriginal.recurrencia,
         ambito: tareaOriginal.ambito,
         tipoEscolar: tareaOriginal.tipoEscolar,
+        asignaturaHorarioId: tareaOriginal.asignaturaHorarioId,
         fechaLimite,
         usuarioId,
       },
@@ -157,6 +168,20 @@ export class TareasService {
 
     if (!objetivo) {
       throw new NotFoundException('Objetivo no encontrado');
+    }
+  }
+
+  private async verificarPropiedadAsignaturaHorario(
+    usuarioId: string,
+    asignaturaHorarioId: string,
+  ) {
+    const asignatura = await this.prisma.asignaturaHorario.findFirst({
+      where: { id: asignaturaHorarioId, horario: { usuarioId } },
+      select: { id: true },
+    });
+
+    if (!asignatura) {
+      throw new NotFoundException('Asignatura no encontrada en tus horarios');
     }
   }
 }
