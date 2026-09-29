@@ -4,6 +4,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AplicacionController } from './aplicacion.controller.js';
 import { AplicacionService } from './aplicacion.service.js';
+import { ModuloAsistente } from './asistente/asistente.module.js';
 import { FiltroErrores } from './comun/filtro-errores.js';
 import { ModuloAutenticacion } from './autenticacion/autenticacion.module.js';
 import { ModuloEtiquetas } from './etiquetas/etiquetas.module.js';
@@ -38,6 +39,7 @@ import { ModuloTareas } from './tareas/tareas.module.js';
     ModuloFamilia,
     ModuloNotas,
     ModuloPush,
+    ModuloAsistente,
   ],
   controllers: [AplicacionController],
   // FiltroErrores añade a cada error el código que traduce el frontend.

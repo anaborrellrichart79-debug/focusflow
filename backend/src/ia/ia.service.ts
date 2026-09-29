@@ -16,12 +16,47 @@ export class IaService {
   constructor(private readonly config: ConfigService) {}
 
   redactar(instrucciones: string): Promise<string | null> {
-    const resultado = this.cola.then(() => this.pedirAOllama(instrucciones));
-    this.cola = resultado;
+    return this.encolar(() => this.pedirAOllama(instrucciones));
+  }
+
+  // Respuesta estructurada: Ollama se ciñe al esquema JSON que se le pasa
+  // (parámetro `format`). null si no está disponible o no devuelve JSON; quien
+  // llama debe validar igualmente el contenido.
+  async generarJson<T>(instrucciones: string, esquema: object): Promise<T | null> {
+    const texto = await this.encolar(() => this.pedirAOllama(instrucciones, esquema, 4000));
+    if (!texto) return null;
+    try {
+      return JSON.parse(texto) as T;
+    } catch {
+      this.logger.warn('Ollama no devolvió un JSON válido');
+      return null;
+    }
+  }
+
+  // Si Ollama responde, sin generar nada (para avisar en la interfaz antes de
+  // que alguien espere un minuto para nada).
+  async disponible() {
+    const url = this.config.get<string>('OLLAMA_URL');
+    if (!url) return false;
+    try {
+      const respuesta = await fetch(`${url.replace(/\/$/, '')}/api/tags`, { signal: AbortSignal.timeout(3000) });
+      return respuesta.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  private encolar<T>(tarea: () => Promise<T>): Promise<T> {
+    const resultado = this.cola.then(tarea);
+    this.cola = resultado.catch(() => null);
     return resultado;
   }
 
-  private async pedirAOllama(instrucciones: string): Promise<string | null> {
+  private async pedirAOllama(
+    instrucciones: string,
+    esquema?: object,
+    maximo = 1000,
+  ): Promise<string | null> {
     const url = this.config.get<string>('OLLAMA_URL');
     if (!url) return null;
 
@@ -30,12 +65,16 @@ export class IaService {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: this.config.get<string>('OLLAMA_MODELO') || 'qwen3.5:4b',
+          model: this.config.get<string>('OLLAMA_MODELO') || 'qwen3.5:2b',
           prompt: instrucciones,
           stream: false,
           // Los modelos qwen3.5 "piensan" en voz alta por defecto; aquí solo
           // interesa la respuesta final.
           think: false,
+          // Cargar el modelo en frío puede tardar más que el tiempo de espera:
+          // se mantiene en memoria un rato entre peticiones.
+          keep_alive: this.config.get<string>('OLLAMA_KEEP_ALIVE') || '30m',
+          ...(esquema ? { format: esquema } : {}),
           options: { temperature: 0.4 },
         }),
         signal: AbortSignal.timeout(
@@ -49,7 +88,7 @@ export class IaService {
       const texto = (cuerpo.response ?? '')
         .replace(/<think>[\s\S]*?<\/think>/g, '')
         .trim();
-      return texto ? texto.slice(0, 1000) : null;
+      return texto ? texto.slice(0, maximo) : null;
     } catch (error) {
       this.logger.warn(
         `Ollama no disponible, se usa el texto por reglas: ${(error as Error).message}`,

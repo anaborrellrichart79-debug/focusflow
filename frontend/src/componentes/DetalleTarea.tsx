@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Ambito, EstadoTarea, Recurrencia, Tarea, TipoEscolar } from '@/servicios/tareas';
 import { ESTADOS_TAREA } from '@/utilidades/estados';
 import { rutaEtiqueta } from '@/utilidades/etiquetas';
+import { AsistenteIa } from './AsistenteIa';
 import { NotasVinculadas } from './NotasVinculadas';
 import { OPCIONES_TIPO_ESCOLAR } from '@/utilidades/planificador';
 import {
@@ -528,6 +529,8 @@ export function DetalleTarea({ tarea, className }: { tarea: Tarea; className?: s
                 </Button>
               </form>
             </div>
+
+            <AsistenteIa tarea={tarea} />
 
             <NotasVinculadas tareaId={tarea.id} />
           </div>

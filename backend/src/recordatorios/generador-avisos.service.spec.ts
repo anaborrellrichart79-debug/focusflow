@@ -6,7 +6,7 @@ import { ServicioPrisma } from '../prisma/prisma.service.js';
 import { PushService } from '../push/push.service.js';
 import { CalendarioEscolarService } from './calendario-escolar.service.js';
 import { GeneradorAvisosService } from './generador-avisos.service.js';
-import { IaService } from './ia.service.js';
+import { IaService } from '../ia/ia.service.js';
 
 // Miércoles 23/09/2026 a las 12:00 en Madrid (10:00 UTC, horario de verano).
 const AHORA = new Date('2026-09-23T10:00:00.000Z');

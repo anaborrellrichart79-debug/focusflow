@@ -39,11 +39,22 @@ describe('IaService', () => {
     const [url, opciones] = fetchFalso.mock.calls[0];
     expect(url).toBe('http://localhost:11434/api/generate');
     expect(JSON.parse(opciones.body)).toMatchObject({
-      model: 'qwen3.5:4b',
+      model: 'qwen3.5:2b',
       prompt: 'instrucciones',
       stream: false,
       think: false,
     });
+  });
+
+  it('generarJson pide el formato con el esquema y devuelve el JSON ya leído', async () => {
+    fetchFalso.mockResolvedValue({ ok: true, json: async () => ({ response: '{"pasos":["Leer el tema"]}' }) });
+    const esquema = { type: 'object', properties: { pasos: { type: 'array' } } };
+
+    expect(await servicio.generarJson('instrucciones', esquema)).toEqual({ pasos: ['Leer el tema'] });
+    expect(JSON.parse(fetchFalso.mock.calls[0][1].body)).toMatchObject({ format: esquema, think: false });
+
+    fetchFalso.mockResolvedValue({ ok: true, json: async () => ({ response: 'esto no es JSON' }) });
+    expect(await servicio.generarJson('instrucciones', esquema)).toBeNull();
   });
 
   it('sin OLLAMA_URL no llama a nada y devuelve null', async () => {

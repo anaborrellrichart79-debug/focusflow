@@ -13,7 +13,7 @@ import {
   vencimientoEfectivo,
   type HoraLocal,
 } from './hora-local.util.js';
-import { IaService } from './ia.service.js';
+import { IaService } from '../ia/ia.service.js';
 import {
   asuntoCorreoAvisos,
   htmlCorreoAvisos,

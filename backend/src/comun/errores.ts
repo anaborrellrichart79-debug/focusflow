@@ -61,6 +61,12 @@ export const MENSAJES_ERROR = {
   REVISION_NO_PENDIENTE: 'Esta tarea no está pendiente de revisión',
   SOLO_ADULTO_AUTORIZA: 'Solo una persona adulta puede autorizar la cuenta de un menor',
 
+  // Asistente de IA local (Ollama)
+  IA_NO_DISPONIBLE: 'La IA local no está disponible ahora mismo',
+  IA_RESPUESTA_NO_VALIDA: 'La IA no ha dado una propuesta válida, inténtalo de nuevo',
+  TAREA_SIN_FECHA_LIMITE: 'Ponle una fecha límite a la tarea para poder planificar el estudio',
+  PLAN_SIN_DIAS: 'No quedan días para estudiar antes de la fecha límite',
+
   // Google Calendar
   GOOGLE_NO_CONFIGURADO: 'La sincronización con Google Calendar no está configurada en el servidor',
   GOOGLE_NO_CONECTADO: 'Esta cuenta no está conectada con Google Calendar',

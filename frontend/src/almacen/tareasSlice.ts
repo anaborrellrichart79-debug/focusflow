@@ -66,6 +66,7 @@ export const crearTarea = createAsyncThunk<
     ambito?: Ambito;
     tipoEscolar?: TipoEscolar;
     asignaturaHorarioId?: string;
+    tiempoEstimadoMinutos?: number;
   },
   { state: EstadoRaiz; rejectValue: string }
 >('tareas/crear', async (datos, { getState, rejectWithValue }) => {
