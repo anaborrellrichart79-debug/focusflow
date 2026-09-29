@@ -1,17 +1,13 @@
-import type { ComunidadAutonoma } from '../generated/prisma/enums.js';
+import { ComunidadAutonoma } from '../generated/prisma/enums.js';
 
-// Calendario escolar oficial del curso 2026-2027 por comunidad autónoma.
-// Fuente: resumen de elDiario.es del 17/08/2026 con las resoluciones de cada
-// consejería (la Comunitat Valenciana, contrastada además con la GVA y el
-// DOGV del 18/06/2026). Solo recoge lo común a toda la comunidad: inicio y
-// fin de clases de Infantil/Primaria (donde ESO cambia, se toma el último día
-// lectivo más tardío), Navidad, Semana Santa, los festivos nacionales que caen
-// en día lectivo (12 oct y 8 dic) y el día de la comunidad si cae en día
-// lectivo. Las fiestas locales y los días de libre disposición de cada centro
-// no están: el usuario los añade como días no lectivos propios.
-// Hay que actualizarlo cada curso.
-
-export const CURSO_CALENDARIO_ESCOLAR = '2026-2027';
+// Calendario escolar oficial por curso y comunidad autónoma. Los datos no
+// están aquí sino en backend/datos/calendarios-escolares/<curso>.json (uno por
+// curso, ver el LEEME.md de esa carpeta): para el curso siguiente basta con
+// añadir su fichero, sin tocar código. Solo recoge lo común a toda la
+// comunidad: inicio y fin de clases, Navidad, Semana Santa, los festivos
+// nacionales que caen en día lectivo y el día de la comunidad. Las fiestas
+// locales y los días de libre disposición de cada centro no están: el usuario
+// los añade como días no lectivos propios.
 
 export interface PeriodoNoLectivo {
   clave: string;
@@ -26,6 +22,33 @@ export interface CalendarioComunidad {
   periodos: PeriodoNoLectivo[];
 }
 
+export interface CalendarioCurso {
+  curso: string; // "2026-2027"
+  // Del 1 de septiembre al 31 de agosto: qué curso toca según la fecha.
+  desde: string;
+  hasta: string;
+  comunidades: Record<ComunidadAutonoma, CalendarioComunidad>;
+}
+
+// Forma del fichero JSON de cada curso.
+interface Rango {
+  inicio: string;
+  fin: string;
+}
+interface FicheroComunidad {
+  inicioClases: string;
+  finClases: string;
+  navidad: Rango;
+  semanaSanta: Rango;
+  diaComunidad?: { nombre: string; fecha: string };
+}
+export interface FicheroCalendario {
+  curso: string;
+  fuente?: string;
+  festivosNacionales: { clave: string; nombre: string; fecha: string }[];
+  comunidades: Record<string, FicheroComunidad>;
+}
+
 // Suma días a una fecha "YYYY-MM-DD" sin pasar por la zona horaria local.
 export function sumarDias(fecha: string, dias: number): string {
   const [anio, mes, diaMes] = fecha.split('-').map(Number);
@@ -34,139 +57,91 @@ export function sumarDias(fecha: string, dias: number): string {
     .slice(0, 10);
 }
 
-function navidad(inicio: string, fin: string): PeriodoNoLectivo {
-  return { clave: 'navidad', nombre: 'Vacaciones de Navidad', inicio, fin };
+function esFecha(valor: unknown): valor is string {
+  return (
+    typeof valor === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(valor) &&
+    new Date(`${valor}T00:00:00Z`).toISOString().slice(0, 10) === valor
+  );
 }
 
-function semanaSanta(inicio: string, fin: string): PeriodoNoLectivo {
-  return {
-    clave: 'semana-santa',
-    nombre: 'Vacaciones de Semana Santa',
-    inicio,
-    fin,
-  };
+// Valida el fichero de un curso y lo convierte en los periodos no lectivos de
+// cada comunidad. Lanza un Error con todos los problemas encontrados, para
+// que el aviso del log diga exactamente qué hay que corregir.
+export function construirCalendario(fichero: FicheroCalendario): CalendarioCurso {
+  const problemas: string[] = [];
+  const cursoValido = /^(\d{4})-(\d{4})$/.exec(fichero?.curso ?? '');
+  if (!cursoValido || Number(cursoValido[2]) !== Number(cursoValido[1]) + 1) {
+    throw new Error(`"curso" debe ser como "2026-2027" (es ${JSON.stringify(fichero?.curso)})`);
+  }
+  const [anioInicio, anioFin] = [cursoValido[1], cursoValido[2]];
+  const desde = `${anioInicio}-09-01`;
+  const hasta = `${anioFin}-08-31`;
+
+  function comprobarFecha(fecha: unknown, donde: string) {
+    if (!esFecha(fecha)) problemas.push(`${donde}: fecha no válida (${JSON.stringify(fecha)})`);
+    else if (fecha < desde || fecha > hasta) problemas.push(`${donde}: ${fecha} está fuera del curso`);
+  }
+  function comprobarRango(rango: Rango | undefined, donde: string) {
+    comprobarFecha(rango?.inicio, `${donde}.inicio`);
+    comprobarFecha(rango?.fin, `${donde}.fin`);
+    if (esFecha(rango?.inicio) && esFecha(rango?.fin) && rango.fin < rango.inicio) {
+      problemas.push(`${donde}: el fin es anterior al inicio`);
+    }
+  }
+
+  const festivos = (fichero.festivosNacionales ?? []).map((festivo, indice) => {
+    comprobarFecha(festivo.fecha, `festivosNacionales[${indice}]`);
+    if (!festivo.clave || !festivo.nombre) problemas.push(`festivosNacionales[${indice}]: falta clave o nombre`);
+    return { clave: festivo.clave, nombre: festivo.nombre, inicio: festivo.fecha, fin: festivo.fecha };
+  });
+
+  const comunidades = {} as Record<ComunidadAutonoma, CalendarioComunidad>;
+  for (const codigo of Object.values(ComunidadAutonoma)) {
+    const datos = fichero.comunidades?.[codigo];
+    if (!datos) {
+      problemas.push(`falta la comunidad ${codigo}`);
+      continue;
+    }
+    comprobarRango({ inicio: datos.inicioClases, fin: datos.finClases }, `${codigo}.clases`);
+    comprobarRango(datos.navidad, `${codigo}.navidad`);
+    comprobarRango(datos.semanaSanta, `${codigo}.semanaSanta`);
+    if (datos.diaComunidad) comprobarFecha(datos.diaComunidad.fecha, `${codigo}.diaComunidad`);
+
+    const periodos: PeriodoNoLectivo[] = [
+      ...festivos,
+      { clave: 'navidad', nombre: 'Vacaciones de Navidad', ...datos.navidad },
+      { clave: 'semana-santa', nombre: 'Vacaciones de Semana Santa', ...datos.semanaSanta },
+      ...(datos.diaComunidad
+        ? [{ clave: 'dia-comunidad', nombre: datos.diaComunidad.nombre, inicio: datos.diaComunidad.fecha, fin: datos.diaComunidad.fecha }]
+        : []),
+      // El verano cuenta como periodo no lectivo para poder avisar antes de
+      // que acabe el curso (hasta el 31 de agosto).
+      { clave: 'verano', nombre: 'Vacaciones de verano', inicio: esFecha(datos.finClases) ? sumarDias(datos.finClases, 1) : hasta, fin: hasta },
+    ];
+    comunidades[codigo] = {
+      inicioClases: datos.inicioClases,
+      finClases: datos.finClases,
+      periodos: periodos.sort((a, b) => a.inicio.localeCompare(b.inicio)),
+    };
+  }
+  for (const codigo of Object.keys(fichero.comunidades ?? {})) {
+    if (!(codigo in ComunidadAutonoma)) problemas.push(`comunidad desconocida: ${codigo}`);
+  }
+
+  if (problemas.length > 0) throw new Error(problemas.join('; '));
+  return { curso: fichero.curso, desde, hasta, comunidades };
 }
 
-function dia(clave: string, nombre: string, fecha: string): PeriodoNoLectivo {
-  return { clave, nombre, inicio: fecha, fin: fecha };
+// El curso de hoy; si no hay fichero para él, el más reciente de los que ya
+// han empezado (mejor un calendario viejo que ninguno) o, si todos son
+// futuros, el más próximo.
+export function elegirCurso(cursos: CalendarioCurso[], hoy: string): CalendarioCurso | null {
+  const ordenados = [...cursos].sort((a, b) => a.desde.localeCompare(b.desde));
+  return (
+    ordenados.find((curso) => curso.desde <= hoy && hoy <= curso.hasta) ??
+    ordenados.filter((curso) => curso.desde <= hoy).at(-1) ??
+    ordenados[0] ??
+    null
+  );
 }
-
-const FESTIVOS_NACIONALES = [
-  dia('hispanidad', 'Fiesta Nacional de España', '2026-10-12'),
-  dia('inmaculada', 'Día de la Inmaculada Concepción', '2026-12-08'),
-];
-
-function comunidad(
-  inicioClases: string,
-  finClases: string,
-  periodos: PeriodoNoLectivo[],
-): CalendarioComunidad {
-  // El verano cuenta como periodo no lectivo para poder avisar antes de que
-  // acabe el curso (hasta el 31 de agosto, el nuevo calendario aún no existe).
-  const verano: PeriodoNoLectivo = {
-    clave: 'verano',
-    nombre: 'Vacaciones de verano',
-    inicio: sumarDias(finClases, 1),
-    fin: '2027-08-31',
-  };
-  return {
-    inicioClases,
-    finClases,
-    periodos: [...FESTIVOS_NACIONALES, ...periodos, verano].sort((a, b) =>
-      a.inicio.localeCompare(b.inicio),
-    ),
-  };
-}
-
-export const CALENDARIO_ESCOLAR: Record<
-  ComunidadAutonoma,
-  CalendarioComunidad
-> = {
-  ANDALUCIA: comunidad('2026-09-10', '2027-06-22', [
-    navidad('2026-12-23', '2027-01-06'),
-    semanaSanta('2027-03-22', '2027-03-29'),
-  ]),
-  ARAGON: comunidad('2026-09-08', '2027-06-18', [
-    navidad('2026-12-22', '2027-01-06'),
-    semanaSanta('2027-03-25', '2027-04-02'),
-    dia('dia-comunidad', 'Día de Aragón', '2027-04-23'),
-  ]),
-  ASTURIAS: comunidad('2026-09-09', '2027-06-23', [
-    navidad('2026-12-23', '2027-01-10'),
-    semanaSanta('2027-03-20', '2027-03-28'),
-  ]),
-  BALEARES: comunidad('2026-09-10', '2027-06-18', [
-    navidad('2026-12-23', '2027-01-06'),
-    dia('dia-comunidad', 'Día de las Illes Balears', '2027-03-01'),
-    semanaSanta('2027-03-25', '2027-04-04'),
-  ]),
-  CANARIAS: comunidad('2026-09-09', '2027-06-22', [
-    navidad('2026-12-22', '2027-01-07'),
-    semanaSanta('2027-03-22', '2027-03-26'),
-  ]),
-  CANTABRIA: comunidad('2026-09-08', '2027-06-24', [
-    navidad('2026-12-23', '2027-01-10'),
-    semanaSanta('2027-03-20', '2027-03-28'),
-  ]),
-  CASTILLA_LA_MANCHA: comunidad('2026-09-08', '2027-06-22', [
-    navidad('2026-12-23', '2027-01-10'),
-    semanaSanta('2027-03-22', '2027-03-29'),
-    dia('dia-comunidad', 'Día de Castilla-La Mancha', '2027-05-31'),
-  ]),
-  CASTILLA_Y_LEON: comunidad('2026-09-09', '2027-06-24', [
-    navidad('2026-12-23', '2027-01-10'),
-    semanaSanta('2027-03-19', '2027-03-30'),
-    dia('dia-comunidad', 'Día de Castilla y León', '2027-04-23'),
-  ]),
-  CATALUNA: comunidad('2026-09-08', '2027-06-21', [
-    dia('dia-comunidad', 'Diada de Catalunya', '2026-09-11'),
-    navidad('2026-12-22', '2027-01-07'),
-    semanaSanta('2027-03-20', '2027-03-29'),
-  ]),
-  COMUNITAT_VALENCIANA: comunidad('2026-09-09', '2027-06-18', [
-    dia('dia-comunidad', 'Día de la Comunitat Valenciana', '2026-10-09'),
-    navidad('2026-12-22', '2027-01-06'),
-    semanaSanta('2027-03-25', '2027-04-05'),
-  ]),
-  EXTREMADURA: comunidad('2026-09-10', '2027-06-18', [
-    navidad('2026-12-23', '2027-01-07'),
-    semanaSanta('2027-03-22', '2027-03-29'),
-  ]),
-  GALICIA: comunidad('2026-09-09', '2027-06-21', [
-    navidad('2026-12-22', '2027-01-07'),
-    semanaSanta('2027-03-19', '2027-03-29'),
-    dia('dia-comunidad', 'Día de las Letras Gallegas', '2027-05-17'),
-  ]),
-  MADRID: comunidad('2026-09-07', '2027-06-18', [
-    navidad('2026-12-23', '2027-01-10'),
-    semanaSanta('2027-03-19', '2027-03-29'),
-  ]),
-  MURCIA: comunidad('2026-09-08', '2027-06-22', [
-    navidad('2026-12-23', '2027-01-06'),
-    semanaSanta('2027-03-22', '2027-03-29'),
-    dia('dia-comunidad', 'Día de la Región de Murcia', '2027-06-09'),
-  ]),
-  NAVARRA: comunidad('2026-09-08', '2027-06-22', [
-    dia('dia-comunidad', 'Día de Navarra', '2026-12-03'),
-    navidad('2026-12-23', '2027-01-10'),
-    semanaSanta('2027-03-25', '2027-04-04'),
-  ]),
-  PAIS_VASCO: comunidad('2026-09-08', '2027-06-18', [
-    navidad('2026-12-24', '2027-01-06'),
-    semanaSanta('2027-03-25', '2027-03-29'),
-  ]),
-  LA_RIOJA: comunidad('2026-09-09', '2027-06-22', [
-    navidad('2026-12-23', '2027-01-06'),
-    semanaSanta('2027-03-25', '2027-04-04'),
-    dia('dia-comunidad', 'Día de La Rioja', '2027-06-09'),
-  ]),
-  CEUTA: comunidad('2026-09-08', '2027-06-23', [
-    navidad('2026-12-23', '2027-01-10'),
-    semanaSanta('2027-03-22', '2027-04-02'),
-  ]),
-  MELILLA: comunidad('2026-09-09', '2027-06-23', [
-    dia('dia-comunidad', 'Día de Melilla', '2026-09-17'),
-    navidad('2026-12-23', '2027-01-10'),
-    semanaSanta('2027-03-22', '2027-03-26'),
-  ]),
-};

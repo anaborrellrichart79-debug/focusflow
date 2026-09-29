@@ -1,0 +1,290 @@
+{
+  "curso": "2026-2027",
+  "fuente": "Resumen de elDiario.es del 17/08/2026 con las resoluciones de cada consejería (la Comunitat Valenciana, contrastada además con la GVA y el DOGV del 18/06/2026).",
+  "festivosNacionales": [
+    {
+      "clave": "hispanidad",
+      "nombre": "Fiesta Nacional de España",
+      "fecha": "2026-10-12"
+    },
+    {
+      "clave": "inmaculada",
+      "nombre": "Día de la Inmaculada Concepción",
+      "fecha": "2026-12-08"
+    }
+  ],
+  "comunidades": {
+    "ANDALUCIA": {
+      "inicioClases": "2026-09-10",
+      "finClases": "2027-06-22",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-06"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-22",
+        "fin": "2027-03-29"
+      }
+    },
+    "ARAGON": {
+      "inicioClases": "2026-09-08",
+      "finClases": "2027-06-18",
+      "navidad": {
+        "inicio": "2026-12-22",
+        "fin": "2027-01-06"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-25",
+        "fin": "2027-04-02"
+      },
+      "diaComunidad": {
+        "nombre": "Día de Aragón",
+        "fecha": "2027-04-23"
+      }
+    },
+    "ASTURIAS": {
+      "inicioClases": "2026-09-09",
+      "finClases": "2027-06-23",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-10"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-20",
+        "fin": "2027-03-28"
+      }
+    },
+    "BALEARES": {
+      "inicioClases": "2026-09-10",
+      "finClases": "2027-06-18",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-06"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-25",
+        "fin": "2027-04-04"
+      },
+      "diaComunidad": {
+        "nombre": "Día de las Illes Balears",
+        "fecha": "2027-03-01"
+      }
+    },
+    "CANARIAS": {
+      "inicioClases": "2026-09-09",
+      "finClases": "2027-06-22",
+      "navidad": {
+        "inicio": "2026-12-22",
+        "fin": "2027-01-07"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-22",
+        "fin": "2027-03-26"
+      }
+    },
+    "CANTABRIA": {
+      "inicioClases": "2026-09-08",
+      "finClases": "2027-06-24",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-10"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-20",
+        "fin": "2027-03-28"
+      }
+    },
+    "CASTILLA_LA_MANCHA": {
+      "inicioClases": "2026-09-08",
+      "finClases": "2027-06-22",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-10"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-22",
+        "fin": "2027-03-29"
+      },
+      "diaComunidad": {
+        "nombre": "Día de Castilla-La Mancha",
+        "fecha": "2027-05-31"
+      }
+    },
+    "CASTILLA_Y_LEON": {
+      "inicioClases": "2026-09-09",
+      "finClases": "2027-06-24",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-10"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-19",
+        "fin": "2027-03-30"
+      },
+      "diaComunidad": {
+        "nombre": "Día de Castilla y León",
+        "fecha": "2027-04-23"
+      }
+    },
+    "CATALUNA": {
+      "inicioClases": "2026-09-08",
+      "finClases": "2027-06-21",
+      "navidad": {
+        "inicio": "2026-12-22",
+        "fin": "2027-01-07"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-20",
+        "fin": "2027-03-29"
+      },
+      "diaComunidad": {
+        "nombre": "Diada de Catalunya",
+        "fecha": "2026-09-11"
+      }
+    },
+    "COMUNITAT_VALENCIANA": {
+      "inicioClases": "2026-09-09",
+      "finClases": "2027-06-18",
+      "navidad": {
+        "inicio": "2026-12-22",
+        "fin": "2027-01-06"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-25",
+        "fin": "2027-04-05"
+      },
+      "diaComunidad": {
+        "nombre": "Día de la Comunitat Valenciana",
+        "fecha": "2026-10-09"
+      }
+    },
+    "EXTREMADURA": {
+      "inicioClases": "2026-09-10",
+      "finClases": "2027-06-18",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-07"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-22",
+        "fin": "2027-03-29"
+      }
+    },
+    "GALICIA": {
+      "inicioClases": "2026-09-09",
+      "finClases": "2027-06-21",
+      "navidad": {
+        "inicio": "2026-12-22",
+        "fin": "2027-01-07"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-19",
+        "fin": "2027-03-29"
+      },
+      "diaComunidad": {
+        "nombre": "Día de las Letras Gallegas",
+        "fecha": "2027-05-17"
+      }
+    },
+    "MADRID": {
+      "inicioClases": "2026-09-07",
+      "finClases": "2027-06-18",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-10"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-19",
+        "fin": "2027-03-29"
+      }
+    },
+    "MURCIA": {
+      "inicioClases": "2026-09-08",
+      "finClases": "2027-06-22",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-06"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-22",
+        "fin": "2027-03-29"
+      },
+      "diaComunidad": {
+        "nombre": "Día de la Región de Murcia",
+        "fecha": "2027-06-09"
+      }
+    },
+    "NAVARRA": {
+      "inicioClases": "2026-09-08",
+      "finClases": "2027-06-22",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-10"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-25",
+        "fin": "2027-04-04"
+      },
+      "diaComunidad": {
+        "nombre": "Día de Navarra",
+        "fecha": "2026-12-03"
+      }
+    },
+    "PAIS_VASCO": {
+      "inicioClases": "2026-09-08",
+      "finClases": "2027-06-18",
+      "navidad": {
+        "inicio": "2026-12-24",
+        "fin": "2027-01-06"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-25",
+        "fin": "2027-03-29"
+      }
+    },
+    "LA_RIOJA": {
+      "inicioClases": "2026-09-09",
+      "finClases": "2027-06-22",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-06"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-25",
+        "fin": "2027-04-04"
+      },
+      "diaComunidad": {
+        "nombre": "Día de La Rioja",
+        "fecha": "2027-06-09"
+      }
+    },
+    "CEUTA": {
+      "inicioClases": "2026-09-08",
+      "finClases": "2027-06-23",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-10"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-22",
+        "fin": "2027-04-02"
+      }
+    },
+    "MELILLA": {
+      "inicioClases": "2026-09-09",
+      "finClases": "2027-06-23",
+      "navidad": {
+        "inicio": "2026-12-23",
+        "fin": "2027-01-10"
+      },
+      "semanaSanta": {
+        "inicio": "2027-03-22",
+        "fin": "2027-03-26"
+      },
+      "diaComunidad": {
+        "nombre": "Día de Melilla",
+        "fecha": "2026-09-17"
+      }
+    }
+  }
+}

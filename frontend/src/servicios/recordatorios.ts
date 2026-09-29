@@ -117,7 +117,8 @@ export interface DiaNoLectivoPropio {
 }
 
 export interface CalendarioEscolar {
-  curso: string;
+  // null si el servidor no tiene ningún fichero de calendario escolar.
+  curso: string | null;
   comunidad: ComunidadAutonoma | null;
   inicioClases: string | null;
   finClases: string | null;

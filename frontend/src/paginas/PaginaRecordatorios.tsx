@@ -558,7 +558,7 @@ function TarjetaCalendarioEscolar() {
     <Card>
       <CardHeader>
         <CardTitle>
-          {intl.formatMessage({ id: 'recordatorios.calendario.titulo' }, { curso: calendario.curso })}
+          {intl.formatMessage({ id: 'recordatorios.calendario.titulo' }, { curso: calendario.curso ?? '—' })}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

@@ -1,19 +1,73 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import {
-  CALENDARIO_ESCOLAR,
-  CURSO_CALENDARIO_ESCOLAR,
+  construirCalendario,
+  elegirCurso,
+  type CalendarioCurso,
+  type FicheroCalendario,
   type PeriodoNoLectivo,
 } from './calendario-escolar.js';
 import type { CrearDiaNoLectivoDto } from './dto/recordatorios.dto.js';
+import { obtenerHoraLocal } from './hora-local.util.js';
+
+const CARPETA_POR_DEFECTO = 'datos/calendarios-escolares';
 
 @Injectable()
 export class CalendarioEscolarService {
-  constructor(private readonly prisma: ServicioPrisma) {}
+  private readonly logger = new Logger(CalendarioEscolarService.name);
+  // Lo leído de la carpeta, con la "huella" (nombres + fechas de modificación)
+  // que tenía: si alguien añade o corrige un fichero, se vuelve a leer sin
+  // reiniciar el servidor.
+  private cache: { huella: string; cursos: CalendarioCurso[] } | null = null;
+
+  constructor(
+    private readonly prisma: ServicioPrisma,
+    private readonly config: ConfigService,
+  ) {}
+
+  private carpeta() {
+    return resolve(this.config.get<string>('CALENDARIOS_ESCOLARES_DIR') || CARPETA_POR_DEFECTO);
+  }
+
+  // Todos los cursos válidos de la carpeta. Un fichero con errores se ignora
+  // (con un aviso que dice qué falla) en vez de dejar la app sin calendario.
+  cursosDisponibles(): CalendarioCurso[] {
+    const carpeta = this.carpeta();
+    let ficheros: string[];
+    try {
+      ficheros = readdirSync(carpeta).filter((nombre) => nombre.endsWith('.json')).sort();
+    } catch {
+      this.logger.warn(`No se encuentra la carpeta de calendarios escolares: ${carpeta}`);
+      return [];
+    }
+    const huella = ficheros.map((nombre) => `${nombre}:${statSync(join(carpeta, nombre)).mtimeMs}`).join('|');
+    if (this.cache?.huella === huella) return this.cache.cursos;
+
+    const cursos: CalendarioCurso[] = [];
+    for (const nombre of ficheros) {
+      try {
+        const fichero = JSON.parse(readFileSync(join(carpeta, nombre), 'utf-8')) as FicheroCalendario;
+        cursos.push(construirCalendario(fichero));
+      } catch (error) {
+        this.logger.warn(`Calendario escolar ${nombre} ignorado: ${(error as Error).message}`);
+      }
+    }
+    this.cache = { huella, cursos };
+    return cursos;
+  }
+
+  cursoActual(ahora = new Date()) {
+    const hoy = obtenerHoraLocal(ahora, this.config.get<string>('ZONA_HORARIA') || 'Europe/Madrid').fecha;
+    return elegirCurso(this.cursosDisponibles(), hoy);
+  }
 
   // La comunidad sale del horario activo: sin horario, solo cuentan los días
   // no lectivos que haya añadido el propio usuario.
@@ -28,10 +82,11 @@ export class CalendarioEscolarService {
         orderBy: { inicio: 'asc' },
       }),
     ]);
-    const calendario = horario ? CALENDARIO_ESCOLAR[horario.comunidad] : null;
+    const curso = this.cursoActual();
+    const calendario = horario && curso ? curso.comunidades[horario.comunidad] : null;
 
     return {
-      curso: CURSO_CALENDARIO_ESCOLAR,
+      curso: curso?.curso ?? null,
       comunidad: horario?.comunidad ?? null,
       inicioClases: calendario?.inicioClases ?? null,
       finClases: calendario?.finClases ?? null,
