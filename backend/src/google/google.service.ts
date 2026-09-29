@@ -2,10 +2,15 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { google } from 'googleapis';
-import type { calendar_v3 } from 'googleapis';
+import type { Auth, calendar_v3 } from 'googleapis';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 
 const AMBITO_CALENDARIO = 'https://www.googleapis.com/auth/calendar.events';
+// Classroom, solo lectura: los cursos del alumno y sus trabajos y entregas.
+export const AMBITOS_CLASSROOM = [
+  'https://www.googleapis.com/auth/classroom.courses.readonly',
+  'https://www.googleapis.com/auth/classroom.coursework.me.readonly',
+];
 // Ventana de importación (Google Calendar -> FocusFlow): solo eventos de los
 // próximos 30 días. Nunca se recorre el calendario entero, para no volcar de
 // golpe años de eventos ajenos a FocusFlow como si fuesen tareas nuevas.
@@ -44,6 +49,21 @@ function tieneHoraInicio(fecha: Date): boolean {
   );
 }
 
+// Google puede devolver un permiso concedido con otro nombre equivalente:
+// coursework.me.readonly vuelve como student-submissions.me.readonly.
+const ALIAS_AMBITOS: Record<string, string[]> = {
+  'https://www.googleapis.com/auth/classroom.coursework.me.readonly': [
+    'https://www.googleapis.com/auth/classroom.student-submissions.me.readonly',
+  ],
+};
+
+export function tieneAmbitosClassroom(ambitos: string | null | undefined) {
+  const concedidos = new Set((ambitos ?? '').split(/\s+/));
+  return AMBITOS_CLASSROOM.every(
+    (ambito) => concedidos.has(ambito) || (ALIAS_AMBITOS[ambito] ?? []).some((alias) => concedidos.has(alias)),
+  );
+}
+
 @Injectable()
 export class GoogleService {
   constructor(
@@ -60,7 +80,9 @@ export class GoogleService {
     );
   }
 
-  generarUrlAutorizacion(usuarioId: string): string {
+  // Con conClassroom se piden además los permisos de Classroom; con
+  // include_granted_scopes Google suma los nuevos a los que ya había.
+  generarUrlAutorizacion(usuarioId: string, conClassroom = false): string {
     if (!this.config.get('GOOGLE_CLIENT_ID')) {
       throw new BadRequestException(
         'La sincronización con Google Calendar no está configurada en el servidor',
@@ -77,7 +99,8 @@ export class GoogleService {
       // Google solo manda el access_token, y sin refresh_token no se puede
       // renovar la sesión sola).
       prompt: 'consent',
-      scope: [AMBITO_CALENDARIO],
+      scope: conClassroom ? [AMBITO_CALENDARIO, ...AMBITOS_CLASSROOM] : [AMBITO_CALENDARIO],
+      include_granted_scopes: true,
       state: estado,
     });
   }
@@ -100,6 +123,7 @@ export class GoogleService {
         googleAccessToken: tokens.access_token,
         googleRefreshToken: tokens.refresh_token ?? undefined,
         googleTokenExpiraEn: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined,
+        googleAmbitos: tokens.scope ?? undefined,
       },
     });
 
@@ -109,12 +133,13 @@ export class GoogleService {
   async obtenerEstado(usuarioId: string) {
     const usuario = await this.prisma.usuario.findUniqueOrThrow({
       where: { id: usuarioId },
-      select: { googleRefreshToken: true, googleUltimaSincronizacion: true },
+      select: { googleRefreshToken: true, googleUltimaSincronizacion: true, googleAmbitos: true },
     });
 
     return {
       conectado: Boolean(usuario.googleRefreshToken),
       ultimaSincronizacion: usuario.googleUltimaSincronizacion,
+      classroom: Boolean(usuario.googleRefreshToken) && tieneAmbitosClassroom(usuario.googleAmbitos),
     };
   }
 
@@ -126,12 +151,15 @@ export class GoogleService {
         googleRefreshToken: null,
         googleTokenExpiraEn: null,
         googleUltimaSincronizacion: null,
+        googleAmbitos: null,
       },
     });
+    // Los trabajos de Classroom ya importados se recuerdan: al volver a
+    // conectar no se duplican.
     await this.prisma.eventoCalendarioGoogle.deleteMany({ where: { usuarioId } });
   }
 
-  private async obtenerClienteAutenticado(usuarioId: string) {
+  async obtenerClienteAutenticado(usuarioId: string): Promise<Auth.OAuth2Client> {
     const usuario = await this.prisma.usuario.findUniqueOrThrow({
       where: { id: usuarioId },
       select: { googleAccessToken: true, googleRefreshToken: true, googleTokenExpiraEn: true },

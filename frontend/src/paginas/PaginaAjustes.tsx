@@ -12,6 +12,7 @@ import { cambiarModoEscolar, cambiarPerfiles } from '@/almacen/sesionSlice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SeccionClassroom } from '@/componentes/SeccionClassroom';
 import { TarjetaAvisosDispositivo } from '@/componentes/TarjetaAvisosDispositivo';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { PerfilUsuario } from '@/servicios/autenticacion';
@@ -220,6 +221,8 @@ export function PaginaAjustes() {
               </Button>
             )}
           </div>
+
+          {conectado && <SeccionClassroom />}
         </CardContent>
       </Card>
     </main>

@@ -18,6 +18,7 @@ describe('PaginaAjustes', () => {
         sesion: SESION_AUTENTICADA,
         google: {
           conectado: true,
+          classroom: false,
           ultimaSincronizacion: '2026-09-21T18:00:00.000Z',
           sincronizando: false,
           cargandoEstado: false,

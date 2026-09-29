@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { ClassroomService } from './classroom.service.js';
 import { GoogleController } from './google.controller.js';
 import { GoogleService } from './google.service.js';
 
@@ -18,6 +19,6 @@ import { GoogleService } from './google.service.js';
     }),
   ],
   controllers: [GoogleController],
-  providers: [GoogleService],
+  providers: [GoogleService, ClassroomService],
 })
 export class ModuloGoogle {}

@@ -12,13 +12,14 @@ describe('googleSlice', () => {
     const estado = reductor(
       undefined,
       cargarEstadoGoogle.fulfilled(
-        { conectado: true, ultimaSincronizacion: '2026-09-21T18:00:00.000Z' },
+        { conectado: true, ultimaSincronizacion: '2026-09-21T18:00:00.000Z', classroom: true },
         'peticion-1',
         undefined,
       ),
     );
 
     expect(estado.conectado).toBe(true);
+    expect(estado.classroom).toBe(true);
     expect(estado.ultimaSincronizacion).toBe('2026-09-21T18:00:00.000Z');
     expect(estado.cargandoEstado).toBe(false);
   });
@@ -82,6 +83,7 @@ describe('googleSlice', () => {
   it('desconectarGoogle.fulfilled limpia la conexión y el resumen', () => {
     const previo = {
       conectado: true,
+      classroom: true,
       ultimaSincronizacion: '2026-09-21T18:00:00.000Z',
       sincronizando: false,
       cargandoEstado: false,
@@ -92,6 +94,7 @@ describe('googleSlice', () => {
     const estado = reductor(previo, desconectarGoogle.fulfilled(undefined, 'peticion-1', undefined));
 
     expect(estado.conectado).toBe(false);
+    expect(estado.classroom).toBe(false);
     expect(estado.ultimaSincronizacion).toBeNull();
     expect(estado.ultimoResumen).toBeNull();
   });

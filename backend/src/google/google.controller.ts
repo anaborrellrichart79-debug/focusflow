@@ -5,19 +5,21 @@ import type { Response } from 'express';
 import { UsuarioActual } from '../autenticacion/decoradores/usuario-actual.decorator.js';
 import { GuardaConsentimientoConfirmado } from '../autenticacion/guardias/consentimiento-confirmado.guard.js';
 import type { UsuarioPeticion } from '../autenticacion/interfaces/carga-util-jwt.interface.js';
+import { ClassroomService } from './classroom.service.js';
 import { GoogleService } from './google.service.js';
 
 @Controller('google')
 export class GoogleController {
   constructor(
     private readonly googleService: GoogleService,
+    private readonly classroom: ClassroomService,
     private readonly config: ConfigService,
   ) {}
 
   @Get('conectar')
   @UseGuards(AuthGuard('jwt'), GuardaConsentimientoConfirmado)
-  conectar(@UsuarioActual() usuario: UsuarioPeticion) {
-    return { url: this.googleService.generarUrlAutorizacion(usuario.id) };
+  conectar(@UsuarioActual() usuario: UsuarioPeticion, @Query('classroom') classroom?: string) {
+    return { url: this.googleService.generarUrlAutorizacion(usuario.id, classroom === '1') };
   }
 
   // Ruta pública: Google redirige aquí desde el navegador sin cabecera
@@ -42,6 +44,12 @@ export class GoogleController {
   @UseGuards(AuthGuard('jwt'), GuardaConsentimientoConfirmado)
   sincronizar(@UsuarioActual() usuario: UsuarioPeticion) {
     return this.googleService.sincronizar(usuario.id);
+  }
+
+  @Post('classroom/importar')
+  @UseGuards(AuthGuard('jwt'), GuardaConsentimientoConfirmado)
+  importarClassroom(@UsuarioActual() usuario: UsuarioPeticion) {
+    return this.classroom.importar(usuario.id);
   }
 
   @Delete('desconectar')

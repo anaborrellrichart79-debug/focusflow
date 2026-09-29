@@ -3,6 +3,14 @@ import { peticionApi } from './api';
 export interface EstadoGoogle {
   conectado: boolean;
   ultimaSincronizacion: string | null;
+  // Si Google ha concedido también los permisos de Classroom.
+  classroom: boolean;
+}
+
+export interface ResumenClassroom {
+  cursos: number;
+  nuevas: number;
+  actualizadas: number;
 }
 
 export interface ResumenSincronizacionGoogle {
@@ -17,8 +25,18 @@ function cabeceras(token: string) {
   return { Authorization: `Bearer ${token}` };
 }
 
-export function obtenerUrlConexionGoogle(token: string) {
-  return peticionApi<{ url: string }>('/google/conectar', { headers: cabeceras(token) });
+// Con classroom, la URL pide además los permisos (solo lectura) de Classroom.
+export function obtenerUrlConexionGoogle(token: string, classroom = false) {
+  return peticionApi<{ url: string }>(`/google/conectar${classroom ? '?classroom=1' : ''}`, {
+    headers: cabeceras(token),
+  });
+}
+
+export function importarClassroom(token: string) {
+  return peticionApi<ResumenClassroom>('/google/classroom/importar', {
+    method: 'POST',
+    headers: cabeceras(token),
+  });
 }
 
 export function obtenerEstadoGoogle(token: string) {

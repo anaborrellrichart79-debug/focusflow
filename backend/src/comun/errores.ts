@@ -71,6 +71,9 @@ export const MENSAJES_ERROR = {
   GOOGLE_NO_CONFIGURADO: 'La sincronización con Google Calendar no está configurada en el servidor',
   GOOGLE_NO_CONECTADO: 'Esta cuenta no está conectada con Google Calendar',
   ENLACE_GOOGLE_NO_VALIDO: 'Enlace de conexión con Google caducado o inválido',
+  CLASSROOM_NO_CONECTADO: 'Conecta Google Classroom para importar tus deberes',
+  CLASSROOM_API_DESACTIVADA: 'La API de Google Classroom no está activada en el proyecto de Google Cloud',
+  CLASSROOM_SIN_PERMISO: 'Google no permite que FocusFlow lea tu Classroom (puede que tu centro lo tenga restringido)',
 } as const;
 
 export type CodigoError = keyof typeof MENSAJES_ERROR;

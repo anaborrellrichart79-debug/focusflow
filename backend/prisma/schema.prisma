@@ -32,6 +32,10 @@ model Usuario {
   googleRefreshToken         String?
   googleTokenExpiraEn        DateTime?
   googleUltimaSincronizacion DateTime?
+  // Permisos que Google ha concedido (separados por espacios): Calendar y,
+  // si se ha conectado, Classroom (solo lectura).
+  googleAmbitos              String?
+  trabajosClassroom          TrabajoClassroom[]
   // Modo escolar (planificador de exámenes/trabajos) y consentimiento de un
   // tutor legal para menores de edad. fechaNacimiento determina si hace falta
   // consentimiento (ver calcularEdad en comun/edad.util.ts); consentimientoConfirmado
@@ -180,6 +184,8 @@ model Tarea {
   notas                 Nota[]
   creadoEn              DateTime                @default(now())
   actualizadoEn         DateTime                @updatedAt
+
+  trabajoClassroom TrabajoClassroom?
 
   @@map("tareas")
 }
@@ -555,4 +561,23 @@ model SuscripcionPush {
 
   @@index([usuarioId])
   @@map("suscripciones_push")
+}
+
+// Qué trabajo de Google Classroom se importó como qué tarea, para no
+// duplicarlo al volver a importar y para actualizar su fecha si el profesor
+// la cambia. Si el usuario borra la tarea, el registro se queda con tareaId
+// null y el trabajo no se vuelve a importar.
+model TrabajoClassroom {
+  id            String   @id @default(uuid())
+  usuarioId     String
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cursoId       String
+  trabajoId     String
+  tareaId       String?  @unique
+  tarea         Tarea?   @relation(fields: [tareaId], references: [id], onDelete: SetNull)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@unique([usuarioId, trabajoId])
+  @@map("trabajos_classroom")
 }

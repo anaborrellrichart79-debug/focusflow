@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
-import { GoogleService } from './google.service.js';
+import { AMBITOS_CLASSROOM, GoogleService } from './google.service.js';
 
 const clienteOAuthFalso = {
   generateAuthUrl: vi.fn(() => 'https://accounts.google.com/o/oauth2/auth?fake=1'),
@@ -122,6 +122,18 @@ describe('GoogleService', () => {
       expect(jwtFalso.sign).toHaveBeenCalledWith({ sub: 'usuario-1' }, { expiresIn: '10m' });
       expect(url).toBe('https://accounts.google.com/o/oauth2/auth?fake=1');
     });
+
+    it('con Classroom pide además sus permisos de solo lectura, sumados a los ya concedidos', () => {
+      servicio.generarUrlAutorizacion('usuario-1', true);
+
+      const opciones = (clienteOAuthFalso.generateAuthUrl.mock.calls.at(-1) as unknown[])[0] as {
+        scope: string[];
+        include_granted_scopes: boolean;
+      };
+      expect(opciones.scope).toEqual(expect.arrayContaining(AMBITOS_CLASSROOM));
+      expect(opciones.scope.every((ambito) => !ambito.includes('classroom') || ambito.endsWith('.readonly'))).toBe(true);
+      expect(opciones.include_granted_scopes).toBe(true);
+    });
   });
 
   describe('manejarCallback', () => {
@@ -164,6 +176,29 @@ describe('GoogleService', () => {
       const estado = await servicio.obtenerEstado('usuario-1');
 
       expect(estado.conectado).toBe(true);
+      expect(estado.classroom).toBe(false);
+    });
+
+    it('informa Classroom conectado solo si Google concedió sus permisos', async () => {
+      prismaFalso.usuario.findUniqueOrThrow.mockResolvedValue({
+        googleRefreshToken: 'refresh-falso',
+        googleUltimaSincronizacion: null,
+        googleAmbitos: ['https://www.googleapis.com/auth/calendar.events', ...AMBITOS_CLASSROOM].join(' '),
+      });
+
+      expect((await servicio.obtenerEstado('usuario-1')).classroom).toBe(true);
+    });
+
+    it('acepta el nombre con el que Google devuelve de verdad el permiso de trabajos', async () => {
+      // Lo que devolvió Google en la prueba real del 29/09/2026.
+      prismaFalso.usuario.findUniqueOrThrow.mockResolvedValue({
+        googleRefreshToken: 'refresh-falso',
+        googleUltimaSincronizacion: null,
+        googleAmbitos:
+          'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.student-submissions.me.readonly https://www.googleapis.com/auth/calendar.events',
+      });
+
+      expect((await servicio.obtenerEstado('usuario-1')).classroom).toBe(true);
     });
 
     it('informa no conectado cuando no hay refresh token', async () => {
@@ -189,6 +224,7 @@ describe('GoogleService', () => {
           googleRefreshToken: null,
           googleTokenExpiraEn: null,
           googleUltimaSincronizacion: null,
+          googleAmbitos: null,
         },
       });
       expect(prismaFalso.eventoCalendarioGoogle.deleteMany).toHaveBeenCalledWith({

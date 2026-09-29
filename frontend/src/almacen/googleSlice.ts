@@ -12,6 +12,7 @@ import type { EstadoRaiz } from './store';
 
 interface EstadoGoogleSlice {
   conectado: boolean;
+  classroom: boolean;
   ultimaSincronizacion: string | null;
   sincronizando: boolean;
   cargandoEstado: boolean;
@@ -21,6 +22,7 @@ interface EstadoGoogleSlice {
 
 const estadoInicial: EstadoGoogleSlice = {
   conectado: false,
+  classroom: false,
   ultimaSincronizacion: null,
   sincronizando: false,
   cargandoEstado: false,
@@ -52,11 +54,11 @@ export const cargarEstadoGoogle = createAsyncThunk<
 
 export const conectarConGoogle = createAsyncThunk<
   string,
-  void,
+  { classroom?: boolean } | undefined,
   { state: EstadoRaiz; rejectValue: string }
->('google/conectar', async (_, { getState, rejectWithValue }) => {
+>('google/conectar', async (opciones, { getState, rejectWithValue }) => {
   try {
-    const { url } = await obtenerUrlConexionGoogle(tokenOError(getState()));
+    const { url } = await obtenerUrlConexionGoogle(tokenOError(getState()), opciones?.classroom);
     return url;
   } catch (error) {
     return rejectWithValue(
@@ -105,6 +107,7 @@ const googleSlice = createSlice({
       .addCase(cargarEstadoGoogle.fulfilled, (estado, accion) => {
         estado.cargandoEstado = false;
         estado.conectado = accion.payload.conectado;
+        estado.classroom = accion.payload.classroom;
         estado.ultimaSincronizacion = accion.payload.ultimaSincronizacion;
       })
       .addCase(cargarEstadoGoogle.rejected, (estado) => {
@@ -129,6 +132,7 @@ const googleSlice = createSlice({
       })
       .addCase(desconectarGoogle.fulfilled, (estado) => {
         estado.conectado = false;
+        estado.classroom = false;
         estado.ultimaSincronizacion = null;
         estado.ultimoResumen = null;
       })
