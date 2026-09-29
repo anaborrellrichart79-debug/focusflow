@@ -62,10 +62,14 @@ function hoyFlotante() {
 // Inicio con sesión: tarjetas comunes (próximos 7 días, to-dos) y otras según
 // los perfiles (Estudiante, Profesional, Padre) elegidos en Ajustes o, si no
 // hay ninguno elegido, los que sugiere la app.
+// Siempre la misma lista vacía: un [] nuevo en cada render haría que el
+// selector devolviera algo distinto cada vez y repintara de más.
+const SIN_SUPERVISADOS: PersonaVinculada[] = [];
+
 export function InicioPersonalizado({ usuario }: { usuario: UsuarioSesion }) {
   const intl = useIntl();
   const despachar = usarDespachador();
-  const supervisados = usarSelector((estado) => estado.familia.datos?.supervisados ?? []);
+  const supervisados = usarSelector((estado) => estado.familia.datos?.supervisados ?? SIN_SUPERVISADOS);
   const { perfiles, sugeridos } = perfilesEfectivos(usuario, supervisados.length);
 
   useEffect(() => {

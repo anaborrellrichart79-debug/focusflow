@@ -119,15 +119,19 @@ export class TareasService {
   }
 
   // Cambios en la revisión familiar que provoca esta actualización:
-  // - cambiar de revisor borra la revisión anterior;
   // - marcarla como hecha con revisor la deja pendiente de revisión;
+  // - elegir revisor para una tarea que ya está hecha, también (da igual el
+  //   orden en que se hagan los dos cambios);
+  // - cambiar de revisor en otro caso borra la revisión anterior;
   // - sacarla de "hecha" mientras esperaba revisión cancela la petición.
   private calcularRevision(tareaOriginal: TareaModel, datos: ActualizarTareaDto) {
     const revisor = datos.revisorId !== undefined ? datos.revisorId : tareaOriginal.revisorId;
     const pasaAHecha =
       datos.estado === EstadoTarea.HECHA && tareaOriginal.estado !== EstadoTarea.HECHA;
+    const cambiaRevisor = datos.revisorId !== undefined && datos.revisorId !== tareaOriginal.revisorId;
+    const quedaHecha = (datos.estado ?? tareaOriginal.estado) === EstadoTarea.HECHA;
 
-    if (revisor && pasaAHecha) {
+    if (revisor && (pasaAHecha || (cambiaRevisor && quedaHecha))) {
       return { estadoRevision: EstadoRevision.PENDIENTE, comentarioRevision: null };
     }
     if (datos.revisorId !== undefined && datos.revisorId !== tareaOriginal.revisorId) {

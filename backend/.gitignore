@@ -27,3 +27,6 @@ pnpm-debug.log*
 .env
 
 /src/generated/prisma
+
+# Compilación del backend que arrancan los tests de extremo a extremo
+/dist-e2e

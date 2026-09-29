@@ -471,6 +471,21 @@ describe('TareasService', () => {
       expect(prismaFalso.aviso.create).not.toHaveBeenCalled();
     });
 
+    it('elegir revisor para una tarea que ya está hecha también pide la revisión', async () => {
+      prismaFalso.tarea.findFirst.mockResolvedValue({ ...tareaConRevisor, estado: 'HECHA', revisorId: null });
+      prismaFalso.vinculoFamiliar.findUnique.mockResolvedValue({ id: 'vinculo-1' });
+
+      await servicio.actualizar('hija', 'tarea-1', { revisorId: 'mama' });
+
+      expect(prismaFalso.tarea.update.mock.calls[0][0].data).toMatchObject({
+        revisorId: 'mama',
+        estadoRevision: 'PENDIENTE',
+      });
+      expect(prismaFalso.aviso.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ usuarioId: 'mama', tipo: 'REVISION_SOLICITADA' }),
+      });
+    });
+
     it('solo deja elegir como revisor a alguien vinculado', async () => {
       prismaFalso.tarea.findFirst.mockResolvedValue({ ...tareaConRevisor, revisorId: null });
       prismaFalso.vinculoFamiliar.findUnique.mockResolvedValue(null);
