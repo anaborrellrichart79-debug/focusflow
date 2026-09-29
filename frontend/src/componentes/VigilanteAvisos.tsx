@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { Aviso } from '@/servicios/recordatorios';
+import { pushActivoEnEsteDispositivo } from '@/servicios/push';
 import { textoAviso } from '@/utilidades/avisos';
 import { reproducirAlarmaEmergencia, reproducirAvisoRecordatorio } from '@/utilidades/sonido';
 
@@ -49,7 +50,9 @@ export function VigilanteAvisos() {
     if (hayEmergencia) reproducirAlarmaEmergencia();
     else reproducirAvisoRecordatorio();
 
-    if (notificacionesPermitidas()) {
+    // Con Web Push activo en este dispositivo, el service worker ya ha
+    // enseñado la notificación: aquí solo suenan y se marcan como mostrados.
+    if (notificacionesPermitidas() && !pushActivoEnEsteDispositivo()) {
       const { titulo, cuerpo } =
         nuevos.length === 1
           ? textoAviso(intl, nuevos[0])

@@ -12,6 +12,7 @@ import { cambiarModoEscolar, cambiarPerfiles } from '@/almacen/sesionSlice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TarjetaAvisosDispositivo } from '@/componentes/TarjetaAvisosDispositivo';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { PerfilUsuario } from '@/servicios/autenticacion';
 import { PERFILES, perfilesEfectivos } from '@/utilidades/perfiles';
@@ -112,6 +113,8 @@ export function PaginaAjustes() {
           )}
         </CardContent>
       </Card>
+
+      <TarjetaAvisosDispositivo />
 
       <Card>
         <CardHeader>

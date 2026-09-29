@@ -54,6 +54,7 @@ model Usuario {
   emergenciaPorCorreo        Boolean                  @default(false)
   recordatorios              Recordatorio[]
   avisos                     Aviso[]
+  suscripcionesPush          SuscripcionPush[]
   diasNoLectivosPropios      DiaNoLectivoPropio[]
   // Vínculo familiar: el supervisado genera un código de un solo uso y el
   // responsable (padre, madre, tutor) lo introduce en su cuenta. Así no hace
@@ -531,4 +532,20 @@ model Nota {
 
   @@index([usuarioId, tipo])
   @@map("notas")
+}
+
+// Un dispositivo (navegador) suscrito a Web Push: recibe los avisos aunque la
+// app esté cerrada. El endpoint lo da el servicio de push del navegador y es
+// único por dispositivo; p256dh y auth cifran el contenido del mensaje.
+model SuscripcionPush {
+  id        String   @id @default(uuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  creadoEn  DateTime @default(now())
+
+  @@index([usuarioId])
+  @@map("suscripciones_push")
 }

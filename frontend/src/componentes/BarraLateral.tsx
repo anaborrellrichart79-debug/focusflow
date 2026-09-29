@@ -21,7 +21,7 @@ import {
 import { useIntl } from 'react-intl';
 import { Link, NavLink } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
-import { cerrarSesion } from '@/almacen/sesionSlice';
+import { salir } from '@/almacen/sesionSlice';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { FiltroEtiqueta } from './FiltroEtiqueta';
@@ -175,7 +175,7 @@ export function BarraLateral({
           variant="ghost"
           size="sm"
           className="justify-start gap-3 px-3 text-muted-foreground"
-          onClick={() => despachar(cerrarSesion())}
+          onClick={() => despachar(salir())}
         >
           <LogOut aria-hidden className="size-4" />
           {intl.formatMessage({ id: 'auth.cerrarSesion' })}

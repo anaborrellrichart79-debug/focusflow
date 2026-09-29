@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoRevision, EstadoTarea, Recurrencia } from '../generated/prisma/enums.js';
 import type { TareaModel } from '../generated/prisma/models.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
+import { PushService } from '../push/push.service.js';
 import type { ActualizarTareaDto } from './dto/actualizar-tarea.dto.js';
 import type { CrearTareaDto } from './dto/crear-tarea.dto.js';
 import type { FiltrarTareasDto } from './dto/filtrar-tareas.dto.js';
@@ -18,7 +19,10 @@ const INCLUIR_RELACIONES = {
 
 @Injectable()
 export class TareasService {
-  constructor(private readonly prisma: ServicioPrisma) {}
+  constructor(
+    private readonly prisma: ServicioPrisma,
+    private readonly push: PushService,
+  ) {}
 
   async crear(usuarioId: string, datos: CrearTareaDto) {
     if (datos.objetivoId) {
@@ -148,7 +152,7 @@ export class TareasService {
       where: { id: usuarioId },
       select: { nombre: true, correo: true },
     });
-    await this.prisma.aviso.create({
+    const aviso = await this.prisma.aviso.create({
       data: {
         usuarioId: revisorId,
         tareaId: tarea.id,
@@ -157,6 +161,7 @@ export class TareasService {
         datos: { titulo: tarea.titulo, nombre: propietario.nombre ?? propietario.correo },
       },
     });
+    void this.push.enviarAvisos(revisorId, [aviso]);
   }
 
   private async verificarVinculoRevisor(usuarioId: string, revisorId: string) {

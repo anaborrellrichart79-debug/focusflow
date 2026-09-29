@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CorreoService } from '../correo/correo.service.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
+import { PushService } from '../push/push.service.js';
 import { CalendarioEscolarService } from './calendario-escolar.service.js';
 import { GeneradorAvisosService } from './generador-avisos.service.js';
 import { IaService } from './ia.service.js';
@@ -37,6 +38,7 @@ function tarea(datos: Record<string, unknown>) {
 }
 
 describe('GeneradorAvisosService', () => {
+  const pushFalso = { enviarAvisos: vi.fn() };
   let servicio: GeneradorAvisosService;
 
   const usuarioBase = {
@@ -98,6 +100,7 @@ describe('GeneradorAvisosService', () => {
         { provide: IaService, useValue: iaFalsa },
         { provide: CorreoService, useValue: correoFalso },
         { provide: ConfigService, useValue: configFalso },
+        { provide: PushService, useValue: pushFalso },
       ],
     }).compile();
 
@@ -225,6 +228,10 @@ describe('GeneradorAvisosService', () => {
         clave: `entrega:rec-1:tarea-1:${fechaLimite.toISOString()}`,
         datos: { horasRestantes: 21 },
       });
+      // Nada más crearlo, sin esperar al texto de Ollama.
+      expect(pushFalso.enviarAvisos).toHaveBeenCalledWith('usuario-1', [
+        expect.objectContaining({ tipo: 'ENTREGA', tareaId: 'tarea-1' }),
+      ]);
     });
 
     it('una tarea sin hora vence al final de su día', async () => {

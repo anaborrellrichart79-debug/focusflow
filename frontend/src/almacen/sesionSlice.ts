@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, type ThunkAction, type UnknownAction } from '@reduxjs/toolkit';
 import {
   actualizarPreferencias,
   iniciarSesion as iniciarSesionApi,
@@ -8,6 +8,7 @@ import {
   type UsuarioSesion,
 } from '@/servicios/autenticacion';
 import { ErrorApi } from '@/servicios/api';
+import { desactivarPush } from '@/servicios/push';
 
 const CLAVE_TOKEN_ALMACENAMIENTO = 'focusflow.tokenAcceso';
 
@@ -195,4 +196,15 @@ const sesionSlice = createSlice({
 });
 
 export const { cerrarSesion } = sesionSlice.actions;
+
+// Lo que usa el botón "Cerrar sesión": además de cerrarla, da de baja este
+// dispositivo de los avisos push, para que quien entre después en el mismo
+// navegador no reciba los avisos de esta cuenta.
+export function salir(): ThunkAction<void, { sesion: EstadoSesion }, unknown, UnknownAction> {
+  return (despachar, obtenerEstado) => {
+    const token = obtenerEstado().sesion.tokenAcceso;
+    despachar(cerrarSesion());
+    desactivarPush(token).catch(() => {});
+  };
+}
 export default sesionSlice.reducer;

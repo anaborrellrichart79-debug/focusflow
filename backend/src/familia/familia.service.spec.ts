@@ -6,6 +6,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
+import { PushService } from '../push/push.service.js';
 import { FamiliaService } from './familia.service.js';
 
 const MANANA = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -38,15 +39,19 @@ describe('FamiliaService', () => {
     ),
   };
 
+  const pushFalso = { enviarAvisos: vi.fn() };
+
   beforeEach(async () => {
     vi.clearAllMocks();
     prismaFalso.vinculoFamiliar.create.mockResolvedValue({ id: 'vinculo-1' });
     prismaFalso.tarea.update.mockResolvedValue({ id: 'tarea-1' });
+    prismaFalso.aviso.create.mockResolvedValue({ id: 'aviso-1' });
 
     const modulo: TestingModule = await Test.createTestingModule({
       providers: [
         FamiliaService,
         { provide: ServicioPrisma, useValue: prismaFalso },
+        { provide: PushService, useValue: pushFalso },
       ],
     }).compile();
     servicio = modulo.get(FamiliaService);
@@ -319,6 +324,8 @@ describe('FamiliaService', () => {
           },
         }),
       });
+      // También al móvil del supervisado, aunque tenga la app cerrada.
+      expect(pushFalso.enviarAvisos).toHaveBeenCalledWith('hija', [{ id: 'aviso-1' }]);
     });
 
     it('devolverla la vuelve a poner en marcha con el comentario', async () => {

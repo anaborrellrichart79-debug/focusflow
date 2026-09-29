@@ -12,6 +12,7 @@ import { ModuloHorarios } from './horarios/horarios.module.js';
 import { ModuloObjetivos } from './objetivos/objetivos.module.js';
 import { ModuloPomodoro } from './pomodoro/pomodoro.module.js';
 import { ModuloPrisma } from './prisma/prisma.module.js';
+import { ModuloPush } from './push/push.module.js';
 import { ModuloRecordatorios } from './recordatorios/recordatorios.module.js';
 import { ModuloSubtareas } from './subtareas/subtareas.module.js';
 import { ModuloTareas } from './tareas/tareas.module.js';
@@ -34,6 +35,7 @@ import { ModuloTareas } from './tareas/tareas.module.js';
     ModuloRecordatorios,
     ModuloFamilia,
     ModuloNotas,
+    ModuloPush,
   ],
   controllers: [AplicacionController],
   providers: [AplicacionService],

@@ -4,6 +4,7 @@ import { CorreoService } from '../correo/correo.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import type { TipoAviso } from '../generated/prisma/enums.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
+import { PushService } from '../push/push.service.js';
 import { sumarDias, type PeriodoNoLectivo } from './calendario-escolar.js';
 import { CalendarioEscolarService } from './calendario-escolar.service.js';
 import {
@@ -57,6 +58,7 @@ export class GeneradorAvisosService {
     private readonly ia: IaService,
     private readonly correo: CorreoService,
     private readonly config: ConfigService,
+    private readonly push: PushService,
   ) {}
 
   async procesarTodos(ahora = new Date()) {
@@ -263,6 +265,10 @@ export class GeneradorAvisosService {
       skipDuplicates: true,
     });
     if (creados.length === 0) return 0;
+
+    // Al móvil u ordenador aunque la app esté cerrada, con el texto por reglas:
+    // no espera a Ollama. enviarAvisos nunca lanza.
+    void this.push.enviarAvisos(usuarioId, creados);
 
     // El aviso ya existe y la app puede enseñarlo; el texto de Ollama (que
     // puede tardar un minuto) y el correo, que lo incluye, van después.

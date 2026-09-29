@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useIntl } from 'react-intl';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
-import { cerrarSesion, restaurarSesion } from '@/almacen/sesionSlice';
+import { salir, restaurarSesion } from '@/almacen/sesionSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorApi } from '@/servicios/api';
@@ -95,7 +95,7 @@ export function PantallaConsentimientoPendiente() {
             <Button variant="outline" onClick={alReenviar} disabled={reenvio.tipo === 'enviando'}>
               {intl.formatMessage({ id: 'consentimiento.pendiente.reenviar' })}
             </Button>
-            <Button variant="ghost" onClick={() => despachar(cerrarSesion())}>
+            <Button variant="ghost" onClick={() => despachar(salir())}>
               {intl.formatMessage({ id: 'auth.cerrarSesion' })}
             </Button>
           </div>

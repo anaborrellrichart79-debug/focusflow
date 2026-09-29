@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
+import { PushService } from '../push/push.service.js';
 import { TareasService } from './tareas.service.js';
 
 const INCLUIR_RELACIONES = {
@@ -35,11 +36,18 @@ describe('TareasService', () => {
     aviso: { create: vi.fn() },
   };
 
+  const pushFalso = { enviarAvisos: vi.fn() };
+
   beforeEach(async () => {
     vi.clearAllMocks();
+    prismaFalso.aviso.create.mockResolvedValue({ id: 'aviso-1' });
 
     const modulo: TestingModule = await Test.createTestingModule({
-      providers: [TareasService, { provide: ServicioPrisma, useValue: prismaFalso }],
+      providers: [
+        TareasService,
+        { provide: ServicioPrisma, useValue: prismaFalso },
+        { provide: PushService, useValue: pushFalso },
+      ],
     }).compile();
 
     servicio = modulo.get(TareasService);
@@ -451,6 +459,7 @@ describe('TareasService', () => {
           datos: { titulo: 'Maqueta del sistema solar', nombre: 'Lucía' },
         }),
       });
+      expect(pushFalso.enviarAvisos).toHaveBeenCalledWith('mama', [{ id: 'aviso-1' }]);
     });
 
     it('sin revisor, marcarla como hecha no pide revisión', async () => {

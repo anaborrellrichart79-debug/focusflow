@@ -7,6 +7,7 @@ import {
 import { randomInt } from 'node:crypto';
 import { calcularEdad } from '../comun/edad.util.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
+import { PushService } from '../push/push.service.js';
 import type { AsignarTareaDto, RevisarTareaDto } from './dto/familia.dto.js';
 
 // Sin letras ni números que se confundan al dictarlos (O/0, I/1).
@@ -28,7 +29,10 @@ export function nombreVisible(persona: {
 // que él mismo ha asignado, nunca el resto de la cuenta.
 @Injectable()
 export class FamiliaService {
-  constructor(private readonly prisma: ServicioPrisma) {}
+  constructor(
+    private readonly prisma: ServicioPrisma,
+    private readonly push: PushService,
+  ) {}
 
   async obtener(usuarioId: string) {
     const usuario = await this.prisma.usuario.findUniqueOrThrow({
@@ -261,7 +265,7 @@ export class FamiliaService {
       select: { nombre: true, correo: true },
     });
 
-    const [actualizada] = await this.prisma.$transaction([
+    const [actualizada, aviso] = await this.prisma.$transaction([
       this.prisma.tarea.update({
         where: { id: tareaId },
         data: {
@@ -287,6 +291,7 @@ export class FamiliaService {
         },
       }),
     ]);
+    void this.push.enviarAvisos(tarea.usuarioId, [aviso]);
     return actualizada;
   }
 }
