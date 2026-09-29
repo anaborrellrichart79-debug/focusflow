@@ -141,11 +141,17 @@ function TarjetaVincular() {
   const intl = useIntl();
   const despachar = usarDespachador();
   const [codigo, setCodigo] = useState('');
+  // Nombre del menor cuya cuenta acaba de quedar confirmada con este vínculo.
+  const [autorizado, setAutorizado] = useState<string | null>(null);
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
+    setAutorizado(null);
     const resultado = await despachar(vincularConCodigo(codigo));
-    if (vincularConCodigo.fulfilled.match(resultado)) setCodigo('');
+    if (vincularConCodigo.fulfilled.match(resultado)) {
+      setCodigo('');
+      if (resultado.payload.consentimientoConcedido) setAutorizado(nombreDe(resultado.payload));
+    }
   }
 
   return (
@@ -172,6 +178,11 @@ function TarjetaVincular() {
         <p className="mt-2 text-xs text-muted-foreground">
           {intl.formatMessage({ id: 'familia.vincular.ayuda' })}
         </p>
+        {autorizado && (
+          <p role="status" className="mt-2 text-sm text-primary">
+            {intl.formatMessage({ id: 'familia.vincular.consentimientoConcedido' }, { nombre: autorizado })}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

@@ -3,7 +3,7 @@ import * as api from '@/servicios/familia';
 import type {
   EstadoFamilia,
   NuevaTareaAsignada,
-  PersonaVinculada,
+  ResultadoVinculo,
   TareaSupervisada,
 } from '@/servicios/familia';
 import { crearThunkApi } from './crearThunkApi';
@@ -32,7 +32,7 @@ export const generarCodigoVinculo = crearThunkApi<{ codigo: string; expiraEn: st
   'No se pudo generar el código',
 );
 
-export const vincularConCodigo = crearThunkApi<PersonaVinculada, string>(
+export const vincularConCodigo = crearThunkApi<ResultadoVinculo, string>(
   'familia/vincular',
   (token, codigo) => api.vincularConCodigo(token, codigo),
   'No se pudo completar el vínculo',
@@ -96,7 +96,8 @@ const familiaSlice = createSlice({
         if (estado.datos) estado.datos.codigo = accion.payload;
       })
       .addCase(vincularConCodigo.fulfilled, (estado, accion) => {
-        estado.datos?.supervisados.push(accion.payload);
+        const { consentimientoConcedido: _, ...persona } = accion.payload;
+        estado.datos?.supervisados.push(persona);
       })
       .addCase(quitarVinculo.fulfilled, (estado, accion) => {
         if (!estado.datos) return;

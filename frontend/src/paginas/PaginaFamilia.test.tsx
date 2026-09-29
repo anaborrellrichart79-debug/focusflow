@@ -33,14 +33,18 @@ function tareaSupervisada(datos: Partial<TareaSupervisada>): TareaSupervisada {
   };
 }
 
-function simularApi(familia: EstadoFamilia, tareas: TareaSupervisada[] = []) {
+function simularApi(
+  familia: EstadoFamilia,
+  tareas: TareaSupervisada[] = [],
+  consentimientoConcedido = false,
+) {
   const fetchFalso = vi.fn(async (url: string, opciones?: RequestInit) => {
     const cuerpo = opciones?.body ? JSON.parse(opciones.body as string) : null;
     let respuesta: unknown = null;
     if (url.endsWith('/familia')) respuesta = familia;
     else if (url.endsWith('/familia/codigo'))
       respuesta = { codigo: 'K7P2QX', expiraEn: '2026-09-25T10:00:00.000Z' };
-    else if (url.endsWith('/familia/vincular')) respuesta = HIJA;
+    else if (url.endsWith('/familia/vincular')) respuesta = { ...HIJA, consentimientoConcedido };
     else if (url.endsWith('/revision'))
       respuesta = tareaSupervisada({ estadoRevision: cuerpo.decision, comentarioRevision: cuerpo.comentario ?? null });
     else if (url.includes('/supervisados/') && opciones?.method === 'POST')
@@ -84,6 +88,20 @@ describe('PaginaFamilia', () => {
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ codigo: 'K7P2QX' }) }),
     );
     expect(await screen.findByText('Tareas de Lucía')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('si el vínculo confirma la cuenta de un menor pendiente, lo avisa', async () => {
+    const usuario = userEvent.setup();
+    simularApi(SIN_NADIE, [], true);
+    renderizarPagina(<PaginaFamilia />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
+
+    await usuario.type(await screen.findByLabelText('Código'), 'k7p2qx');
+    await usuario.click(screen.getByRole('button', { name: 'Vincular' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Has confirmado la cuenta de Lucía: ya puede usar FocusFlow.',
+    );
   });
 
   it('aprueba una tarea pendiente de revisión', async () => {

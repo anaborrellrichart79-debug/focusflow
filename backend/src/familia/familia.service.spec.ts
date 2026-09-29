@@ -74,6 +74,7 @@ describe('FamiliaService', () => {
         nombre: 'Lucía',
         correo: 'l@example.com',
         codigoVinculoExpiraEn: MANANA,
+        consentimientoConfirmado: true,
       });
       prismaFalso.vinculoFamiliar.findUnique.mockResolvedValue(null);
 
@@ -94,7 +95,72 @@ describe('FamiliaService', () => {
         id: 'hija',
         nombre: 'Lucía',
         correo: 'l@example.com',
+        consentimientoConcedido: false,
       });
+      // Si la cuenta ya estaba confirmada no hace falta comprobar la edad.
+      expect(prismaFalso.usuario.findUniqueOrThrow).not.toHaveBeenCalled();
+    });
+
+    it('un adulto que vincula a un menor pendiente confirma su cuenta', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue({
+        id: 'hija',
+        nombre: 'Lucía',
+        correo: 'l@example.com',
+        codigoVinculoExpiraEn: MANANA,
+        consentimientoConfirmado: false,
+      });
+      prismaFalso.usuario.findUniqueOrThrow.mockResolvedValue({
+        fechaNacimiento: new Date('1980-05-01'),
+      });
+      prismaFalso.vinculoFamiliar.findUnique.mockResolvedValue(null);
+
+      const resultado = await servicio.vincular('mama', 'ABC234');
+
+      expect(prismaFalso.usuario.update).toHaveBeenCalledWith({
+        where: { id: 'hija' },
+        data: {
+          codigoVinculo: null,
+          codigoVinculoExpiraEn: null,
+          consentimientoConfirmado: true,
+        },
+      });
+      expect(resultado.consentimientoConcedido).toBe(true);
+    });
+
+    it('una cuenta antigua sin fecha de nacimiento se da por adulta', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue({
+        id: 'hija',
+        codigoVinculoExpiraEn: MANANA,
+        consentimientoConfirmado: false,
+      });
+      prismaFalso.usuario.findUniqueOrThrow.mockResolvedValue({
+        fechaNacimiento: null,
+      });
+      prismaFalso.vinculoFamiliar.findUnique.mockResolvedValue(null);
+
+      const resultado = await servicio.vincular('mama', 'ABC234');
+
+      expect(resultado.consentimientoConcedido).toBe(true);
+    });
+
+    it('otro menor no puede autorizar la cuenta de un menor pendiente', async () => {
+      const haceDiezAnios = new Date();
+      haceDiezAnios.setFullYear(haceDiezAnios.getFullYear() - 10);
+      prismaFalso.usuario.findUnique.mockResolvedValue({
+        id: 'hija',
+        codigoVinculoExpiraEn: MANANA,
+        consentimientoConfirmado: false,
+      });
+      prismaFalso.usuario.findUniqueOrThrow.mockResolvedValue({
+        fechaNacimiento: haceDiezAnios,
+      });
+      prismaFalso.vinculoFamiliar.findUnique.mockResolvedValue(null);
+
+      await expect(servicio.vincular('amigo', 'ABC234')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prismaFalso.vinculoFamiliar.create).not.toHaveBeenCalled();
+      expect(prismaFalso.usuario.update).not.toHaveBeenCalled();
     });
 
     it('rechaza un código caducado, inexistente o el propio', async () => {
@@ -126,6 +192,7 @@ describe('FamiliaService', () => {
       prismaFalso.usuario.findUnique.mockResolvedValue({
         id: 'hija',
         codigoVinculoExpiraEn: MANANA,
+        consentimientoConfirmado: true,
       });
       prismaFalso.vinculoFamiliar.findUnique.mockResolvedValue({
         id: 'vinculo-1',

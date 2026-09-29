@@ -18,7 +18,7 @@ describe('CorreoService', () => {
   let servicio: CorreoService;
 
   const configFalso = {
-    get: vi.fn((clave: string) => {
+    get: vi.fn((clave: string): string | undefined => {
       const valores: Record<string, string> = {
         SMTP_HOST: 'smtp.ejemplo.com',
         SMTP_PORT: '587',

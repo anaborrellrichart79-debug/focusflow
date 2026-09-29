@@ -4,7 +4,7 @@ Este fichero recoge en todo momento qué está hecho y qué queda pendiente en e
 
 ## 👉 Empezar aquí la próxima sesión
 
-**Próxima sesión: valorar punto por punto la "Propuesta de mejoras (pendiente de valorar)"** (sección justo antes del Roadmap). Ninguno de esos puntos está empezado ni aprobado todavía.
+**Próxima sesión: seguir con la "Propuesta de mejoras"** (sección justo antes del Roadmap). Todos los puntos están aprobados (29/09/2026). Ojo con dos condiciones: **1.1 (SMTP) no antes del 11/10/2026** (cambio de Hostalia a Hetzner) y **3.3: no borrar las cuentas de prueba hasta grabar el vídeo demo**.
 
 Las Fases 1, 2, 3 y 4 están completas. Toda la ampliación de funcionalidades propuesta (bloques 1 a 4: **Fase 5 — Planificación temporal**, **Bloque 2 — Estructura de las tareas**, **Bloque 3 — Revisión y hábitos**, **Bloque 4 — Analítica más profunda**) está completa, y además se ha añadido **Sincronización con Google Calendar** (ver su sección más abajo). Batería de tests: **backend 76 tests unitarios / frontend 190 tests** / backend 151 tests unitarios + 1 e2e. **Modo Escolar**: **completo** (fases A a F), ampliado después con el **horario de clase** (ver su sección). **Recordatorios inteligentes** (alarmas, modo emergencia, calendario escolar 2026-27 precargado e IA local con Ollama): **completo** (ver su sección; backend 204 tests / frontend 209 tests). **Metadatos avanzados** (estados nuevos, ámbito Eventual, vínculo familiar con revisión de tareas): **completo** (ver su sección; backend 221 tests / frontend 221 tests). **Etiquetas jerárquicas, perfiles y Notas/To-Do**: **completo** (ver su sección; backend 235 tests / frontend 241 tests). Solo quedaban pendientes, del lado del usuario, configurar un SMTP real para que el correo al tutor llegue de verdad y ver con sus propios ojos la pantalla de cuenta pendiente con la cuenta de menor de prueba (ver Fases B y D).
 
@@ -333,28 +333,29 @@ Pedido por el usuario ("categorías y etiquetas multidimensionales", "vistas de 
 - [x] Probado contra la API real con la cuenta de prueba `familia.hija@example.com`: tres niveles bien, el cuarto rechazado, ciclo rechazado, nombre repetido 409, tarea etiquetada con una subetiqueta, nota con casilla asociada a una tarea, to-do marcado, quitar la casilla a un to-do rechazado, otra cuenta no puede borrar la nota (404), al borrar "Matemáticas" "Cálculo" sube a "Estudio", perfiles sin repetidos y perfil inventado rechazado. En Chrome: Inicio de Estudiante, Notas, Etiquetas y el filtro de la barra lateral aplicado al Kanban. Ajustes tras verlo: las etiquetas de fecha de las tarjetas del Inicio ya no se parten en dos líneas, "Clases de hoy" explica que hay que activar el modo escolar si está apagado, y la opción vacía de "Mostrar" en Notas dice "Todas" (no "Sin asociar").
 - [ ] Limitaciones conocidas: una nota solo se asocia a una cosa a la vez (una tarea o un objetivo); el filtro de etiqueta no se guarda entre sesiones (a propósito, para no dejar vistas "vacías" sin saber por qué al volver).
 
-## Propuesta de mejoras (pendiente de valorar)
+## Propuesta de mejoras (valorada el 29/09/2026)
 
-Propuesta de Claude al terminar etiquetas, perfiles y notas, a petición del usuario ("¿mejorarías algo o añadirías alguna funcionalidad más?"). **Nada de esto está aprobado**: se valora punto por punto en la próxima sesión. Recomendación de Claude si hubiera que elegir tres: 1.1 + 1.2 (correo y vínculo como consentimiento), 1.4 (app instalable con notificaciones) y 2.1 (búsqueda global).
+Propuesta de Claude al terminar etiquetas, perfiles y notas. **Valorada punto por punto por el usuario el 29/09/2026: todos los puntos aprobados**, con dos condiciones de calendario (1.1 y 3.3). Orden de trabajo acordado: 1.2 → 2.1 → 2.2 → 1.4 → resto; 1.1 a partir del 11/10; 3.3 al final, tras el vídeo demo.
 
 ### 1. Cerrar huecos que ya existen
-- [ ] 1.1 **Configurar el correo (SMTP)**. Hoy un menor real no puede usar la app (se queda esperando la confirmación del tutor, que nunca llega) y no salen los correos de recordatorios ni las alarmas de emergencia. Lo configura el usuario (p. ej. contraseña de aplicación de Gmail) en `backend/.env`.
-- [ ] 1.2 **Que el vínculo familiar sirva como consentimiento parental**: si el padre o la madre introduce el código del hijo, eso ya demuestra que lo autoriza; se podría desbloquear así la cuenta del menor sin depender del correo.
-- [ ] 1.3 **Verificar el correo al registrarse**: ahora cualquiera puede registrarse con cualquier dirección; con familias y revisiones importa más.
-- [ ] 1.4 **App instalable en el móvil (PWA) con notificaciones aunque esté cerrada (Web Push)**: un estudiante la usará sobre todo en el móvil, y ahora los avisos solo suenan con la pestaña abierta.
+- [ ] 1.1 **Configurar el correo (SMTP)** — ✅ aprobado, **no empezar antes del 11/10/2026**: ese día el usuario da de baja Hostalia y pasa a Hetzner, y el SMTP se configurará con el nuevo proveedor. Hoy un menor real no puede usar la app (se queda esperando la confirmación del tutor, que nunca llega) y no salen los correos de recordatorios ni las alarmas de emergencia. Se configura en `backend/.env`.
+- [x] 1.2 **Que el vínculo familiar sirva como consentimiento parental** — hecho (29/09/2026) y comprobado por el usuario en el navegador. La pantalla de "cuenta pendiente de confirmación" ofrece ahora, además del correo, **generar un código de vínculo**; cuando el padre o la madre lo introduce en su página Familia, `FamiliaService.vincular` crea el vínculo **y** pone `consentimientoConfirmado = true` en la misma transacción, y la página Familia le muestra "Has confirmado la cuenta de X". Solo lo puede hacer una persona adulta (si quien introduce el código tiene fecha de nacimiento y es menor → 400; las cuentas antiguas sin fecha se dan por adultas, igual que su `consentimientoConfirmado` por defecto). En `FamiliaController` el guard de consentimiento pasó de toda la clase a cada método, salvo `GET /familia` y `POST /familia/codigo`, que quedan abiertos a una cuenta pendiente. Tests: backend 238 (+3), frontend 243 (+2). De paso se arreglaron dos errores de tipos que `npx tsc --noEmit` daba en `correo.service.spec.ts` y `google.service.spec.ts` (el mock de `ConfigService.get` no admitía `undefined`).
+  - **Bug encontrado por el usuario al probarlo**: en la cuenta del menor aparecían las tareas del adulto. No era el backend (Sofía tenía 0 tareas en la base de datos): al cerrar sesión solo se borraba la sesión, y las tareas, objetivos, notas, etc. de la cuenta anterior seguían en la tienda Redux, así que al entrar con otra cuenta en la misma pestaña se veían. Arreglado con `frontend/src/almacen/reductorRaiz.ts`: tras `cerrarSesion`, `iniciarSesionUsuario.fulfilled`, `registrarse.fulfilled` o `restaurarSesion.rejected`, todos los datos vuelven a su estado inicial y solo se conservan `interfaz` (idioma, tema) y `sesion`. `store.ts` y el helper de tests `pruebas/render.tsx` usan ya ese mismo reductor. Tests: frontend 246 (+3, `reductorRaiz.test.ts`).
+- [ ] 1.3 **Verificar el correo al registrarse** — ✅ aprobado. Se puede programar antes, pero no se podrá probar de verdad hasta tener el SMTP de 1.1.
+- [ ] 1.4 **App instalable en el móvil (PWA) con notificaciones aunque esté cerrada (Web Push)** — ✅ aprobado.
 
 ### 2. Funcionalidades que la harían redonda
-- [ ] 2.1 **Búsqueda global** en tareas, notas y etiquetas.
-- [ ] 2.2 **Estadísticas por etiqueta o asignatura** ("esta semana, 3 h de Matemáticas y 20 min de Lengua"), con los datos de Pomodoro y etiquetas que ya existen.
-- [ ] 2.3 **Más usos de la IA local (Ollama)**: partir una tarea grande en subtareas, o proponer un plan de estudio con los días que quedan hasta un examen.
-- [ ] 2.4 **Asistente la primera vez que se entra**: elegir perfil, activar el modo escolar y crear el horario en tres pasos (hoy está repartido por Ajustes y otras páginas).
-- [ ] 2.5 **Importar deberes desde Google Classroom**, aprovechando la conexión con Google que ya existe.
+- [ ] 2.1 **Búsqueda global** en tareas, notas y etiquetas — ✅ aprobado.
+- [ ] 2.2 **Estadísticas por etiqueta o asignatura** ("esta semana, 3 h de Matemáticas y 20 min de Lengua"), con los datos de Pomodoro y etiquetas que ya existen — ✅ aprobado.
+- [ ] 2.3 **Más usos de la IA local (Ollama)**: partir una tarea grande en subtareas, o proponer un plan de estudio con los días que quedan hasta un examen — ✅ aprobado.
+- [ ] 2.4 **Asistente la primera vez que se entra**: elegir perfil, activar el modo escolar y crear el horario en tres pasos — ✅ aprobado (mejor hacerlo hacia el final, cuando la app cambie menos).
+- [ ] 2.5 **Importar deberes desde Google Classroom**, aprovechando la conexión con Google que ya existe — ✅ aprobado (el más costoso: permisos de Classroom más restrictivos, y muchos centros los bloquean).
 
 ### 3. Mantenimiento y calidad
-- [ ] 3.1 **Tests de extremo a extremo** (p. ej. Playwright) de los flujos clave: registro, vínculo familiar, revisión y recordatorios. Ahora se comprueban a mano en Chrome.
-- [ ] 3.2 **Mensajes de error del servidor traducidos** (hoy salen siempre en castellano): que el backend devuelva códigos y el frontend los traduzca.
-- [ ] 3.3 **Limpiar las cuentas de prueba** `@example.com` creadas en la base de datos local durante las pruebas (`recordatorios.prueba`, `familia.hija`, `familia.responsable`, `familia.extrano`, `hijo.prueba`, y las de sesiones anteriores).
-- [ ] 3.4 **Actualizar el calendario escolar cada curso sin tocar código** (cargarlo desde un fichero de datos o una pantalla de administración).
+- [ ] 3.1 **Tests de extremo a extremo** (p. ej. Playwright) de los flujos clave: registro, vínculo familiar, revisión y recordatorios — ✅ aprobado.
+- [ ] 3.2 **Mensajes de error del servidor traducidos**: que el backend devuelva códigos y el frontend los traduzca — ✅ aprobado.
+- [ ] 3.3 **Limpiar las cuentas de prueba** `@example.com` de la base de datos local (`recordatorios.prueba`, `familia.hija`, `familia.responsable`, `familia.extrano`, `hijo.prueba`, y las de sesiones anteriores) — ✅ aprobado, pero **NO BORRARLAS hasta que se haya grabado el vídeo demo** que el usuario usará en su portfolio, LinkedIn y perfiles freelance (esas cuentas sirven de datos para la demo).
+- [ ] 3.4 **Actualizar el calendario escolar cada curso sin tocar código** (cargarlo desde un fichero de datos o una pantalla de administración) — ✅ aprobado.
 
 ## Roadmap de ampliación (propuesto, sin empezar salvo lo de arriba)
 

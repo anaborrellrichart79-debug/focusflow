@@ -4,33 +4,9 @@ import type { ReactElement } from 'react';
 import { IntlProvider } from 'react-intl';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
-import etiquetasReducer from '@/almacen/etiquetasSlice';
-import familiaReducer from '@/almacen/familiaSlice';
-import googleReducer from '@/almacen/googleSlice';
-import notasReducer from '@/almacen/notasSlice';
-import horarioReducer from '@/almacen/horarioSlice';
-import interfazReducer from '@/almacen/interfazSlice';
-import objetivosReducer from '@/almacen/objetivosSlice';
-import pomodoroReducer from '@/almacen/pomodoroSlice';
-import recordatoriosReducer from '@/almacen/recordatoriosSlice';
-import sesionReducer from '@/almacen/sesionSlice';
+import { reductorRaiz } from '@/almacen/reductorRaiz';
 import type { EstadoRaiz } from '@/almacen/store';
-import tareasReducer from '@/almacen/tareasSlice';
 import { es } from '@/idiomas/es';
-
-const reductorRaiz = {
-  interfaz: interfazReducer,
-  sesion: sesionReducer,
-  objetivos: objetivosReducer,
-  tareas: tareasReducer,
-  etiquetas: etiquetasReducer,
-  familia: familiaReducer,
-  pomodoro: pomodoroReducer,
-  google: googleReducer,
-  notas: notasReducer,
-  horario: horarioReducer,
-  recordatorios: recordatoriosReducer,
-};
 
 export function crearTiendaDePrueba(estadoPrecargado?: Partial<EstadoRaiz>) {
   return configureStore({

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomInt } from 'node:crypto';
+import { calcularEdad } from '../comun/edad.util.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import type { AsignarTareaDto, RevisarTareaDto } from './dto/familia.dto.js';
 
@@ -89,12 +90,20 @@ export class FamiliaService {
     );
   }
 
-  // Quien introduce el código pasa a ser responsable de quien lo generó.
+  // Quien introduce el código pasa a ser responsable de quien lo generó. Si
+  // quien lo generó es un menor con la cuenta pendiente de confirmar, el
+  // vínculo hace de consentimiento parental: el código solo se consigue en
+  // persona, de manos del propio menor, así que prueba que el adulto lo
+  // autoriza sin depender del correo al tutor.
   async vincular(responsableId: string, codigoIntroducido: string) {
     const codigo = codigoIntroducido.trim().toUpperCase();
     const supervisado = await this.prisma.usuario.findUnique({
       where: { codigoVinculo: codigo },
-      select: { ...DATOS_PERSONA, codigoVinculoExpiraEn: true },
+      select: {
+        ...DATOS_PERSONA,
+        codigoVinculoExpiraEn: true,
+        consentimientoConfirmado: true,
+      },
     });
     if (
       !supervisado ||
@@ -119,6 +128,25 @@ export class FamiliaService {
     });
     if (existente) throw new ConflictException('Ya estáis vinculados');
 
+    const concedeConsentimiento = !supervisado.consentimientoConfirmado;
+    if (concedeConsentimiento) {
+      const responsable = await this.prisma.usuario.findUniqueOrThrow({
+        where: { id: responsableId },
+        select: { fechaNacimiento: true },
+      });
+      // Sin fecha de nacimiento solo quedan las cuentas anteriores al modo
+      // escolar, que se dan por adultas (igual que su consentimientoConfirmado
+      // por defecto).
+      if (
+        responsable.fechaNacimiento &&
+        calcularEdad(responsable.fechaNacimiento) < 18
+      ) {
+        throw new BadRequestException(
+          'Solo una persona adulta puede autorizar la cuenta de un menor',
+        );
+      }
+    }
+
     const [vinculo] = await this.prisma.$transaction([
       this.prisma.vinculoFamiliar.create({
         data: { responsableId, supervisadoId: supervisado.id },
@@ -126,7 +154,11 @@ export class FamiliaService {
       // Un solo uso.
       this.prisma.usuario.update({
         where: { id: supervisado.id },
-        data: { codigoVinculo: null, codigoVinculoExpiraEn: null },
+        data: {
+          codigoVinculo: null,
+          codigoVinculoExpiraEn: null,
+          ...(concedeConsentimiento ? { consentimientoConfirmado: true } : {}),
+        },
       }),
     ]);
 
@@ -135,6 +167,7 @@ export class FamiliaService {
       id: supervisado.id,
       nombre: supervisado.nombre,
       correo: supervisado.correo,
+      consentimientoConcedido: concedeConsentimiento,
     };
   }
 

@@ -21,7 +21,10 @@ import {
 } from './dto/familia.dto.js';
 import { FamiliaService } from './familia.service.js';
 
-@UseGuards(AuthGuard('jwt'), GuardaConsentimientoConfirmado)
+// El consentimiento se exige método a método: obtener el estado y generar el
+// código quedan abiertos a una cuenta pendiente de confirmar, porque el
+// vínculo familiar es una de las vías para confirmarla (ver vincular).
+@UseGuards(AuthGuard('jwt'))
 @Controller('familia')
 export class FamiliaController {
   constructor(private readonly familia: FamiliaService) {}
@@ -37,6 +40,7 @@ export class FamiliaController {
   }
 
   @Post('vincular')
+  @UseGuards(GuardaConsentimientoConfirmado)
   vincular(
     @UsuarioActual() usuario: UsuarioPeticion,
     @Body() datos: VincularDto,
@@ -45,6 +49,7 @@ export class FamiliaController {
   }
 
   @Delete('vinculos/:id')
+  @UseGuards(GuardaConsentimientoConfirmado)
   @HttpCode(HttpStatus.NO_CONTENT)
   desvincular(
     @UsuarioActual() usuario: UsuarioPeticion,
@@ -54,6 +59,7 @@ export class FamiliaController {
   }
 
   @Get('supervisados/:id/tareas')
+  @UseGuards(GuardaConsentimientoConfirmado)
   listarTareas(
     @UsuarioActual() usuario: UsuarioPeticion,
     @Param('id', ParseUUIDPipe) id: string,
@@ -62,6 +68,7 @@ export class FamiliaController {
   }
 
   @Post('supervisados/:id/tareas')
+  @UseGuards(GuardaConsentimientoConfirmado)
   asignarTarea(
     @UsuarioActual() usuario: UsuarioPeticion,
     @Param('id', ParseUUIDPipe) id: string,
@@ -71,6 +78,7 @@ export class FamiliaController {
   }
 
   @Post('tareas/:tareaId/revision')
+  @UseGuards(GuardaConsentimientoConfirmado)
   revisar(
     @UsuarioActual() usuario: UsuarioPeticion,
     @Param('tareaId', ParseUUIDPipe) tareaId: string,

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorApi } from '@/servicios/api';
 import { reenviarConfirmacion } from '@/servicios/autenticacion';
+import { generarCodigoVinculo } from '@/servicios/familia';
 import { SelectorIdioma } from './SelectorIdioma';
 import { SelectorTema } from './SelectorTema';
 
@@ -15,12 +16,38 @@ type EstadoReenvio =
   | { tipo: 'enviado' }
   | { tipo: 'error'; mensaje: string };
 
+type EstadoCodigo =
+  | { tipo: 'inactivo' }
+  | { tipo: 'generando' }
+  | { tipo: 'generado'; codigo: string; expiraEn: string }
+  | { tipo: 'error'; mensaje: string };
+
 export function PantallaConsentimientoPendiente() {
   const intl = useIntl();
   const despachar = usarDespachador();
   const tokenAcceso = usarSelector((estado) => estado.sesion.tokenAcceso);
   const [reenvio, setReenvio] = useState<EstadoReenvio>({ tipo: 'inactivo' });
   const [comprobando, setComprobando] = useState(false);
+  const [codigo, setCodigo] = useState<EstadoCodigo>({ tipo: 'inactivo' });
+
+  // Segunda vía de confirmación, sin correo: si el padre o la madre introduce
+  // este código en su página Familia, el vínculo confirma la cuenta.
+  async function alGenerarCodigo() {
+    if (!tokenAcceso) return;
+    setCodigo({ tipo: 'generando' });
+    try {
+      const generado = await generarCodigoVinculo(tokenAcceso);
+      setCodigo({ tipo: 'generado', ...generado });
+    } catch (error) {
+      setCodigo({
+        tipo: 'error',
+        mensaje:
+          error instanceof ErrorApi
+            ? error.message
+            : intl.formatMessage({ id: 'consentimiento.pendiente.errorCodigo' }),
+      });
+    }
+  }
 
   async function alReenviar() {
     if (!tokenAcceso) return;
@@ -82,6 +109,40 @@ export function PantallaConsentimientoPendiente() {
               {reenvio.mensaje}
             </p>
           )}
+          <div className="flex flex-col gap-2 rounded-md border border-dashed border-border p-3">
+            <p className="text-sm">{intl.formatMessage({ id: 'consentimiento.pendiente.viaFamilia' })}</p>
+            {codigo.tipo === 'generado' && (
+              <p className="flex flex-wrap items-baseline gap-3">
+                <span
+                  className="font-mono text-2xl font-semibold tracking-[0.3em]"
+                  aria-label={intl.formatMessage({ id: 'familia.codigo.etiqueta' })}
+                >
+                  {codigo.codigo}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {intl.formatMessage(
+                    { id: 'familia.codigo.caduca' },
+                    { fecha: intl.formatDate(codigo.expiraEn, { dateStyle: 'medium', timeStyle: 'short' }) },
+                  )}
+                </span>
+              </p>
+            )}
+            {codigo.tipo === 'error' && (
+              <p role="alert" className="text-sm text-destructive">
+                {codigo.mensaje}
+              </p>
+            )}
+            <Button
+              variant="outline"
+              className="self-start"
+              onClick={alGenerarCodigo}
+              disabled={codigo.tipo === 'generando'}
+            >
+              {intl.formatMessage({
+                id: codigo.tipo === 'generado' ? 'familia.codigo.otro' : 'consentimiento.pendiente.generarCodigo',
+              })}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </main>

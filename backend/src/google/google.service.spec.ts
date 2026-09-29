@@ -65,7 +65,7 @@ describe('GoogleService', () => {
   };
 
   const configFalso = {
-    get: vi.fn((clave: string) => {
+    get: vi.fn((clave: string): string | undefined => {
       const valores: Record<string, string> = {
         GOOGLE_CLIENT_ID: 'id-falso',
         GOOGLE_CLIENT_SECRET: 'secreto-falso',

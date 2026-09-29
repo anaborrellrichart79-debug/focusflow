@@ -41,8 +41,13 @@ export function generarCodigoVinculo(token: string) {
   });
 }
 
+export interface ResultadoVinculo extends PersonaVinculada {
+  // true si el vínculo ha confirmado la cuenta pendiente de un menor.
+  consentimientoConcedido: boolean;
+}
+
 export function vincularConCodigo(token: string, codigo: string) {
-  return peticionApi<PersonaVinculada>('/familia/vincular', {
+  return peticionApi<ResultadoVinculo>('/familia/vincular', {
     method: 'POST',
     headers: cabeceras(token),
     body: JSON.stringify({ codigo }),

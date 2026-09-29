@@ -77,4 +77,24 @@ describe('PantallaConsentimientoPendiente', () => {
     );
     expect(tienda.getState().sesion.usuario?.consentimientoConfirmado).toBe(true);
   });
+
+  it('genera un código de vínculo para que el padre o la madre confirme la cuenta', async () => {
+    const usuario = userEvent.setup();
+    vi.mocked(fetch).mockResolvedValue(
+      respuesta(true, { codigo: 'ABC234', expiraEn: '2026-10-01T10:00:00.000Z' }),
+    );
+
+    renderizarPagina(<PantallaConsentimientoPendiente />, {
+      estadoPrecargado: { sesion: SESION_PENDIENTE },
+    });
+
+    await usuario.click(screen.getByRole('button', { name: 'Generar código' }));
+
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:3000/familia/codigo',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(await screen.findByLabelText('Código de vínculo')).toHaveTextContent('ABC234');
+    expect(screen.getByRole('button', { name: 'Generar otro código' })).toBeInTheDocument();
+  });
 });
