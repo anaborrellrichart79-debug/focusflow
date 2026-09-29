@@ -112,6 +112,8 @@ describe('AutenticacionService', () => {
         modoEscolarActivo: false,
         perfiles: [],
         idioma: 'es',
+        // Una cuenta nueva ve el asistente de bienvenida.
+        bienvenidaCompletada: false,
       });
     });
 

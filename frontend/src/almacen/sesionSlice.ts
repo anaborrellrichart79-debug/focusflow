@@ -140,6 +140,21 @@ export const sincronizarIdioma = createAsyncThunk<
   }
 });
 
+// Terminar o saltar el asistente de bienvenida: no vuelve a salir.
+export const completarBienvenida = createAsyncThunk<
+  UsuarioSesion,
+  void,
+  { state: { sesion: EstadoSesion }; rejectValue: string }
+>('sesion/completarBienvenida', async (_, { getState, rejectWithValue }) => {
+  const tokenAcceso = getState().sesion.tokenAcceso;
+  if (!tokenAcceso) return rejectWithValue('No autenticado');
+  try {
+    return await actualizarPreferencias(tokenAcceso, { bienvenidaCompletada: true });
+  } catch (error) {
+    return rejectWithValue(error instanceof ErrorApi ? error.message : 'No se pudo guardar la preferencia');
+  }
+});
+
 const sesionSlice = createSlice({
   name: 'sesion',
   initialState: estadoInicial,
@@ -202,6 +217,9 @@ const sesionSlice = createSlice({
         estado.usuario = accion.payload;
       })
       .addCase(sincronizarIdioma.fulfilled, (estado, accion) => {
+        estado.usuario = accion.payload;
+      })
+      .addCase(completarBienvenida.fulfilled, (estado, accion) => {
         estado.usuario = accion.payload;
       })
       .addCase(restaurarSesion.rejected, (estado) => {

@@ -14,6 +14,8 @@ export interface UsuarioSesion {
   perfiles?: PerfilUsuario[];
   // Idioma guardado en el servidor para lo que redacta él (push, correos, IA).
   idioma?: CodigoIdioma;
+  // false en una cuenta recién creada: se le enseña el asistente de bienvenida.
+  bienvenidaCompletada?: boolean;
 }
 
 export interface RespuestaAutenticacion {
@@ -68,7 +70,12 @@ export function reenviarConfirmacion(tokenAcceso: string) {
 
 export function actualizarPreferencias(
   tokenAcceso: string,
-  datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[]; idioma?: CodigoIdioma },
+  datos: {
+    modoEscolarActivo?: boolean;
+    perfiles?: PerfilUsuario[];
+    idioma?: CodigoIdioma;
+    bienvenidaCompletada?: true;
+  },
 ) {
   return peticionApi<UsuarioSesion>('/autenticacion/preferencias', {
     method: 'PATCH',

@@ -17,4 +17,9 @@ export class ActualizarPreferenciasDto {
   @IsOptional()
   @IsIn(IDIOMAS)
   idioma?: Idioma;
+
+  // Solo se puede marcar como hecha (terminar o saltar el asistente).
+  @IsOptional()
+  @IsIn([true])
+  bienvenidaCompletada?: true;
 }

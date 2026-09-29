@@ -32,7 +32,16 @@ export async function registrarPorApi(
     },
   });
   expect(respuesta.ok(), await respuesta.text()).toBe(true);
-  return respuesta.json();
+  const registro: Registro = await respuesta.json();
+  // Las cuentas que se preparan por la API se saltan el asistente de
+  // bienvenida (lo recorre cuenta.e2e.ts); un menor sin confirmar no puede
+  // tocar sus preferencias hasta que lo confirmen.
+  if (!datos.correoTutor) {
+    await llamarApi(request, registro.tokenAcceso, 'patch', '/autenticacion/preferencias', {
+      bienvenidaCompletada: true,
+    });
+  }
+  return registro;
 }
 
 export async function llamarApi(

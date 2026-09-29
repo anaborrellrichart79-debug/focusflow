@@ -32,8 +32,9 @@ test('un menor se registra, su madre confirma la cuenta con el código y revisa 
   await paginaMadre.getByRole('button', { name: 'Vincular' }).click();
   await expect(paginaMadre.getByText('Has confirmado la cuenta de Pablo: ya puede usar FocusFlow.')).toBeVisible();
 
-  // 4. El menor ya puede entrar.
+  // 4. El menor ya puede entrar (se salta el asistente de bienvenida).
   await page.getByRole('button', { name: 'Ya lo ha confirmado' }).click();
+  await page.getByRole('button', { name: 'Saltar' }).click();
   await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible();
 
   // 5. Apunta una tarea, pide que la revise su madre y la marca como hecha.

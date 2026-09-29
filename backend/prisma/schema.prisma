@@ -42,6 +42,10 @@ model Usuario {
   consentimientoConfirmado   Boolean                  @default(true)
   consentimientoReenviadoEn  DateTime?
   modoEscolarActivo          Boolean                  @default(false)
+  // Asistente de bienvenida (perfil, modo escolar, horario). Por defecto true
+  // para no enseñárselo a las cuentas que ya existían; el registro lo pone a
+  // false.
+  bienvenidaCompletada       Boolean                  @default(true)
   // Idioma de la interfaz (es, va, gl, eu, ca, en): lo sincroniza el frontend
   // y se usa en lo que redacta el servidor (avisos push, correos, IA).
   idioma                     String                   @default("es")

@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { usarSelector } from '@/almacen/hooks';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { AsistenteBienvenida } from './AsistenteBienvenida';
 import { BarraLateral } from './BarraLateral';
 import { BuscadorGlobal } from './BuscadorGlobal';
 import { CapturaRapida } from './CapturaRapida';
@@ -34,6 +35,11 @@ export function DisenoAplicacion({ children }: { children: ReactNode }) {
   // esto es solo para explicárselo en vez de enseñarle páginas vacías con errores.
   if (usuario && !usuario.consentimientoConfirmado) {
     return <PantallaConsentimientoPendiente />;
+  }
+
+  // Cuenta recién creada (y ya confirmada): primero, el asistente de bienvenida.
+  if (usuario && usuario.bienvenidaCompletada === false) {
+    return <AsistenteBienvenida />;
   }
 
   return (

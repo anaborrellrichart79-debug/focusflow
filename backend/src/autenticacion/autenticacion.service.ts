@@ -54,6 +54,7 @@ export class AutenticacionService {
         fechaNacimiento: new Date(datos.fechaNacimiento),
         correoTutor: datos.correoTutor,
         idioma: datos.idioma ?? 'es',
+        bienvenidaCompletada: false,
         consentimientoConfirmado: !esMenorDeEdad,
       },
     });
@@ -158,7 +159,7 @@ export class AutenticacionService {
 
   async actualizarPreferencias(
     usuarioId: string,
-    datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[]; idioma?: Idioma },
+    datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[]; idioma?: Idioma; bienvenidaCompletada?: true },
   ) {
     const usuario = await this.prisma.usuario.update({
       where: { id: usuarioId },
@@ -166,6 +167,7 @@ export class AutenticacionService {
         modoEscolarActivo: datos.modoEscolarActivo,
         perfiles: datos.perfiles ? [...new Set(datos.perfiles)] : undefined,
         idioma: datos.idioma,
+        bienvenidaCompletada: datos.bienvenidaCompletada,
       },
     });
 
@@ -192,6 +194,7 @@ export class AutenticacionService {
       modoEscolarActivo: usuario.modoEscolarActivo,
       perfiles: usuario.perfiles ?? [],
       idioma: comoIdioma(usuario.idioma),
+      bienvenidaCompletada: usuario.bienvenidaCompletada,
     };
   }
 
