@@ -1,3 +1,4 @@
+import type { CodigoIdioma } from '@/idiomas';
 import { peticionApi } from './api';
 
 export type PerfilUsuario = 'ESTUDIANTE' | 'PROFESIONAL' | 'PADRE';
@@ -11,6 +12,8 @@ export interface UsuarioSesion {
   // Perfiles elegidos en Ajustes; vacío = el Inicio usa los sugeridos.
   // Opcional en el tipo para no obligar a cada dato de prueba a incluirlo.
   perfiles?: PerfilUsuario[];
+  // Idioma guardado en el servidor para lo que redacta él (push, correos, IA).
+  idioma?: CodigoIdioma;
 }
 
 export interface RespuestaAutenticacion {
@@ -28,6 +31,7 @@ export function registrarUsuario(datos: {
   nombre?: string;
   fechaNacimiento: string;
   correoTutor?: string;
+  idioma?: CodigoIdioma;
 }) {
   return peticionApi<RespuestaAutenticacion>('/autenticacion/registro', {
     method: 'POST',
@@ -64,7 +68,7 @@ export function reenviarConfirmacion(tokenAcceso: string) {
 
 export function actualizarPreferencias(
   tokenAcceso: string,
-  datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[] },
+  datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[]; idioma?: CodigoIdioma },
 ) {
   return peticionApi<UsuarioSesion>('/autenticacion/preferencias', {
     method: 'PATCH',

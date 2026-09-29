@@ -20,6 +20,7 @@ export function PaginaRegistro() {
   const navegar = useNavigate();
   const despachar = usarDespachador();
   const { cargando, error } = usarSelector((estado) => estado.sesion);
+  const idioma = usarSelector((estado) => estado.interfaz.idioma);
 
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
@@ -38,6 +39,7 @@ export function PaginaRegistro() {
         nombre: nombre || undefined,
         fechaNacimiento,
         correoTutor: esMenorDeEdad ? correoTutor : undefined,
+        idioma,
       }),
     );
     if (registrarse.fulfilled.match(resultado)) {

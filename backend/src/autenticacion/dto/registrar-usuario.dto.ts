@@ -1,4 +1,5 @@
-import { IsDateString, IsEmail, IsOptional, IsString, Matches, MinLength, ValidateIf } from 'class-validator';
+import { IsDateString, IsEmail, IsIn, IsOptional, IsString, Matches, MinLength, ValidateIf } from 'class-validator';
+import { IDIOMAS, type Idioma } from '../../comun/idiomas.js';
 import { calcularEdad } from '../../comun/edad.util.js';
 
 export class RegistrarUsuarioDto {
@@ -27,4 +28,9 @@ export class RegistrarUsuarioDto {
     { message: 'Se necesita el correo de un tutor legal para menores de 18 años' },
   )
   correoTutor?: string;
+
+  // Idioma de la interfaz al registrarse (también el del correo al tutor).
+  @IsOptional()
+  @IsIn(IDIOMAS)
+  idioma?: Idioma;
 }

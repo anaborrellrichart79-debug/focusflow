@@ -42,6 +42,7 @@ describe('GeneradorAvisosService', () => {
   let servicio: GeneradorAvisosService;
 
   const usuarioBase = {
+    idioma: 'es',
     correo: 'ana@example.com',
     emergenciaActiva: false,
     emergenciaDias: 3,
@@ -192,6 +193,19 @@ describe('GeneradorAvisosService', () => {
         where: { id: { in: ['aviso-0'] } },
         data: { mensajeIa: 'Empieza por el examen de mates.' },
       });
+    });
+
+    it('pide a Ollama el texto en el idioma del usuario', async () => {
+      usuarioCon({
+        idioma: 'en',
+        recordatorios: [recordatorio({ tipo: 'REVISION_SEMANAL', diaSemana: 3, hora: '09:00' })],
+      });
+
+      await servicio.procesarUsuario('usuario-1', AHORA);
+
+      const instrucciones = iaFalsa.redactar.mock.calls[0][0] as string;
+      expect(instrucciones).toContain('Escribe en inglés');
+      expect(instrucciones).toContain('You have 0 pending tasks');
     });
 
     it('si Ollama falla, el aviso se crea igual sin texto de IA', async () => {

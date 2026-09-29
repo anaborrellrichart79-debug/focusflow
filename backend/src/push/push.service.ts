@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import webpush from 'web-push';
 import type { TipoAviso } from '../generated/prisma/enums.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
-import { textoAviso } from '../recordatorios/textos-aviso.js';
+import { comoIdioma, type Idioma } from '../comun/idiomas.js';
+import { textoAviso, textosIdioma } from '../recordatorios/textos-aviso.js';
 import type { SuscribirPushDto } from './dto/push.dto.js';
 
 // Cuánto guarda el servicio de push un aviso para un dispositivo apagado o
@@ -29,13 +30,12 @@ export interface CargaNotificacion {
 
 // Lo que ve el usuario en la notificación. Mismo criterio que VigilanteAvisos
 // en el frontend: una petición de revisión se atiende en Familia; lo demás, en
-// Recordatorios. Los textos van en castellano (el backend no conoce el idioma
-// de la interfaz, igual que en el correo).
-export function cargaNotificacion(avisos: AvisoParaPush[]): CargaNotificacion {
-  const textos = avisos.map((aviso) => textoAviso(aviso.tipo, aviso.datos));
+// Recordatorios. En el idioma de la interfaz del usuario (Usuario.idioma).
+export function cargaNotificacion(avisos: AvisoParaPush[], idioma: Idioma = 'es'): CargaNotificacion {
+  const textos = avisos.map((aviso) => textoAviso(aviso.tipo, aviso.datos, idioma));
   const soloRevisiones = avisos.every((aviso) => aviso.tipo === 'REVISION_SOLICITADA');
   return {
-    titulo: avisos.length === 1 ? textos[0].titulo : `Tienes ${avisos.length} avisos nuevos`,
+    titulo: avisos.length === 1 ? textos[0].titulo : textosIdioma(idioma).variosAvisos(avisos.length),
     cuerpo: avisos.length === 1 ? textos[0].cuerpo : textos.map((texto) => texto.titulo).join('\n'),
     url: soloRevisiones ? '/familia' : '/recordatorios',
     etiqueta: `aviso-${avisos[0].id}`,
@@ -90,20 +90,29 @@ export class PushService {
 
   // Nunca lanza: un fallo de push no debe impedir que el aviso se cree.
   async enviarAvisos(usuarioId: string, avisos: AvisoParaPush[]) {
-    if (avisos.length === 0) return;
-    await this.enviar(usuarioId, cargaNotificacion(avisos));
+    if (avisos.length === 0 || !this.clavePublicaVapid) return;
+    const idioma = await this.idiomaDe(usuarioId);
+    await this.enviar(usuarioId, cargaNotificacion(avisos, idioma));
   }
 
   // Botón "Enviar aviso de prueba" de Ajustes. Devuelve a cuántos
   // dispositivos se ha intentado enviar.
   async enviarPrueba(usuarioId: string) {
+    const idioma = await this.idiomaDe(usuarioId);
     return this.enviar(usuarioId, {
       titulo: 'FocusFlow',
-      cuerpo: 'Los avisos funcionan en este dispositivo.',
+      cuerpo: textosIdioma(idioma).pruebaPush,
       url: '/ajustes',
       etiqueta: 'prueba',
       emergencia: false,
     });
+  }
+
+  private async idiomaDe(usuarioId: string) {
+    const usuario = await this.prisma.usuario
+      .findUnique({ where: { id: usuarioId }, select: { idioma: true } })
+      .catch(() => null);
+    return comoIdioma(usuario?.idioma);
   }
 
   private async enviar(usuarioId: string, cargaNotificacion: CargaNotificacion) {

@@ -9,10 +9,12 @@ import { cargarEstadoGoogle, sincronizarGoogle } from '@/almacen/googleSlice';
 import { cargarHorarios } from '@/almacen/horarioSlice';
 import { cargarCalendarioEscolar } from '@/almacen/recordatoriosSlice';
 import { restaurarSesion } from '@/almacen/sesionSlice';
+import { adoptarIdiomaDeCuenta, idiomaElegidoEnDispositivo } from '@/almacen/interfazSlice';
 import { DisenoAplicacion } from '@/componentes/DisenoAplicacion';
 import { RutaProtegida } from '@/componentes/RutaProtegida';
 import { VigilanteAvisos } from '@/componentes/VigilanteAvisos';
 import { CODIGO_LOCALE_ICU, mensajesPorIdioma } from '@/idiomas';
+import { establecerIdiomaErrores } from '@/servicios/api';
 import { PaginaAgenda } from '@/paginas/PaginaAgenda';
 import { PaginaAjustes } from '@/paginas/PaginaAjustes';
 import { PaginaConfirmarConsentimiento } from '@/paginas/PaginaConfirmarConsentimiento';
@@ -39,6 +41,9 @@ const INTERVALO_AUTOSYNC_MS = 5 * 60 * 1000;
 export function Aplicacion() {
   const despachar = usarDespachador();
   const idiomaActual = usarSelector((estado) => estado.interfaz.idioma);
+  // En el propio render y no en un efecto: los efectos de las páginas (que
+  // ya piden datos a la API) se ejecutan antes que los de Aplicacion.
+  establecerIdiomaErrores(idiomaActual);
   const tema = usarSelector((estado) => estado.interfaz.tema);
   const restaurandoSesion = usarSelector((estado) => estado.sesion.restaurando);
   const usuario = usarSelector((estado) => estado.sesion.usuario);
@@ -85,6 +90,13 @@ export function Aplicacion() {
   useEffect(() => {
     document.documentElement.lang = CODIGO_LOCALE_ICU[idiomaActual];
   }, [idiomaActual]);
+
+  // En un dispositivo donde no se ha elegido idioma, se usa el de la cuenta.
+  // (Al elegirlo en el selector se guarda en los dos sitios: SelectorIdioma.)
+  const idiomaCuenta = usuario?.idioma;
+  useEffect(() => {
+    if (idiomaCuenta && !idiomaElegidoEnDispositivo()) despachar(adoptarIdiomaDeCuenta(idiomaCuenta));
+  }, [idiomaCuenta, despachar]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', tema === 'oscuro');

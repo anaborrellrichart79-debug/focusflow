@@ -7,6 +7,7 @@ import {
   type PerfilUsuario,
   type UsuarioSesion,
 } from '@/servicios/autenticacion';
+import type { CodigoIdioma } from '@/idiomas';
 import { ErrorApi } from '@/servicios/api';
 import { desactivarPush } from '@/servicios/push';
 
@@ -63,6 +64,7 @@ export const registrarse = createAsyncThunk(
       nombre?: string;
       fechaNacimiento: string;
       correoTutor?: string;
+      idioma?: CodigoIdioma;
     },
     { rejectWithValue },
   ) => {
@@ -118,6 +120,23 @@ export const cambiarPerfiles = createAsyncThunk<
     return rejectWithValue(
       error instanceof ErrorApi ? error.message : 'No se pudo guardar la preferencia',
     );
+  }
+});
+
+// La interfaz manda: el idioma elegido en este dispositivo se guarda en el
+// servidor para que los avisos push, los correos y el texto de la IA salgan
+// en ese idioma.
+export const sincronizarIdioma = createAsyncThunk<
+  UsuarioSesion,
+  CodigoIdioma,
+  { state: { sesion: EstadoSesion }; rejectValue: string }
+>('sesion/sincronizarIdioma', async (idioma, { getState, rejectWithValue }) => {
+  const tokenAcceso = getState().sesion.tokenAcceso;
+  if (!tokenAcceso) return rejectWithValue('No autenticado');
+  try {
+    return await actualizarPreferencias(tokenAcceso, { idioma });
+  } catch (error) {
+    return rejectWithValue(error instanceof ErrorApi ? error.message : 'No se pudo guardar el idioma');
   }
 });
 
@@ -180,6 +199,9 @@ const sesionSlice = createSlice({
         estado.usuario = accion.payload;
       })
       .addCase(cambiarPerfiles.fulfilled, (estado, accion) => {
+        estado.usuario = accion.payload;
+      })
+      .addCase(sincronizarIdioma.fulfilled, (estado, accion) => {
         estado.usuario = accion.payload;
       })
       .addCase(restaurarSesion.rejected, (estado) => {

@@ -42,6 +42,9 @@ model Usuario {
   consentimientoConfirmado   Boolean                  @default(true)
   consentimientoReenviadoEn  DateTime?
   modoEscolarActivo          Boolean                  @default(false)
+  // Idioma de la interfaz (es, va, gl, eu, ca, en): lo sincroniza el frontend
+  // y se usa en lo que redacta el servidor (avisos push, correos, IA).
+  idioma                     String                   @default("es")
   // Perfiles elegidos en Ajustes (pueden ser varios); vacío = el Inicio usa
   // los que sugiere la app según lo que se usa.
   perfiles                   PerfilUsuario[]          @default([])

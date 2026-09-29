@@ -61,6 +61,8 @@ describe('PaginaRegistro', () => {
       correo: 'nueva@example.com',
       contrasena: 'Abcdefg1',
       fechaNacimiento: FECHA_NACIMIENTO_ADULTA,
+      // El idioma de la interfaz, para lo que redacta el servidor.
+      idioma: 'es',
     });
     expect(cuerpoEnviado).not.toHaveProperty('nombre');
     expect(cuerpoEnviado).not.toHaveProperty('correoTutor');

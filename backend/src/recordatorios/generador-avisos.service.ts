@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { CorreoService } from '../correo/correo.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import type { TipoAviso } from '../generated/prisma/enums.js';
+import { comoIdioma, NOMBRE_IDIOMA_PARA_IA, type Idioma } from '../comun/idiomas.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import { PushService } from '../push/push.service.js';
 import { sumarDias, type PeriodoNoLectivo } from './calendario-escolar.js';
@@ -14,6 +15,7 @@ import {
 } from './hora-local.util.js';
 import { IaService } from './ia.service.js';
 import {
+  asuntoCorreoAvisos,
   htmlCorreoAvisos,
   textoAviso,
   type DatosEmergencia,
@@ -106,6 +108,7 @@ export class GeneradorAvisosService {
       where: { id: usuarioId },
       select: {
         correo: true,
+        idioma: true,
         emergenciaActiva: true,
         emergenciaDias: true,
         emergenciaPorCorreo: true,
@@ -275,6 +278,7 @@ export class GeneradorAvisosService {
     const clavesCreadas = new Set(creados.map((aviso) => aviso.clave));
     const completar = this.completarAvisos(
       usuario.correo,
+      comoIdioma(usuario.idioma),
       creados,
       nuevos.filter((candidato) => clavesCreadas.has(candidato.clave)),
     );
@@ -291,10 +295,11 @@ export class GeneradorAvisosService {
 
   private async completarAvisos(
     correo: string,
+    idioma: Idioma,
     creados: { id: string; clave: string; tipo: TipoAviso; datos: unknown }[],
     candidatos: AvisoCandidato[],
   ) {
-    const textosIa = await this.redactarConIa(candidatos);
+    const textosIa = await this.redactarConIa(candidatos, idioma);
     const avisos = creados.map((aviso) => ({
       ...aviso,
       mensajeIa: textosIa.get(aviso.clave) ?? null,
@@ -322,7 +327,7 @@ export class GeneradorAvisosService {
     const paraCorreo = avisos.filter((aviso) =>
       clavesPorCorreo.has(aviso.clave),
     );
-    if (paraCorreo.length > 0) await this.enviarCorreo(correo, paraCorreo);
+    if (paraCorreo.length > 0) await this.enviarCorreo(correo, paraCorreo, idioma);
   }
 
   private datosRevision(
@@ -352,7 +357,8 @@ export class GeneradorAvisosService {
   // Ollama solo redacta donde aporta: el resumen de la revisión semanal y un
   // único mensaje para todas las alarmas de emergencia de esta pasada. Las
   // entregas y las vacaciones ya se explican bien con el texto por reglas.
-  private async redactarConIa(nuevos: AvisoCandidato[]) {
+  private async redactarConIa(nuevos: AvisoCandidato[], idioma: Idioma) {
+    const enIdioma = NOMBRE_IDIOMA_PARA_IA[idioma];
     const textos = new Map<string, string>();
 
     for (const candidato of nuevos.filter(
@@ -361,9 +367,9 @@ export class GeneradorAvisosService {
       const datos = candidato.datos as DatosRevision;
       const texto = await this.ia.redactar(
         'Eres el asistente de FocusFlow, una app de organización para estudiantes. ' +
-          'Escribe en castellano, en tono cercano y en un máximo de 3 frases, un resumen de la ' +
+          `Escribe en ${enIdioma}, en tono cercano y en un máximo de 3 frases, un resumen de la ` +
           'revisión semanal y qué conviene priorizar. No uses listas ni markdown. ' +
-          `Datos: ${textoAviso('REVISION_SEMANAL', datos).cuerpo} ` +
+          `Datos: ${textoAviso('REVISION_SEMANAL', datos, idioma).cuerpo} ` +
           `Tareas con fecha, de la más urgente a la menos: ${datos.titulos.join('; ') || 'ninguna'}.`,
       );
       if (texto) textos.set(candidato.clave, texto);
@@ -380,7 +386,7 @@ export class GeneradorAvisosService {
         .join('; ');
       const texto = await this.ia.redactar(
         'Eres el asistente de FocusFlow, una app de organización para estudiantes. ' +
-          'Escribe en castellano, en un máximo de 2 frases, un aviso urgente pero amable para que ' +
+          `Escribe en ${enIdioma}, en un máximo de 2 frases, un aviso urgente pero amable para que ` +
           `el usuario revise hoy estas tareas olvidadas (${emergencias.length} en total): ${lista}. ` +
           'No uses listas ni markdown.',
       );
@@ -399,18 +405,11 @@ export class GeneradorAvisosService {
       datos: unknown;
       mensajeIa: string | null;
     }[],
+    idioma: Idioma,
   ) {
     if (!this.correo.estaConfigurado()) return;
 
-    const emergencias = avisos.filter(
-      (aviso) => aviso.tipo === 'EMERGENCIA',
-    ).length;
-    const asunto =
-      emergencias > 0
-        ? `⚠️ FocusFlow: ${emergencias} tareas llevan días sin revisar`
-        : avisos.length === 1
-          ? `FocusFlow: ${textoAviso(avisos[0].tipo, avisos[0].datos).titulo}`
-          : `FocusFlow: tienes ${avisos.length} recordatorios`;
+    const asunto = asuntoCorreoAvisos(avisos, idioma);
     const enlaceApp =
       this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
 
@@ -418,7 +417,7 @@ export class GeneradorAvisosService {
       await this.correo.enviarAviso(
         destinatario,
         asunto,
-        htmlCorreoAvisos(avisos, enlaceApp),
+        htmlCorreoAvisos(avisos, enlaceApp, idioma),
       );
       await this.prisma.aviso.updateMany({
         where: { id: { in: avisos.map((aviso) => aviso.id) } },

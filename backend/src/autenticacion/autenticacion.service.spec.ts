@@ -111,6 +111,7 @@ describe('AutenticacionService', () => {
         consentimientoConfirmado: true,
         modoEscolarActivo: false,
         perfiles: [],
+        idioma: 'es',
       });
     });
 
@@ -147,9 +148,11 @@ describe('AutenticacionService', () => {
       const datosGuardados = prismaFalso.usuario.create.mock.calls[0][0].data;
       expect(datosGuardados.consentimientoConfirmado).toBe(false);
       expect(datosGuardados.correoTutor).toBe('tutor@example.com');
+      expect(datosGuardados.idioma).toBe('es');
       expect(correoServiceFalso.enviarCorreoConfirmacionConsentimiento).toHaveBeenCalledWith(
         'tutor@example.com',
         expect.stringContaining('token-firmado'),
+        'es',
       );
     });
 
@@ -230,6 +233,7 @@ describe('AutenticacionService', () => {
         consentimientoConfirmado: true,
         modoEscolarActivo: false,
         perfiles: [],
+        idioma: 'es',
       });
       expect(resultado).not.toHaveProperty('contrasena');
       expect(resultado).not.toHaveProperty('correoTutor');
@@ -290,6 +294,7 @@ describe('AutenticacionService', () => {
       expect(correoServiceFalso.enviarCorreoConfirmacionConsentimiento).toHaveBeenCalledWith(
         'tutor@example.com',
         expect.any(String),
+        'es',
       );
       expect(prismaFalso.usuario.update).toHaveBeenCalledWith({
         where: { id: 'usuario-1' },

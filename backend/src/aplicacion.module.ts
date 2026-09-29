@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AplicacionController } from './aplicacion.controller.js';
 import { AplicacionService } from './aplicacion.service.js';
+import { FiltroErrores } from './comun/filtro-errores.js';
 import { ModuloAutenticacion } from './autenticacion/autenticacion.module.js';
 import { ModuloEtiquetas } from './etiquetas/etiquetas.module.js';
 import { ModuloFamilia } from './familia/familia.module.js';
@@ -38,6 +40,7 @@ import { ModuloTareas } from './tareas/tareas.module.js';
     ModuloPush,
   ],
   controllers: [AplicacionController],
-  providers: [AplicacionService],
+  // FiltroErrores añade a cada error el código que traduce el frontend.
+  providers: [AplicacionService, { provide: APP_FILTER, useClass: FiltroErrores }],
 })
 export class AplicacionModule {}

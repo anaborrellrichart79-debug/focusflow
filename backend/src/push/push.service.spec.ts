@@ -24,6 +24,7 @@ const SUSCRIPCION = { id: 's-1', endpoint: 'https://push.example.com/abc', p256d
 
 describe('PushService', () => {
   const prismaFalso = {
+    usuario: { findUnique: vi.fn() },
     suscripcionPush: {
       findMany: vi.fn(),
       upsert: vi.fn(),
@@ -49,6 +50,7 @@ describe('PushService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prismaFalso.suscripcionPush.findMany.mockResolvedValue([SUSCRIPCION]);
+    prismaFalso.usuario.findUnique.mockResolvedValue({ idioma: 'es' });
     vi.mocked(webpush.sendNotification).mockResolvedValue({} as never);
   });
 
@@ -70,6 +72,11 @@ describe('PushService', () => {
       expect(varios.titulo).toBe('Tienes 2 avisos nuevos');
       expect(varios.cuerpo).toBe('Entrega en 5 h: Maqueta\nLucía espera tu revisión');
       expect(varios.url).toBe('/recordatorios');
+    });
+
+    it('se redacta en el idioma del usuario', () => {
+      expect(cargaNotificacion([ENTREGA], 'en').titulo).toBe('Due in 5 h: Maqueta');
+      expect(cargaNotificacion([ENTREGA, REVISION], 'gl').titulo).toBe('Tes 2 avisos novos');
     });
 
     it('una emergencia se marca para quedarse en pantalla', () => {
@@ -97,6 +104,16 @@ describe('PushService', () => {
       JSON.stringify(cargaNotificacion([ENTREGA])),
       { TTL: 24 * 60 * 60 },
     );
+  });
+
+  it('envía el aviso en el idioma guardado del usuario', async () => {
+    prismaFalso.usuario.findUnique.mockResolvedValue({ idioma: 'eu' });
+    const servicio = await crearServicio();
+
+    await servicio.enviarAvisos('hija', [REVISION]);
+
+    const carga = JSON.parse(vi.mocked(webpush.sendNotification).mock.calls[0][1] as string);
+    expect(carga.titulo).toBe('Lucía zure berrikuspenaren zain dago');
   });
 
   it('borra la suscripción que el navegador ha anulado (410) y no lanza con otros errores', async () => {

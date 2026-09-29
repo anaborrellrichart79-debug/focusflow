@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import reductor, { alternarTema, cambiarAmbitoActivo, cambiarIdioma } from './interfazSlice';
+import reductor, {
+  adoptarIdiomaDeCuenta,
+  alternarTema,
+  cambiarAmbitoActivo,
+  cambiarIdioma,
+  idiomaElegidoEnDispositivo,
+} from './interfazSlice';
 import { IDIOMA_POR_DEFECTO } from '@/idiomas';
 
 describe('interfazSlice', () => {
@@ -16,6 +22,17 @@ describe('interfazSlice', () => {
   it('cambiarIdioma actualiza el idioma seleccionado', () => {
     const estado = reductor(undefined, cambiarIdioma('eu'));
     expect(estado.idioma).toBe('eu');
+  });
+
+  it('el idioma elegido se recuerda en este dispositivo; el adoptado de la cuenta no', () => {
+    expect(idiomaElegidoEnDispositivo()).toBe(false);
+
+    reductor(undefined, adoptarIdiomaDeCuenta('gl'));
+    expect(idiomaElegidoEnDispositivo()).toBe(false);
+
+    reductor(undefined, cambiarIdioma('gl'));
+    expect(localStorage.getItem('focusflow.idioma')).toBe('gl');
+    expect(idiomaElegidoEnDispositivo()).toBe(true);
   });
 
   it('alternarTema pasa de claro a oscuro y viceversa', () => {

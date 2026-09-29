@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcrypt';
+import { comoIdioma, type Idioma } from '../comun/idiomas.js';
 import { calcularEdad } from '../comun/edad.util.js';
 import { CorreoService } from '../correo/correo.service.js';
 import type { Usuario } from '../generated/prisma/client.js';
@@ -52,6 +53,7 @@ export class AutenticacionService {
         nombre: datos.nombre,
         fechaNacimiento: new Date(datos.fechaNacimiento),
         correoTutor: datos.correoTutor,
+        idioma: datos.idioma ?? 'es',
         consentimientoConfirmado: !esMenorDeEdad,
       },
     });
@@ -61,7 +63,7 @@ export class AutenticacionService {
       // complete: el correo se puede reenviar más adelante desde la pantalla
       // de "cuenta pendiente de confirmación" (ver reenviarConfirmacion).
       try {
-        await this.enviarCorreoConsentimiento(usuario.id, datos.correoTutor);
+        await this.enviarCorreoConsentimiento(usuario.id, datos.correoTutor, comoIdioma(usuario.idioma));
       } catch (error) {
         if (!(error instanceof BadRequestException)) throw error;
         console.warn(
@@ -146,7 +148,7 @@ export class AutenticacionService {
     // pulsado "Reenviar correo" explícitamente: si el SMTP no está
     // configurado, el error debe llegar tal cual al frontend (igual que
     // "Conectar con Google" sin credenciales configuradas).
-    await this.enviarCorreoConsentimiento(usuario.id, usuario.correoTutor);
+    await this.enviarCorreoConsentimiento(usuario.id, usuario.correoTutor, comoIdioma(usuario.idioma));
 
     await this.prisma.usuario.update({
       where: { id: usuarioId },
@@ -156,20 +158,21 @@ export class AutenticacionService {
 
   async actualizarPreferencias(
     usuarioId: string,
-    datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[] },
+    datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[]; idioma?: Idioma },
   ) {
     const usuario = await this.prisma.usuario.update({
       where: { id: usuarioId },
       data: {
         modoEscolarActivo: datos.modoEscolarActivo,
         perfiles: datos.perfiles ? [...new Set(datos.perfiles)] : undefined,
+        idioma: datos.idioma,
       },
     });
 
     return this.aDatosPublicos(usuario);
   }
 
-  private async enviarCorreoConsentimiento(usuarioId: string, correoTutor: string) {
+  private async enviarCorreoConsentimiento(usuarioId: string, correoTutor: string, idioma: Idioma) {
     const token = this.jwtService.sign(
       { sub: usuarioId, tipo: TIPO_TOKEN_CONSENTIMIENTO },
       { expiresIn: '30d' },
@@ -177,7 +180,7 @@ export class AutenticacionService {
     const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
     const enlaceConfirmacion = `${frontendUrl}/confirmar-consentimiento?token=${token}`;
 
-    await this.correoService.enviarCorreoConfirmacionConsentimiento(correoTutor, enlaceConfirmacion);
+    await this.correoService.enviarCorreoConfirmacionConsentimiento(correoTutor, enlaceConfirmacion, idioma);
   }
 
   private aDatosPublicos(usuario: Usuario) {
@@ -188,6 +191,7 @@ export class AutenticacionService {
       consentimientoConfirmado: usuario.consentimientoConfirmado,
       modoEscolarActivo: usuario.modoEscolarActivo,
       perfiles: usuario.perfiles ?? [],
+      idioma: comoIdioma(usuario.idioma),
     };
   }
 
