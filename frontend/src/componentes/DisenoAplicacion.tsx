@@ -1,11 +1,12 @@
-import { Menu, X } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { Menu, Search, X } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { usarSelector } from '@/almacen/hooks';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BarraLateral } from './BarraLateral';
+import { BuscadorGlobal } from './BuscadorGlobal';
 import { CapturaRapida } from './CapturaRapida';
 import { PantallaConsentimientoPendiente } from './PantallaConsentimientoPendiente';
 
@@ -15,6 +16,19 @@ export function DisenoAplicacion({ children }: { children: ReactNode }) {
   const intl = useIntl();
   const usuario = usarSelector((estado) => estado.sesion.usuario);
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [buscadorAbierto, setBuscadorAbierto] = useState(false);
+
+  // Ctrl+K (Cmd+K en Mac) abre la búsqueda desde cualquier página.
+  useEffect(() => {
+    function alPulsarTecla(evento: KeyboardEvent) {
+      if ((evento.ctrlKey || evento.metaKey) && evento.key.toLowerCase() === 'k') {
+        evento.preventDefault();
+        setBuscadorAbierto(true);
+      }
+    }
+    window.addEventListener('keydown', alPulsarTecla);
+    return () => window.removeEventListener('keydown', alPulsarTecla);
+  }, []);
 
   // La API ya bloquea con 403 a un menor sin confirmar (GuardaConsentimientoConfirmado);
   // esto es solo para explicárselo en vez de enseñarle páginas vacías con errores.
@@ -31,15 +45,25 @@ export function DisenoAplicacion({ children }: { children: ReactNode }) {
         >
           {intl.formatMessage({ id: 'app.titulo' })}
         </Link>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          aria-label={intl.formatMessage({ id: menuAbierto ? 'nav.cerrarMenu' : 'nav.abrirMenu' })}
-          aria-expanded={menuAbierto}
-          onClick={() => setMenuAbierto((abierto) => !abierto)}
-        >
-          {menuAbierto ? <X aria-hidden /> : <Menu aria-hidden />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label={intl.formatMessage({ id: 'busqueda.abrir' })}
+            onClick={() => setBuscadorAbierto(true)}
+          >
+            <Search aria-hidden />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label={intl.formatMessage({ id: menuAbierto ? 'nav.cerrarMenu' : 'nav.abrirMenu' })}
+            aria-expanded={menuAbierto}
+            onClick={() => setMenuAbierto((abierto) => !abierto)}
+          >
+            {menuAbierto ? <X aria-hidden /> : <Menu aria-hidden />}
+          </Button>
+        </div>
       </header>
 
       {menuAbierto && (
@@ -56,12 +80,19 @@ export function DisenoAplicacion({ children }: { children: ReactNode }) {
           menuAbierto ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <BarraLateral alNavegar={() => setMenuAbierto(false)} />
+        <BarraLateral
+          alNavegar={() => setMenuAbierto(false)}
+          alBuscar={() => {
+            setMenuAbierto(false);
+            setBuscadorAbierto(true);
+          }}
+        />
       </aside>
 
       <div className="min-w-0 flex-1 pb-20">{children}</div>
       {/* Con el cajón abierto se oculta: si no, tapa Ajustes y Cerrar sesión. */}
       {!menuAbierto && <CapturaRapida />}
+      <BuscadorGlobal abierto={buscadorAbierto} alCambiarAbierto={setBuscadorAbierto} />
     </div>
   );
 }

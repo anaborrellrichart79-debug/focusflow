@@ -12,6 +12,7 @@ import {
   Grid2x2,
   House,
   LogOut,
+  Search,
   Settings,
   Target,
   Timer,
@@ -85,7 +86,13 @@ function claseEnlace({ isActive }: { isActive: boolean }) {
 }
 
 // `alNavegar` permite al cajón del móvil cerrarse al elegir una sección.
-export function BarraLateral({ alNavegar }: { alNavegar?: () => void }) {
+export function BarraLateral({
+  alNavegar,
+  alBuscar,
+}: {
+  alNavegar?: () => void;
+  alBuscar?: () => void;
+}) {
   const intl = useIntl();
   const despachar = usarDespachador();
   const usuario = usarSelector((estado) => estado.sesion.usuario);
@@ -103,6 +110,18 @@ export function BarraLateral({ alNavegar }: { alNavegar?: () => void }) {
       >
         {intl.formatMessage({ id: 'app.titulo' })}
       </Link>
+
+      {alBuscar && (
+        <button
+          type="button"
+          onClick={alBuscar}
+          className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Search aria-hidden className="size-4" />
+          {intl.formatMessage({ id: 'busqueda.abrir' })}
+          <kbd className="ml-auto rounded border border-border px-1.5 font-mono text-[10px]">Ctrl K</kbd>
+        </button>
+      )}
 
       <div className="flex flex-col gap-2">
         <SelectorAmbito />

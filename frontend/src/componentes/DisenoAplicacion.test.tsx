@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
 import { DisenoAplicacion } from './DisenoAplicacion';
 
@@ -58,5 +58,21 @@ describe('DisenoAplicacion', () => {
     // Elegir una sección cierra el cajón.
     await usuario.click(screen.getByRole('link', { name: 'Kanban' }));
     expect(screen.getByRole('button', { name: 'Abrir menú' })).toBeInTheDocument();
+  });
+
+  it('Ctrl+K abre la búsqueda global', async () => {
+    const usuario = userEvent.setup();
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sin red en los tests')));
+    renderizarPagina(
+      <DisenoAplicacion>
+        <p>Contenido de la página</p>
+      </DisenoAplicacion>,
+      { estadoPrecargado: { sesion: SESION_AUTENTICADA } },
+    );
+
+    await usuario.keyboard('{Control>}k{/Control}');
+
+    expect(await screen.findByRole('searchbox', { name: 'Buscar en FocusFlow' })).toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 });
