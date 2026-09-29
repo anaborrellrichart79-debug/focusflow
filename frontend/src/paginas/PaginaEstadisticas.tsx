@@ -6,6 +6,7 @@ import {
   seleccionarObjetivosDelAmbito,
   seleccionarTareasDelAmbito,
 } from '@/almacen/selectores';
+import { cargarEtiquetas } from '@/almacen/etiquetasSlice';
 import { cargarObjetivos } from '@/almacen/objetivosSlice';
 import { cargarHistorialPomodoro } from '@/almacen/pomodoroSlice';
 import { cargarTareas } from '@/almacen/tareasSlice';
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { MapaActividad } from '@/componentes/MapaActividad';
+import { TiempoPorCategoria } from '@/componentes/TiempoPorCategoria';
 import { ESTADOS_SIN_ARCHIVADA } from '@/utilidades/estados';
 import { calcularRachaDias } from '@/utilidades/rachas';
 import { construirFilaCsv, descargarCsv } from '@/utilidades/exportar';
@@ -33,6 +35,7 @@ export function PaginaEstadisticas() {
     despachar(cargarTareas());
     despachar(cargarObjetivos());
     despachar(cargarHistorialPomodoro());
+    despachar(cargarEtiquetas());
   }, [despachar]);
 
   const totalTareas = tareas.length;
@@ -186,6 +189,8 @@ export function PaginaEstadisticas() {
           )}
         </CardContent>
       </Card>
+
+      <TiempoPorCategoria />
 
       <Card>
         <CardHeader>
