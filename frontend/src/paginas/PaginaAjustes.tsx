@@ -225,7 +225,7 @@ export function PaginaAjustes() {
             )}
           </div>
 
-          {conectado && <SeccionClassroom />}
+          <SeccionClassroom />
         </CardContent>
       </Card>
     </main>

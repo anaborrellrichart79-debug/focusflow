@@ -139,7 +139,7 @@ export const gl = {
   'agenda.sinTareas': 'Non hai tarefas neste período.',
   'agenda.masTareas': '+{cantidad} máis',
   'ajustes.titulo': 'Axustes',
-  'ajustes.google.titulo': 'Google Calendar',
+  'ajustes.google.titulo': 'Google (Calendar e Classroom)',
   'ajustes.google.descripcion':
     'Sincroniza as túas tarefas con data límite e as túas sesións de Pomodoro completadas co teu Google Calendar, nos dous sentidos.',
   'ajustes.google.conectar': 'Conectar con Google',
@@ -719,6 +719,7 @@ export const gl = {
   'classroom.titulo': 'Google Classroom',
   'classroom.descripcion': 'Importa como tarefas escolares os traballos que tes pendentes de entregar nas túas clases, coa data de entrega e a ligazón a Classroom. Se volves importar, non se duplican e actualízase a data se o profesor a cambia.',
   'classroom.conectar': 'Conectar Google Classroom',
+  'classroom.conectarTodo': 'Conectar Google e Classroom',
   'classroom.aviso': 'Só pide permiso para ler as túas clases e os teus traballos; nunca escribe en Classroom. Algúns centros non permiten conectar outras apps ás contas do alumnado.',
   'classroom.importar': 'Importar deberes agora',
   'classroom.importando': 'Importando…',

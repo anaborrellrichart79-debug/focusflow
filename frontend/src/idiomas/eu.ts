@@ -139,7 +139,7 @@ export const eu = {
   'agenda.sinTareas': 'Ez dago zereginik epe honetan.',
   'agenda.masTareas': '+{cantidad} gehiago',
   'ajustes.titulo': 'Ezarpenak',
-  'ajustes.google.titulo': 'Google Calendar',
+  'ajustes.google.titulo': 'Google (Calendar eta Classroom)',
   'ajustes.google.descripcion':
     'Sinkronizatu muga-data duten zure zereginak eta osatutako Pomodoro saioak zure Google Calendarrekin, bi noranzkoetan.',
   'ajustes.google.conectar': 'Google-rekin konektatu',
@@ -719,6 +719,7 @@ export const eu = {
   'classroom.titulo': 'Google Classroom',
   'classroom.descripcion': 'Inportatu eskolako zeregin gisa zure klaseetan entregatzeko dituzun lanak, entrega-datarekin eta Classroom-eko estekarekin. Berriro inportatzen baduzu, ez dira bikoizten, eta data eguneratzen da irakasleak aldatzen badu.',
   'classroom.conectar': 'Konektatu Google Classroom',
+  'classroom.conectarTodo': 'Konektatu Google eta Classroom',
   'classroom.aviso': 'Zure klaseak eta lanak irakurtzeko baimena bakarrik eskatzen du; ez du inoiz Classroom-en idazten. Ikastetxe batzuek ez dute uzten beste aplikazio batzuk ikasleen kontuetara konektatzen.',
   'classroom.importar': 'Inportatu etxeko lanak orain',
   'classroom.importando': 'Inportatzen…',

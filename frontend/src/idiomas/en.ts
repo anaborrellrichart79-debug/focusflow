@@ -139,7 +139,7 @@ export const en = {
   'agenda.sinTareas': 'No tasks in this period.',
   'agenda.masTareas': '+{cantidad} more',
   'ajustes.titulo': 'Settings',
-  'ajustes.google.titulo': 'Google Calendar',
+  'ajustes.google.titulo': 'Google (Calendar and Classroom)',
   'ajustes.google.descripcion':
     'Sync your tasks with a due date and your completed Pomodoro sessions with your Google Calendar, in both directions.',
   'ajustes.google.conectar': 'Connect with Google',
@@ -719,6 +719,7 @@ export const en = {
   'classroom.titulo': 'Google Classroom',
   'classroom.descripcion': 'Import the work you still have to hand in for your classes as school tasks, with its due date and the link to Classroom. Importing again never duplicates them and updates the due date if the teacher changes it.',
   'classroom.conectar': 'Connect Google Classroom',
+  'classroom.conectarTodo': 'Connect Google and Classroom',
   'classroom.aviso': 'It only asks for permission to read your classes and your work; it never writes to Classroom. Some schools do not allow other apps to be connected to student accounts.',
   'classroom.importar': 'Import homework now',
   'classroom.importando': 'Importing…',

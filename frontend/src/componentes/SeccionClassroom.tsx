@@ -9,11 +9,14 @@ import { importarClassroom, type ResumenClassroom } from '@/servicios/google';
 
 // Dentro de la tarjeta de Google en Ajustes: conectar Classroom (permisos de
 // solo lectura, que se suman a los de Calendar) e importar como tareas
-// escolares los trabajos pendientes de entregar.
+// escolares los trabajos pendientes de entregar. Se ve siempre: sin Google
+// conectado, un solo botón conecta Google y Classroom a la vez (antes había
+// que conectar Google para que apareciera y costaba encontrarlo).
 export function SeccionClassroom() {
   const intl = useIntl();
   const despachar = usarDespachador();
   const token = usarSelector((estado) => estado.sesion.tokenAcceso);
+  const googleConectado = usarSelector((estado) => estado.google.conectado);
   const conectado = usarSelector((estado) => estado.google.classroom);
   const [importando, setImportando] = useState(false);
   const [resumen, setResumen] = useState<ResumenClassroom | null>(null);
@@ -50,8 +53,8 @@ export function SeccionClassroom() {
         </Button>
       ) : (
         <>
-          <Button variant="outline" className="self-start" onClick={conectar}>
-            {intl.formatMessage({ id: 'classroom.conectar' })}
+          <Button variant={googleConectado ? 'outline' : 'default'} className="self-start" onClick={conectar}>
+            {intl.formatMessage({ id: googleConectado ? 'classroom.conectar' : 'classroom.conectarTodo' })}
           </Button>
           <p className="text-xs text-muted-foreground">{intl.formatMessage({ id: 'classroom.aviso' })}</p>
         </>

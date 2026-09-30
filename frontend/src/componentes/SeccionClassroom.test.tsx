@@ -4,12 +4,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
 import { SeccionClassroom } from './SeccionClassroom';
 
-function renderizar(classroom: boolean) {
+function renderizar(classroom: boolean, conectado = true) {
   return renderizarPagina(<SeccionClassroom />, {
     estadoPrecargado: {
       sesion: SESION_AUTENTICADA,
       google: {
-        conectado: true,
+        conectado,
         classroom,
         ultimaSincronizacion: null,
         sincronizando: false,
@@ -24,6 +24,14 @@ function renderizar(classroom: boolean) {
 describe('SeccionClassroom', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('sin Google conectado se ve igual y ofrece conectar Google y Classroom de una vez', () => {
+    renderizar(false, false);
+
+    expect(screen.getByText('Google Classroom')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Conectar Google y Classroom' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Importar deberes ahora' })).not.toBeInTheDocument();
   });
 
   it('sin Classroom conectado ofrece conectarlo y avisa de que es solo lectura', () => {
