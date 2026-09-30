@@ -48,7 +48,10 @@ export function TarjetaPlan() {
         )}
         {estado.incluida ? (
           <p className="text-muted-foreground tabular-nums">
-            {intl.formatMessage({ id: 'ia.usos' }, { usados: estado.usados, limite: estado.limite })}
+            {intl.formatMessage(
+              { id: estado.compartidos ? 'ia.usosCompartidos' : 'ia.usos' },
+              { usados: estado.usados, limite: estado.limite },
+            )}
           </p>
         ) : (
           !estado.desactivadaPorFamilia && (

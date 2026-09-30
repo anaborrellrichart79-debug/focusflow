@@ -69,7 +69,7 @@ export function PaginaPlanes() {
           </CardHeader>
           <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
             <p>{intl.formatMessage({ id: 'planes.plus.incluye' }, { limite: LIMITE_USOS_PLUS })}</p>
-            <p>{intl.formatMessage({ id: 'planes.plus.familia' })}</p>
+            <p>{intl.formatMessage({ id: 'planes.plus.familia' }, { limite: LIMITE_USOS_PLUS })}</p>
           </CardContent>
         </Card>
       </div>

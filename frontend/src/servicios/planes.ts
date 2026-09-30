@@ -10,6 +10,8 @@ export interface EstadoIa {
   // Usos del asistente este mes y el máximo.
   usados: number;
   limite: number;
+  // Los usos son una bolsa compartida con las cuentas vinculadas a quien paga.
+  compartidos?: boolean;
 }
 
 export function obtenerEstadoIa(token: string) {

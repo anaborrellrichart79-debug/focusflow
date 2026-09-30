@@ -156,7 +156,7 @@ export const en: TextosLegales = {
           {
             lista: [
               'Free plan: every organisation feature, without AI help.',
-              'Plus plan: €3.99 a month or €29.99 a year, VAT included. It adds AI help, with a maximum number of uses per month shown in Settings. It also covers minors linked to the person who has it (family plan), unless that person turns their AI off.',
+              'Plus plan: €3.99 a month or €29.99 a year, VAT included. It adds AI help, with a maximum number of uses per month shown in Settings. It also covers the accounts linked to the person who has it (family plan), unless that person turns their AI off; they all share those same monthly uses, so the more accounts are linked, the fewer uses each one gets.',
               'Payment and renewal: you pay when you subscribe and it covers one month or one year, depending on the option you choose. When that period ends it renews automatically on the same day and the same amount is charged again.',
               'Cancellation: you can cancel at any time in Settings, as easily as you subscribed. The subscription will not renew and you keep Plus until the end of the period you have paid for; the remaining part is not refunded.',
               'Right of withdrawal: you have 14 calendar days from subscribing to withdraw without giving any reason, by cancelling or by writing to privacidad@focusflowup.com. If you asked to start using Plus before that period ended, you will be refunded what you paid minus the part proportional to the time already used.',

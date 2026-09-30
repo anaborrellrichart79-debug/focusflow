@@ -142,7 +142,10 @@ export function AsistenteIa({ tarea }: { tarea: Tarea }) {
         {intl.formatMessage({ id: 'ia.titulo' })}
         {estadoIa.limite > 0 && (
           <span className="ml-auto text-xs font-normal text-muted-foreground tabular-nums">
-            {intl.formatMessage({ id: 'ia.usos' }, { usados: estadoIa.usados, limite: estadoIa.limite })}
+            {intl.formatMessage(
+              { id: estadoIa.compartidos ? 'ia.usosCompartidos' : 'ia.usos' },
+              { usados: estadoIa.usados, limite: estadoIa.limite },
+            )}
           </span>
         )}
       </span>

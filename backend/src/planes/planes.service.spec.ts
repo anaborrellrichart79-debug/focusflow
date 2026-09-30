@@ -13,7 +13,7 @@ function usuario(
   return {
     plan,
     iaDesactivadaPorFamilia,
-    vinculosComoSupervisado: planesResponsables.map((p) => ({ responsable: { plan: p } })),
+    vinculosComoSupervisado: planesResponsables.map((p, i) => ({ responsable: { id: `adulto-${i}`, plan: p } })),
   };
 }
 
@@ -22,6 +22,7 @@ describe('PlanesService', () => {
   const prismaFalso = {
     usuario: { findUnique: vi.fn() },
     usoIa: { count: vi.fn(), create: vi.fn() },
+    vinculoFamiliar: { findMany: vi.fn() },
   };
   const configFalso = { get: vi.fn() };
 
@@ -29,6 +30,7 @@ describe('PlanesService', () => {
     vi.clearAllMocks();
     configFalso.get.mockReturnValue(undefined);
     prismaFalso.usoIa.count.mockResolvedValue(0);
+    prismaFalso.vinculoFamiliar.findMany.mockResolvedValue([]);
     const modulo: TestingModule = await Test.createTestingModule({
       providers: [
         PlanesService,
@@ -99,12 +101,59 @@ describe('PlanesService', () => {
     prismaFalso.usuario.findUnique.mockResolvedValue(usuario('GRATUITO', ['PAGO']));
     prismaFalso.usoIa.count.mockResolvedValue(7);
 
+    prismaFalso.vinculoFamiliar.findMany.mockResolvedValue([{ supervisadoId: 'sofia' }]);
+
     expect(await servicio.estadoIa('sofia')).toEqual({
       incluida: true,
       origen: 'FAMILIA',
       desactivadaPorFamilia: false,
       usados: 7,
       limite: 100,
+      compartidos: true,
+    });
+  });
+
+  describe('bolsa de usos compartida', () => {
+    it('quien paga cuenta sus usos y los de todas sus cuentas vinculadas', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(usuario('PAGO'));
+      prismaFalso.vinculoFamiliar.findMany.mockResolvedValue([{ supervisadoId: 'sofia' }, { supervisadoId: 'pol' }]);
+
+      await servicio.usosDelMes('ana');
+
+      expect(prismaFalso.vinculoFamiliar.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { responsableId: 'ana' } }),
+      );
+      expect(prismaFalso.usoIa.count.mock.calls[0][0].where.usuarioId).toEqual({ in: ['ana', 'sofia', 'pol'] });
+    });
+
+    it('una cuenta vinculada gasta de la bolsa de la persona que paga', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(usuario('GRATUITO', ['GRATUITO', 'PAGO']));
+      prismaFalso.vinculoFamiliar.findMany.mockResolvedValue([{ supervisadoId: 'sofia' }]);
+
+      await servicio.usosDelMes('sofia');
+
+      expect(prismaFalso.vinculoFamiliar.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { responsableId: 'adulto-1' } }),
+      );
+      expect(prismaFalso.usoIa.count.mock.calls[0][0].where.usuarioId).toEqual({ in: ['adulto-1', 'sofia'] });
+    });
+
+    it('con la bolsa gastada entre todos, nadie del grupo puede usar más la IA este mes', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(usuario('GRATUITO', ['PAGO']));
+      prismaFalso.vinculoFamiliar.findMany.mockResolvedValue([{ supervisadoId: 'sofia' }, { supervisadoId: 'pol' }]);
+      prismaFalso.usoIa.count.mockResolvedValue(100);
+
+      const error = await servicio.comprobarUsoIa('pol').catch((e: unknown) => e);
+      expect((error as HttpException).getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
+    });
+
+    it('sin IA solo cuenta sus propios usos', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(usuario('GRATUITO'));
+
+      await servicio.usosDelMes('laura');
+
+      expect(prismaFalso.vinculoFamiliar.findMany).not.toHaveBeenCalled();
+      expect(prismaFalso.usoIa.count.mock.calls[0][0].where.usuarioId).toEqual({ in: ['laura'] });
     });
   });
 

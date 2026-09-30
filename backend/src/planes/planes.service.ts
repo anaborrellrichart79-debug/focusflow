@@ -32,9 +32,30 @@ export class PlanesService {
       select: {
         plan: true,
         iaDesactivadaPorFamilia: true,
-        vinculosComoSupervisado: { select: { responsable: { select: { plan: true } } } },
+        vinculosComoSupervisado: { select: { responsable: { select: { id: true, plan: true } } } },
       },
     });
+  }
+
+  // Quién paga la IA de esta cuenta: ella misma si tiene Plus, o el primer
+  // adulto vinculado que lo tenga. null si no tiene IA.
+  private async quienPaga(usuarioId: string): Promise<string | null> {
+    const usuario = await this.leerUsuario(usuarioId);
+    if (!usuario || usuario.iaDesactivadaPorFamilia) return null;
+    if (usuario.plan === 'PAGO') return usuarioId;
+    return usuario.vinculosComoSupervisado.find((vinculo) => vinculo.responsable.plan === 'PAGO')?.responsable.id ?? null;
+  }
+
+  // Cuentas que comparten la bolsa de usos de una suscripción: quien paga y
+  // todas las que tiene vinculadas. Como no se puede comprobar que sean de
+  // verdad familia, cuantas más se vinculan, menos le toca a cada una: así el
+  // coste de la IA por suscripción nunca pasa del límite.
+  private async grupoDe(pagadorId: string) {
+    const vinculos = await this.prisma.vinculoFamiliar.findMany({
+      where: { responsableId: pagadorId },
+      select: { supervisadoId: true },
+    });
+    return [pagadorId, ...vinculos.map((vinculo) => vinculo.supervisadoId)];
   }
 
   async tieneIa(usuarioId: string) {
@@ -45,18 +66,28 @@ export class PlanesService {
     return Number(this.config.get('IA_LIMITE_MENSUAL')) || LIMITE_MENSUAL_POR_DEFECTO;
   }
 
-  // Usos del mes natural en curso (hora del servidor; un día de desfase a
-  // final de mes no importa para un límite así).
+  // Usos del mes natural en curso de toda la bolsa (quien paga y sus
+  // vinculados); sin IA, solo los de la propia cuenta. Hora del servidor: un
+  // día de desfase a final de mes no importa para un límite así.
   async usosDelMes(usuarioId: string, ahora = new Date()) {
     const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-    return this.prisma.usoIa.count({ where: { usuarioId, creadoEn: { gte: inicioMes } } });
+    const pagador = await this.quienPaga(usuarioId);
+    const cuentas = pagador ? await this.grupoDe(pagador) : [usuarioId];
+    return this.prisma.usoIa.count({ where: { usuarioId: { in: cuentas }, creadoEn: { gte: inicioMes } } });
+  }
+
+  // Cuántas cuentas comparten la bolsa (1 = nadie más).
+  private async tamanoBolsa(usuarioId: string) {
+    const pagador = await this.quienPaga(usuarioId);
+    return pagador ? (await this.grupoDe(pagador)).length : 1;
   }
 
   async estadoIa(usuarioId: string) {
-    const [usuario, origen, usados] = await Promise.all([
+    const [usuario, origen, usados, cuentas] = await Promise.all([
       this.leerUsuario(usuarioId),
       this.origenIa(usuarioId),
       this.usosDelMes(usuarioId),
+      this.tamanoBolsa(usuarioId),
     ]);
     return {
       incluida: origen !== null,
@@ -65,6 +96,8 @@ export class PlanesService {
       desactivadaPorFamilia: usuario?.iaDesactivadaPorFamilia ?? false,
       usados,
       limite: this.limiteMensual(),
+      // Si los usos se comparten con otras cuentas vinculadas (la bolsa).
+      compartidos: cuentas > 1,
     };
   }
 

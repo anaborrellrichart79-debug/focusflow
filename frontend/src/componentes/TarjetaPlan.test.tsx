@@ -28,10 +28,11 @@ describe('TarjetaPlan', () => {
     expect(screen.getByText('Este mes: 12 de 100 usos.')).toBeInTheDocument();
   });
 
-  it('menor con el plan de su familia: lo dice', async () => {
-    conEstado({ incluida: true, origen: 'FAMILIA', usados: 0, limite: 100 });
+  it('menor con el plan de su familia: lo dice, y que los usos son compartidos', async () => {
+    conEstado({ incluida: true, origen: 'FAMILIA', usados: 42, limite: 100, compartidos: true });
     renderizarPagina(<TarjetaPlan />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
 
     expect(await screen.findByText(/Plus a través de tu familia/)).toBeInTheDocument();
+    expect(screen.getByText('Este mes: 42 de 100 usos, compartidos con tu familia.')).toBeInTheDocument();
   });
 });
