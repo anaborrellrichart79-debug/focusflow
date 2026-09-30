@@ -8,6 +8,8 @@ import { ConfigService } from '@nestjs/config';
 const MODELO_AVISOS_POR_DEFECTO = 'claude-haiku-4-5';
 const MODELO_ASISTENTE_POR_DEFECTO = 'claude-sonnet-5-5';
 
+export type TipoImagen = 'image/jpeg' | 'image/png' | 'image/webp';
+
 // Texto y respuestas estructuradas generadas por IA. Hay dos proveedores:
 // - Anthropic (Claude), si ANTHROPIC_API_KEY está en .env: el del plan de pago
 //   en producción; solo se paga lo que se usa.
@@ -57,6 +59,29 @@ export class IaService {
     }
   }
 
+  // Leer una foto (un horario, un calendario de exámenes...) y devolver lo que
+  // pide el esquema. Solo con Anthropic: el modelo local de Ollama no ve
+  // imágenes, así que sin clave devuelve null (ver leeImagenes).
+  async leerImagenJson<T>(
+    instrucciones: string,
+    esquema: object,
+    imagen: { datos: Buffer; tipo: TipoImagen },
+  ): Promise<T | null> {
+    if (!this.anthropic) return null;
+    const texto = await this.generarJsonConClaude(this.anthropic, instrucciones, esquema, imagen);
+    if (!texto) return null;
+    try {
+      return JSON.parse(texto) as T;
+    } catch {
+      this.logger.warn('La IA no devolvió un JSON válido al leer la foto');
+      return null;
+    }
+  }
+
+  leeImagenes() {
+    return this.anthropic !== null;
+  }
+
   // Si se le puede pedir algo ahora mismo, sin generar nada (para avisar en la
   // interfaz antes de que alguien espere para nada). Con Anthropic basta con
   // tener la clave: un fallo puntual ya se trata como "sin propuesta".
@@ -87,11 +112,17 @@ export class IaService {
     }
   }
 
-  // Sonnet 5.5 con salida estructurada (el JSON siempre cumple el esquema) y
-  // esfuerzo bajo: son propuestas cortas. `fallbacks: "default"` hace que, si el
+  // Sonnet 5.5 con salida estructurada (el JSON siempre cumple el esquema).
+  // Esfuerzo bajo para las propuestas cortas; medio al leer una foto, donde
+  // conviene mirar con calma la cuadrícula o las fechas. `fallbacks: "default"` hace que, si el
   // modelo rechazara la petición por sus filtros de seguridad, la API la repita
   // con otro modelo dentro de la misma llamada.
-  private async generarJsonConClaude(cliente: Anthropic, instrucciones: string, esquema: object) {
+  private async generarJsonConClaude(
+    cliente: Anthropic,
+    instrucciones: string,
+    esquema: object,
+    imagen?: { datos: Buffer; tipo: TipoImagen },
+  ) {
     try {
       const respuesta = await cliente.beta.messages.create({
         model: this.config.get<string>('IA_MODELO_ASISTENTE') || MODELO_ASISTENTE_POR_DEFECTO,
@@ -99,10 +130,23 @@ export class IaService {
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',
         output_config: {
-          effort: 'low',
+          effort: imagen ? 'medium' : 'low',
           format: { type: 'json_schema', schema: esquema as Record<string, unknown> },
         },
-        messages: [{ role: 'user', content: instrucciones }],
+        messages: [
+          {
+            role: 'user',
+            content: imagen
+              ? [
+                  {
+                    type: 'image',
+                    source: { type: 'base64', media_type: imagen.tipo, data: imagen.datos.toString('base64') },
+                  },
+                  { type: 'text', text: instrucciones },
+                ]
+              : instrucciones,
+          },
+        ],
       });
       return textoDe(respuesta.content, respuesta.stop_reason, 8000);
     } catch (error) {

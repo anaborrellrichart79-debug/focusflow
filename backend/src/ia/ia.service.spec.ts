@@ -78,6 +78,12 @@ describe('IaService', () => {
     expect(await servicio.generarJson('instrucciones', esquema)).toBeNull();
   });
 
+  it('sin Anthropic no lee fotos (el modelo local no ve imágenes)', async () => {
+    expect(servicio.leeImagenes()).toBe(false);
+    expect(await servicio.leerImagenJson('instrucciones', {}, { datos: Buffer.from('x'), tipo: 'image/jpeg' })).toBeNull();
+    expect(fetchFalso).not.toHaveBeenCalled();
+  });
+
   it('sin OLLAMA_URL no llama a nada y devuelve null', async () => {
     configFalso.get.mockReturnValue(undefined);
 
@@ -193,6 +199,24 @@ describe('IaService con Anthropic', () => {
 
     anthropicFalso.crear.mockResolvedValueOnce({ content: [], stop_reason: 'refusal' });
     expect(await servicio.redactar('instrucciones')).toBeNull();
+  });
+
+  it('lee una foto: la manda como imagen en base64 junto al texto, con más esfuerzo', async () => {
+    anthropicFalso.crearBeta.mockResolvedValue({
+      content: [{ type: 'text', text: '{"franjas":[]}' }],
+      stop_reason: 'end_turn',
+    });
+
+    expect(servicio.leeImagenes()).toBe(true);
+    expect(
+      await servicio.leerImagenJson('instrucciones', {}, { datos: Buffer.from('hola'), tipo: 'image/png' }),
+    ).toEqual({ franjas: [] });
+    const peticion = anthropicFalso.crearBeta.mock.calls[0][0];
+    expect(peticion.output_config.effort).toBe('medium');
+    expect(peticion.messages[0].content).toEqual([
+      { type: 'image', source: { type: 'base64', media_type: 'image/png', data: Buffer.from('hola').toString('base64') } },
+      { type: 'text', text: 'instrucciones' },
+    ]);
   });
 
   it('si Anthropic falla (clave mala, límite, caída), devuelve null en vez de fallar', async () => {

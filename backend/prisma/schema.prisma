@@ -539,10 +539,13 @@ enum PlanUsuario {
 enum TipoUsoIa {
   SUBTAREAS
   PLAN_ESTUDIO
+  FOTO_HORARIO
+  FOTO_EXAMENES
 }
 
 // Cada petición de ayuda a la IA que ha salido bien (dividir en pasos, plan de
-// estudio), para el límite mensual. Los avisos que redacta la IA no cuentan:
+// estudio, leer un horario o un calendario de exámenes de una foto), para el
+// límite mensual. Los avisos que redacta la IA no cuentan:
 // son automáticos y muy baratos.
 model UsoIa {
   id        String    @id @default(uuid())

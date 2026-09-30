@@ -67,6 +67,7 @@ export const MENSAJES_ERROR = {
   IA_NO_DISPONIBLE: 'La IA no está disponible ahora mismo',
   PLAN_SIN_IA: 'La ayuda de la IA está incluida en el plan Plus',
   LIMITE_IA_ALCANZADO: 'Has llegado al límite de usos de la IA de este mes',
+  FOTO_NO_VALIDA: 'Sube una foto (JPG, PNG o WEBP) de menos de 5 MB',
   IA_RESPUESTA_NO_VALIDA: 'La IA no ha dado una propuesta válida, inténtalo de nuevo',
   TAREA_SIN_FECHA_LIMITE: 'Ponle una fecha límite a la tarea para poder planificar el estudio',
   PLAN_SIN_DIAS: 'No quedan días para estudiar antes de la fecha límite',

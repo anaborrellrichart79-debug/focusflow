@@ -149,3 +149,46 @@ export class AsignarSesionDto {
   @MaxLength(30)
   aula?: string;
 }
+
+// Horario leído de una foto por la IA, ya revisado por el usuario: sustituye
+// entera la cuadrícula (franjas y celdas) del horario.
+export class ClasePropuestaDto {
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  diaSemana!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  asignaturaId!: string;
+}
+
+export class FranjaPropuestaDto {
+  @Matches(FORMATO_HORA)
+  horaInicio!: string;
+
+  @Matches(FORMATO_HORA)
+  horaFin!: string;
+
+  @IsEnum(TipoFranja)
+  tipo!: TipoFranja;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  etiqueta?: string;
+
+  @IsArray()
+  @ArrayMaxSize(5)
+  @ValidateNested({ each: true })
+  @Type(() => ClasePropuestaDto)
+  clases!: ClasePropuestaDto[];
+}
+
+export class AplicarPropuestaHorarioDto {
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => FranjaPropuestaDto)
+  franjas!: FranjaPropuestaDto[];
+}

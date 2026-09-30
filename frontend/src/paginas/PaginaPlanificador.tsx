@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { DetalleTarea } from '@/componentes/DetalleTarea';
 import { EtiquetaFechaLimite } from '@/componentes/EtiquetaFechaLimite';
+import { LectorFotoEntregas } from '@/componentes/fotos/LectorFotoEntregas';
 import { IndicadoresTarea } from '@/componentes/IndicadoresTarea';
 import type { Tarea, TipoEscolar } from '@/servicios/tareas';
 import {
@@ -166,6 +167,8 @@ export function PaginaPlanificador() {
           </form>
         </CardContent>
       </Card>
+
+      <LectorFotoEntregas />
 
       <div
         role="group"

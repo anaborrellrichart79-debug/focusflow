@@ -56,7 +56,9 @@ export async function peticionApi<T>(
     respuesta = await fetch(`${URL_BASE_API}${ruta}`, {
       ...opciones,
       headers: {
-        'Content-Type': 'application/json',
+        // Con un formulario (subir una foto) el navegador pone él mismo el
+        // Content-Type multipart con su separador: no hay que pisarlo.
+        ...(opciones.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
         ...opciones.headers,
       },
     });

@@ -7,5 +7,6 @@ import { HorariosService } from './horarios.service.js';
 @Module({
   controllers: [CatalogoController, HorariosController],
   providers: [CatalogoService, HorariosService],
+  exports: [CatalogoService, HorariosService],
 })
 export class ModuloHorarios {}

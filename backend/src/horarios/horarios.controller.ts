@@ -19,6 +19,7 @@ import {
   ActualizarAsignaturaHorarioDto,
   ActualizarHorarioDto,
   AnadirAsignaturaHorarioDto,
+  AplicarPropuestaHorarioDto,
   AsignarSesionDto,
   CrearHorarioDto,
   ReemplazarFranjasDto,
@@ -120,6 +121,16 @@ export class HorariosController {
       id,
       asignaturaHorarioId,
     );
+  }
+
+  // Sustituye toda la cuadrícula por la leída de una foto (ya revisada).
+  @Put(':id/cuadricula')
+  aplicarPropuesta(
+    @UsuarioActual() usuario: UsuarioPeticion,
+    @Param('id') id: string,
+    @Body() datos: AplicarPropuestaHorarioDto,
+  ) {
+    return this.horariosService.aplicarPropuesta(usuario.id, id, datos);
   }
 
   @Put(':id/sesiones')

@@ -8,6 +8,7 @@ import { ServicioPrisma } from '../prisma/prisma.service.js';
 import type {
   ActualizarHorarioDto,
   AnadirAsignaturaHorarioDto,
+  AplicarPropuestaHorarioDto,
   AsignarSesionDto,
   CrearHorarioDto,
   FranjaDto,
@@ -199,6 +200,79 @@ export class HorariosService {
           }
         } else {
           await tx.franjaHorario.create({ data: { ...datos, horarioId: id } });
+        }
+      }
+    });
+
+    return this.obtenerCompleto(usuarioId, id);
+  }
+
+  // Aplica un horario leído de una foto (ya revisado): sustituye todas las
+  // franjas y celdas, y añade al horario las asignaturas del catálogo que
+  // falten, con el primer color libre. Todo o nada, en una transacción.
+  async aplicarPropuesta(usuarioId: string, id: string, datos: AplicarPropuestaHorarioDto) {
+    const horario = await this.obtenerCompleto(usuarioId, id);
+
+    for (const franja of datos.franjas) {
+      if (franja.horaInicio >= franja.horaFin) {
+        throw new BadRequestException(
+          `La franja ${franja.horaInicio}-${franja.horaFin} debe empezar antes de terminar`,
+        );
+      }
+    }
+
+    // Solo asignaturas del curso del horario (oficiales o propias del usuario).
+    const idsPedidos = [
+      ...new Set(datos.franjas.flatMap((franja) => franja.clases.map((clase) => clase.asignaturaId))),
+    ];
+    const validas = await this.prisma.asignatura.findMany({
+      where: { id: { in: idsPedidos }, cursoId: horario.cursoId, OR: [{ usuarioId: null }, { usuarioId }] },
+      select: { id: true },
+    });
+    if (validas.length !== idsPedidos.length) {
+      throw new NotFoundException('Asignatura no encontrada para el curso de este horario');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      // Borrar las franjas borra también sus celdas (Cascade).
+      await tx.franjaHorario.deleteMany({ where: { horarioId: id } });
+
+      const elegidas = new Map(horario.asignaturas.map((elegida) => [elegida.asignaturaId, elegida.id]));
+      const coloresUsados = new Set(horario.asignaturas.map((elegida) => elegida.color));
+      for (const asignaturaId of idsPedidos) {
+        if (elegidas.has(asignaturaId)) continue;
+        const color =
+          PALETA_ASIGNATURAS.find((candidato) => !coloresUsados.has(candidato)) ??
+          PALETA_ASIGNATURAS[elegidas.size % PALETA_ASIGNATURAS.length];
+        coloresUsados.add(color);
+        const creada = await tx.asignaturaHorario.create({ data: { horarioId: id, asignaturaId, color } });
+        elegidas.set(asignaturaId, creada.id);
+      }
+
+      for (const [orden, franja] of datos.franjas.entries()) {
+        const creada = await tx.franjaHorario.create({
+          data: {
+            horarioId: id,
+            orden,
+            horaInicio: franja.horaInicio,
+            horaFin: franja.horaFin,
+            tipo: franja.tipo,
+            etiqueta: franja.etiqueta?.trim() || null,
+          },
+        });
+        if (franja.tipo === TipoFranja.DESCANSO) continue;
+        const dias = new Set<number>();
+        for (const clase of franja.clases) {
+          if (dias.has(clase.diaSemana)) continue; // una celda, una asignatura
+          dias.add(clase.diaSemana);
+          await tx.sesionClase.create({
+            data: {
+              horarioId: id,
+              franjaId: creada.id,
+              diaSemana: clase.diaSemana,
+              asignaturaHorarioId: elegidas.get(clase.asignaturaId)!,
+            },
+          });
         }
       }
     });

@@ -8,6 +8,7 @@ import { CuadriculaHorario } from '@/componentes/horario/CuadriculaHorario';
 import { DatosHorario } from '@/componentes/horario/DatosHorario';
 import { DialogoCelda } from '@/componentes/horario/DialogoCelda';
 import { EditorFranjas } from '@/componentes/horario/EditorFranjas';
+import { LectorFotoHorario } from '@/componentes/fotos/LectorFotoHorario';
 import { FormularioHorario } from '@/componentes/horario/FormularioHorario';
 import { PanelAsignaturas } from '@/componentes/horario/PanelAsignaturas';
 import type { FranjaHorario } from '@/servicios/horarios';
@@ -97,6 +98,8 @@ export function PaginaHorario() {
               )}
             </CardContent>
           </Card>
+
+          <LectorFotoHorario horario={horario} />
 
           {editando && (
             <div className="grid gap-6 lg:grid-cols-2">

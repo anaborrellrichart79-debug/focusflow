@@ -6,6 +6,7 @@ import { AplicacionController } from './aplicacion.controller.js';
 import { AplicacionService } from './aplicacion.service.js';
 import { ModuloAsistente } from './asistente/asistente.module.js';
 import { ModuloPlanes } from './planes/planes.module.js';
+import { ModuloFotos } from './fotos/fotos.module.js';
 import { FiltroErrores } from './comun/filtro-errores.js';
 import { ModuloAutenticacion } from './autenticacion/autenticacion.module.js';
 import { ModuloEtiquetas } from './etiquetas/etiquetas.module.js';
@@ -42,6 +43,7 @@ import { ModuloTareas } from './tareas/tareas.module.js';
     ModuloPush,
     ModuloAsistente,
     ModuloPlanes,
+    ModuloFotos,
   ],
   controllers: [AplicacionController],
   // FiltroErrores añade a cada error el código que traduce el frontend.

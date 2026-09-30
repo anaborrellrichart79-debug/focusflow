@@ -45,7 +45,8 @@ describe('HorariosService', () => {
   const tx = {
     horario: { updateMany: vi.fn(), update: vi.fn() },
     franjaHorario: { deleteMany: vi.fn(), update: vi.fn(), create: vi.fn() },
-    sesionClase: { deleteMany: vi.fn() },
+    sesionClase: { deleteMany: vi.fn(), create: vi.fn() },
+    asignaturaHorario: { create: vi.fn() },
   };
   const prismaFalso = {
     curso: { findUnique: vi.fn() },
@@ -55,7 +56,7 @@ describe('HorariosService', () => {
       create: vi.fn(),
       delete: vi.fn(),
     },
-    asignatura: { findFirst: vi.fn() },
+    asignatura: { findFirst: vi.fn(), findMany: vi.fn() },
     asignaturaHorario: {
       create: vi.fn(),
       findFirst: vi.fn(),
@@ -373,6 +374,67 @@ describe('HorariosService', () => {
           asignaturaHorarioId: 'ah-de-otro-horario',
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('aplicarPropuesta (horario leído de una foto)', () => {
+    const propuesta = {
+      franjas: [
+        {
+          horaInicio: '09:00',
+          horaFin: '10:00',
+          tipo: 'CLASE' as const,
+          clases: [
+            { diaSemana: 1, asignaturaId: 'primaria-3-matematicas' },
+            { diaSemana: 2, asignaturaId: 'primaria-3-lengua' },
+            { diaSemana: 2, asignaturaId: 'primaria-3-matematicas' },
+          ],
+        },
+        { horaInicio: '10:00', horaFin: '10:30', tipo: 'DESCANSO' as const, etiqueta: ' Recreo ', clases: [] },
+      ],
+    };
+
+    it('sustituye la cuadrícula, añade las asignaturas que faltan con un color libre y rellena las celdas', async () => {
+      prismaFalso.asignatura.findMany.mockResolvedValue([
+        { id: 'primaria-3-matematicas' },
+        { id: 'primaria-3-lengua' },
+      ]);
+      tx.franjaHorario.create.mockImplementation(async ({ data }: { data: { orden: number } }) => ({
+        id: `nueva-${data.orden}`,
+      }));
+      tx.asignaturaHorario.create.mockResolvedValue({ id: 'ah-lengua' });
+
+      await servicio.aplicarPropuesta('usuario-1', 'horario-1', propuesta);
+
+      expect(tx.franjaHorario.deleteMany).toHaveBeenCalledWith({ where: { horarioId: 'horario-1' } });
+      // Matemáticas ya estaba: solo se añade Lengua, con el siguiente color.
+      expect(tx.asignaturaHorario.create).toHaveBeenCalledTimes(1);
+      expect(tx.asignaturaHorario.create).toHaveBeenCalledWith({
+        data: { horarioId: 'horario-1', asignaturaId: 'primaria-3-lengua', color: PALETA_ASIGNATURAS[1] },
+      });
+      expect(tx.franjaHorario.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ orden: 1, tipo: 'DESCANSO', etiqueta: 'Recreo' }),
+      });
+      // Una asignatura por celda: el segundo martes se ignora.
+      expect(tx.sesionClase.create.mock.calls.map(([{ data }]) => [data.diaSemana, data.asignaturaHorarioId])).toEqual([
+        [1, 'ah-mates'],
+        [2, 'ah-lengua'],
+      ]);
+    });
+
+    it('rechaza asignaturas que no son del curso del horario, sin tocar nada', async () => {
+      prismaFalso.asignatura.findMany.mockResolvedValue([{ id: 'primaria-3-matematicas' }]);
+
+      await expect(servicio.aplicarPropuesta('usuario-1', 'horario-1', propuesta)).rejects.toThrow(NotFoundException);
+      expect(prismaFalso.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('rechaza franjas que terminan antes de empezar', async () => {
+      await expect(
+        servicio.aplicarPropuesta('usuario-1', 'horario-1', {
+          franjas: [{ horaInicio: '10:00', horaFin: '09:00', tipo: 'CLASE', clases: [] }],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

@@ -148,6 +148,21 @@ export function reemplazarFranjas(token: string, id: string, franjas: DatosFranj
   return enviar<Horario>(token, `/horarios/${id}/franjas`, 'PUT', { franjas });
 }
 
+// Horario leído de una foto y revisado: sustituye toda la cuadrícula.
+export interface CuadriculaPropuesta {
+  franjas: {
+    horaInicio: string;
+    horaFin: string;
+    tipo: TipoFranja;
+    etiqueta?: string;
+    clases: { diaSemana: number; asignaturaId: string }[];
+  }[];
+}
+
+export function aplicarCuadricula(token: string, id: string, cuadricula: CuadriculaPropuesta) {
+  return enviar<Horario>(token, `/horarios/${id}/cuadricula`, 'PUT', cuadricula);
+}
+
 export function anadirAsignaturaHorario(token: string, id: string, asignaturaId: string) {
   return enviar<Horario>(token, `/horarios/${id}/asignaturas`, 'POST', { asignaturaId });
 }

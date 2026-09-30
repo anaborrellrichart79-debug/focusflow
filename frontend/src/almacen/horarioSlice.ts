@@ -3,6 +3,7 @@ import { ErrorApi } from '@/servicios/api';
 import {
   actualizarHorario as actualizarHorarioApi,
   anadirAsignaturaHorario as anadirAsignaturaHorarioApi,
+  aplicarCuadricula as aplicarCuadriculaApi,
   asignarSesion as asignarSesionApi,
   cambiarColorAsignaturaHorario as cambiarColorAsignaturaHorarioApi,
   crearHorario as crearHorarioApi,
@@ -13,6 +14,7 @@ import {
   quitarAsignaturaHorario as quitarAsignaturaHorarioApi,
   reemplazarFranjas as reemplazarFranjasApi,
   type ComunidadAutonoma,
+  type CuadriculaPropuesta,
   type Curso,
   type DatosFranja,
   type Horario,
@@ -115,6 +117,12 @@ export const reemplazarFranjas = crearThunkDeEdicion(
     reemplazarFranjasApi(token, id, franjas),
 );
 
+export const aplicarCuadricula = crearThunkDeEdicion(
+  'aplicarCuadricula',
+  (token, { id, cuadricula }: { id: string; cuadricula: CuadriculaPropuesta }) =>
+    aplicarCuadriculaApi(token, id, cuadricula),
+);
+
 export const anadirAsignaturaHorario = crearThunkDeEdicion(
   'anadirAsignatura',
   (token, { id, asignaturaId }: { id: string; asignaturaId: string }) =>
@@ -160,6 +168,7 @@ const THUNKS_DE_EDICION = [
   crearHorario,
   actualizarHorario,
   reemplazarFranjas,
+  aplicarCuadricula,
   anadirAsignaturaHorario,
   cambiarColorAsignaturaHorario,
   quitarAsignaturaHorario,
