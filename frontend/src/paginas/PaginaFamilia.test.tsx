@@ -5,7 +5,7 @@ import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
 import type { EstadoFamilia, TareaSupervisada } from '@/servicios/familia';
 import { PaginaFamilia } from './PaginaFamilia';
 
-const HIJA = { vinculoId: 'v-1', id: 'hija', nombre: 'Lucía', correo: 'lucia@example.com' };
+const HIJA = { vinculoId: 'v-1', id: 'hija', nombre: 'Lucía', correo: 'lucia@example.com', iaPermitida: true };
 
 function tareaSupervisada(datos: Partial<TareaSupervisada>): TareaSupervisada {
   return {
@@ -47,6 +47,7 @@ function simularApi(
     else if (url.endsWith('/familia/vincular')) respuesta = { ...HIJA, consentimientoConcedido };
     else if (url.endsWith('/revision'))
       respuesta = tareaSupervisada({ estadoRevision: cuerpo.decision, comentarioRevision: cuerpo.comentario ?? null });
+    else if (url.endsWith('/ia') && opciones?.method === 'PATCH') respuesta = { iaPermitida: cuerpo.permitida };
     else if (url.includes('/supervisados/') && opciones?.method === 'POST')
       respuesta = tareaSupervisada({ id: 'nueva', titulo: cuerpo.titulo, estado: 'POR_HACER', estadoRevision: null });
     else if (url.includes('/supervisados/')) respuesta = tareas;
@@ -102,6 +103,21 @@ describe('PaginaFamilia', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Has confirmado la cuenta de Lucía: ya puede usar FocusFlow.',
     );
+  });
+
+  it('la madre o el padre puede apagar la ayuda de la IA de su hija', async () => {
+    const usuario = userEvent.setup();
+    const fetchFalso = simularApi({ ...SIN_NADIE, supervisados: [HIJA] });
+    renderizarPagina(<PaginaFamilia />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
+
+    const interruptor = await screen.findByRole('checkbox', { name: 'Permitir la ayuda de la IA a Lucía' });
+    expect(interruptor).toBeChecked();
+    await usuario.click(interruptor);
+
+    expect(await screen.findByText(/Desactivada: no puede usar la IA/)).toBeInTheDocument();
+    const llamada = fetchFalso.mock.calls.find(([url]) => (url as string).endsWith('/familia/supervisados/hija/ia'));
+    expect(llamada![1]!.method).toBe('PATCH');
+    expect(JSON.parse(llamada![1]!.body as string)).toEqual({ permitida: false });
   });
 
   it('aprueba una tarea pendiente de revisión', async () => {

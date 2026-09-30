@@ -5,6 +5,8 @@ export interface EstadoIa {
   // o el de un adulto vinculado (plan familiar).
   incluida: boolean;
   origen: 'PROPIO' | 'FAMILIA' | null;
+  // Su padre, madre o tutor la ha apagado desde la página Familia.
+  desactivadaPorFamilia?: boolean;
   // Usos del asistente este mes y el máximo.
   usados: number;
   limite: number;

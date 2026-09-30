@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import bcrypt from 'bcrypt';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CorreoService } from '../correo/correo.service.js';
 import type { Usuario } from '../generated/prisma/client.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
@@ -39,6 +39,7 @@ describe('AutenticacionService', () => {
       create: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),
+      delete: vi.fn(),
     },
   };
   const jwtServiceFalso = {
@@ -461,6 +462,46 @@ describe('AutenticacionService', () => {
 
       await expect(servicio.reenviarVerificacion('usuario-1')).rejects.toBeInstanceOf(BadRequestException);
       expect(prismaFalso.usuario.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('eliminarCuenta', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('con la contraseña equivocada no borra nada', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(
+        crearUsuarioFalso({ contrasena: await bcrypt.hash('Correcta1', 4) }),
+      );
+
+      await expect(servicio.eliminarCuenta('usuario-1', 'Otra1234')).rejects.toBeInstanceOf(BadRequestException);
+      expect(prismaFalso.usuario.delete).not.toHaveBeenCalled();
+    });
+
+    it('con la contraseña buena retira el permiso de Google y borra la cuenta', async () => {
+      const fetchFalso = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', fetchFalso);
+      prismaFalso.usuario.findUnique.mockResolvedValue(
+        crearUsuarioFalso({ contrasena: await bcrypt.hash('Correcta1', 4), googleRefreshToken: 'refresh-1' }),
+      );
+
+      await servicio.eliminarCuenta('usuario-1', 'Correcta1');
+
+      expect(fetchFalso).toHaveBeenCalledWith('https://oauth2.googleapis.com/revoke', expect.objectContaining({ method: 'POST' }));
+      expect(prismaFalso.usuario.delete).toHaveBeenCalledWith({ where: { id: 'usuario-1' } });
+    });
+
+    it('si Google no responde, la cuenta se borra igual', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sin red')));
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      prismaFalso.usuario.findUnique.mockResolvedValue(
+        crearUsuarioFalso({ contrasena: await bcrypt.hash('Correcta1', 4), googleRefreshToken: 'refresh-1' }),
+      );
+
+      await servicio.eliminarCuenta('usuario-1', 'Correcta1');
+
+      expect(prismaFalso.usuario.delete).toHaveBeenCalled();
     });
   });
 

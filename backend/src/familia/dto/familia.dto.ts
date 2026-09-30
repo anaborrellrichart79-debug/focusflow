@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsDate,
   IsEnum,
   IsIn,
@@ -57,4 +58,11 @@ export class RevisarTareaDto {
   @IsNotEmpty()
   @MaxLength(500)
   comentario?: string;
+}
+
+// La madre, el padre o el tutor enciende o apaga la IA de la persona que
+// supervisa.
+export class CambiarIaSupervisadoDto {
+  @IsBoolean()
+  permitida!: boolean;
 }

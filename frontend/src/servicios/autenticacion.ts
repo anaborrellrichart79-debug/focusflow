@@ -100,3 +100,12 @@ export function actualizarPreferencias(
     body: JSON.stringify(datos),
   });
 }
+
+// Borra la cuenta y todos sus datos (hay que repetir la contraseña).
+export function eliminarCuenta(tokenAcceso: string, contrasena: string) {
+  return peticionApi<void>('/autenticacion/cuenta', {
+    method: 'DELETE',
+    headers: cabeceras(tokenAcceso),
+    body: JSON.stringify({ contrasena }),
+  });
+}

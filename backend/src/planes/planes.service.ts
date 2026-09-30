@@ -17,19 +17,24 @@ export class PlanesService {
   ) {}
 
   // De dónde le viene la IA: su propio plan, el de un adulto vinculado, o
-  // null si no la tiene.
+  // null si no la tiene (tampoco si su familia la ha apagado).
   async origenIa(usuarioId: string): Promise<'PROPIO' | 'FAMILIA' | null> {
-    const usuario = await this.prisma.usuario.findUnique({
-      where: { id: usuarioId },
-      select: {
-        plan: true,
-        vinculosComoSupervisado: { select: { responsable: { select: { plan: true } } } },
-      },
-    });
-    if (!usuario) return null;
+    const usuario = await this.leerUsuario(usuarioId);
+    if (!usuario || usuario.iaDesactivadaPorFamilia) return null;
     if (usuario.plan === 'PAGO') return 'PROPIO';
     if (usuario.vinculosComoSupervisado.some((vinculo) => vinculo.responsable.plan === 'PAGO')) return 'FAMILIA';
     return null;
+  }
+
+  private leerUsuario(usuarioId: string) {
+    return this.prisma.usuario.findUnique({
+      where: { id: usuarioId },
+      select: {
+        plan: true,
+        iaDesactivadaPorFamilia: true,
+        vinculosComoSupervisado: { select: { responsable: { select: { plan: true } } } },
+      },
+    });
   }
 
   async tieneIa(usuarioId: string) {
@@ -48,13 +53,27 @@ export class PlanesService {
   }
 
   async estadoIa(usuarioId: string) {
-    const [origen, usados] = await Promise.all([this.origenIa(usuarioId), this.usosDelMes(usuarioId)]);
-    return { incluida: origen !== null, origen, usados, limite: this.limiteMensual() };
+    const [usuario, origen, usados] = await Promise.all([
+      this.leerUsuario(usuarioId),
+      this.origenIa(usuarioId),
+      this.usosDelMes(usuarioId),
+    ]);
+    return {
+      incluida: origen !== null,
+      origen,
+      // Para explicar por qué no hay IA en vez de ofrecer el plan Plus.
+      desactivadaPorFamilia: usuario?.iaDesactivadaPorFamilia ?? false,
+      usados,
+      limite: this.limiteMensual(),
+    };
   }
 
   // Antes de pedir nada a la IA desde el asistente: sin plan, 403; con el
   // límite del mes gastado, 429.
   async comprobarUsoIa(usuarioId: string) {
+    if ((await this.leerUsuario(usuarioId))?.iaDesactivadaPorFamilia) {
+      throw new ForbiddenException('Tu familia ha desactivado la ayuda de la IA');
+    }
     if (!(await this.tieneIa(usuarioId))) {
       throw new ForbiddenException('La ayuda de la IA está incluida en el plan Plus');
     }

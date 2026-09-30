@@ -5,11 +5,16 @@ export interface PersonaVinculada extends Persona {
   vinculoId: string;
 }
 
+// Persona que supervisa este usuario: además, si le deja usar la IA.
+export interface PersonaSupervisada extends PersonaVinculada {
+  iaPermitida: boolean;
+}
+
 export interface EstadoFamilia {
   // Código vigente que ha generado este usuario para que lo vincule un responsable.
   codigo: { codigo: string; expiraEn: string } | null;
   // Personas cuyas tareas revisa este usuario.
-  supervisados: PersonaVinculada[];
+  supervisados: PersonaSupervisada[];
   // Personas que revisan las tareas de este usuario.
   responsables: PersonaVinculada[];
 }
@@ -41,7 +46,7 @@ export function generarCodigoVinculo(token: string) {
   });
 }
 
-export interface ResultadoVinculo extends PersonaVinculada {
+export interface ResultadoVinculo extends PersonaSupervisada {
   // true si el vínculo ha confirmado la cuenta pendiente de un menor.
   consentimientoConcedido: boolean;
 }
@@ -84,5 +89,14 @@ export function revisarTarea(
     method: 'POST',
     headers: cabeceras(token),
     body: JSON.stringify(datos),
+  });
+}
+
+// El padre, la madre o el tutor enciende o apaga la IA de quien supervisa.
+export function cambiarIaSupervisado(token: string, supervisadoId: string, permitida: boolean) {
+  return peticionApi<{ iaPermitida: boolean }>(`/familia/supervisados/${supervisadoId}/ia`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ permitida }),
   });
 }

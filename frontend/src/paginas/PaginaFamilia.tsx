@@ -12,10 +12,17 @@ import {
 } from '@/almacen/familiaSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { EtiquetaFechaLimite } from '@/componentes/EtiquetaFechaLimite';
-import type { PersonaVinculada, TareaSupervisada } from '@/servicios/familia';
+import { ErrorApi } from '@/servicios/api';
+import {
+  cambiarIaSupervisado,
+  type PersonaSupervisada,
+  type PersonaVinculada,
+  type TareaSupervisada,
+} from '@/servicios/familia';
 import type { Ambito } from '@/servicios/tareas';
 import { ESTADOS_TAREA } from '@/utilidades/estados';
 
@@ -188,7 +195,49 @@ function TarjetaVincular() {
   );
 }
 
-function TarjetaSupervisado({ persona }: { persona: PersonaVinculada }) {
+// La madre, el padre o el tutor decide si su hijo o hija puede usar la IA
+// (encendida por defecto: la incluye el plan). Así el consentimiento para la
+// IA queda en manos de la familia.
+function InterruptorIa({ persona }: { persona: PersonaSupervisada }) {
+  const intl = useIntl();
+  const token = usarSelector((estado) => estado.sesion.tokenAcceso);
+  const [permitida, setPermitida] = useState(persona.iaPermitida);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function cambiar(valor: boolean) {
+    if (!token) return;
+    setGuardando(true);
+    setError(null);
+    try {
+      const { iaPermitida } = await cambiarIaSupervisado(token, persona.id, valor);
+      setPermitida(iaPermitida);
+    } catch (causa) {
+      setError(causa instanceof ErrorApi ? causa.message : intl.formatMessage({ id: 'familia.ia.error' }));
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-1 rounded-md border border-border p-3">
+      <label className="flex items-center gap-2 text-sm font-medium">
+        <Checkbox checked={permitida} disabled={guardando} onCheckedChange={(marcada) => cambiar(marcada === true)} />
+        {intl.formatMessage({ id: 'familia.ia.interruptor' }, { nombre: nombreDe(persona) })}
+      </label>
+      <p className="pl-6 text-xs text-muted-foreground">
+        {intl.formatMessage({ id: permitida ? 'familia.ia.activada' : 'familia.ia.desactivada' })}
+      </p>
+      {error && (
+        <p role="alert" className="pl-6 text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function TarjetaSupervisado({ persona }: { persona: PersonaSupervisada }) {
   const intl = useIntl();
   const despachar = usarDespachador();
   const tareas = usarSelector((estado) => estado.familia.tareasPorSupervisado[persona.id]);
@@ -213,6 +262,8 @@ function TarjetaSupervisado({ persona }: { persona: PersonaVinculada }) {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        <InterruptorIa persona={persona} />
+
         <section className="flex flex-col gap-2">
           <h3 className="text-sm font-medium">
             {intl.formatMessage({ id: 'familia.supervisado.pendientes' }, { cantidad: pendientes.length })}

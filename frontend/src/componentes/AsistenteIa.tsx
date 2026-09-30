@@ -112,6 +112,15 @@ export function AsistenteIa({ tarea }: { tarea: Tarea }) {
 
   if (!estadoIa) return null;
 
+  if (estadoIa.desactivadaPorFamilia) {
+    return (
+      <div className="flex items-center gap-1.5 rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
+        <Sparkles aria-hidden className="size-4 shrink-0" />
+        {intl.formatMessage({ id: 'ia.desactivadaFamilia' })}
+      </div>
+    );
+  }
+
   if (!estadoIa.incluida) {
     return (
       <div className="flex flex-col gap-1.5 rounded-md border border-dashed border-border p-3 text-sm">

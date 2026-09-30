@@ -42,15 +42,20 @@ export function TarjetaPlan() {
       </CardHeader>
       <CardContent className="flex flex-col gap-2 text-sm">
         <p>{intl.formatMessage({ id: descripcion })}</p>
+        {estado.desactivadaPorFamilia && (
+          <p className="text-muted-foreground">{intl.formatMessage({ id: 'ia.desactivadaFamilia' })}</p>
+        )}
         {estado.incluida ? (
           <p className="text-muted-foreground tabular-nums">
             {intl.formatMessage({ id: 'ia.usos' }, { usados: estado.usados, limite: estado.limite })}
           </p>
         ) : (
-          <>
-            <p className="text-muted-foreground">{intl.formatMessage({ id: 'ia.plus.explicacion' })}</p>
-            <p className="text-xs text-muted-foreground">{intl.formatMessage({ id: 'ia.plus.proximamente' })}</p>
-          </>
+          !estado.desactivadaPorFamilia && (
+            <>
+              <p className="text-muted-foreground">{intl.formatMessage({ id: 'ia.plus.explicacion' })}</p>
+              <p className="text-xs text-muted-foreground">{intl.formatMessage({ id: 'ia.plus.proximamente' })}</p>
+            </>
+          )
         )}
       </CardContent>
     </Card>

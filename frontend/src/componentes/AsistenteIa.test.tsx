@@ -112,4 +112,12 @@ describe('AsistenteIa', () => {
     expect(screen.queryByRole('button', { name: 'Dividir en pasos' })).not.toBeInTheDocument();
     expect(llamadasA(fetchFalso, '/ia/subtareas')).toHaveLength(0);
   });
+
+  it('si la familia ha apagado la IA, lo explica (sin ofrecer el plan Plus)', async () => {
+    simularApi({ '/planes/ia': { incluida: false, origen: null, desactivadaPorFamilia: true, usados: 0, limite: 100 } });
+    renderizarPagina(<AsistenteIa tarea={TAREA} />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
+
+    expect(await screen.findByText('Tu familia ha desactivado la ayuda de la IA en tu cuenta.')).toBeInTheDocument();
+    expect(screen.queryByText('La ayuda de la IA está en el plan Plus')).not.toBeInTheDocument();
+  });
 });

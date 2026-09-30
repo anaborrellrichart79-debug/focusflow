@@ -100,6 +100,8 @@ describe('FamiliaService', () => {
         id: 'hija',
         nombre: 'Lucía',
         correo: 'l@example.com',
+        // Sin nada guardado (iaDesactivadaPorFamilia indefinido), la IA está permitida.
+        iaPermitida: true,
         consentimientoConcedido: false,
       });
       // Si la cuenta ya estaba confirmada no hace falta comprobar la edad.
@@ -230,6 +232,31 @@ describe('FamiliaService', () => {
     });
     expect(prismaFalso.vinculoFamiliar.delete).toHaveBeenCalledWith({
       where: { id: 'vinculo-1' },
+    });
+  });
+
+  describe('IA de la persona supervisada', () => {
+    it('un adulto vinculado puede apagarla y volver a encenderla', async () => {
+      prismaFalso.vinculoFamiliar.findUnique.mockResolvedValue({ id: 'v-1' });
+
+      expect(await servicio.cambiarIaSupervisado('madre', 'hija', false)).toEqual({ iaPermitida: false });
+      expect(prismaFalso.usuario.update).toHaveBeenCalledWith({
+        where: { id: 'hija' },
+        data: { iaDesactivadaPorFamilia: true },
+      });
+
+      await servicio.cambiarIaSupervisado('madre', 'hija', true);
+      expect(prismaFalso.usuario.update).toHaveBeenLastCalledWith({
+        where: { id: 'hija' },
+        data: { iaDesactivadaPorFamilia: false },
+      });
+    });
+
+    it('nadie sin vínculo puede tocarla', async () => {
+      prismaFalso.vinculoFamiliar.findUnique.mockResolvedValue(null);
+
+      await expect(servicio.cambiarIaSupervisado('extrano', 'hija', false)).rejects.toThrow(NotFoundException);
+      expect(prismaFalso.usuario.update).not.toHaveBeenCalled();
     });
   });
 

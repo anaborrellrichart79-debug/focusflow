@@ -9,6 +9,7 @@
 export const MENSAJES_ERROR = {
   // Autenticación y cuenta
   CORREO_O_CONTRASENA_INCORRECTOS: 'Correo o contraseña incorrectos',
+  CONTRASENA_INCORRECTA: 'La contraseña no es correcta',
   USUARIO_YA_EXISTE: 'Ya existe un usuario con ese correo',
   USUARIO_NO_ENCONTRADO: 'Usuario no encontrado',
   CORREO_NO_VALIDO: 'El correo electrónico no es válido',
@@ -66,6 +67,7 @@ export const MENSAJES_ERROR = {
   // Asistente de IA (Anthropic, u Ollama en local) y planes
   IA_NO_DISPONIBLE: 'La IA no está disponible ahora mismo',
   PLAN_SIN_IA: 'La ayuda de la IA está incluida en el plan Plus',
+  IA_DESACTIVADA_POR_FAMILIA: 'Tu familia ha desactivado la ayuda de la IA',
   LIMITE_IA_ALCANZADO: 'Has llegado al límite de usos de la IA de este mes',
   FOTO_NO_VALIDA: 'Sube una foto (JPG, PNG o WEBP) de menos de 5 MB',
   IA_RESPUESTA_NO_VALIDA: 'La IA no ha dado una propuesta válida, inténtalo de nuevo',

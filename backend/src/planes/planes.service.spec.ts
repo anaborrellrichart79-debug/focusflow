@@ -5,9 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import { PlanesService } from './planes.service.js';
 
-function usuario(plan: 'GRATUITO' | 'PAGO', planesResponsables: ('GRATUITO' | 'PAGO')[] = []) {
+function usuario(
+  plan: 'GRATUITO' | 'PAGO',
+  planesResponsables: ('GRATUITO' | 'PAGO')[] = [],
+  iaDesactivadaPorFamilia = false,
+) {
   return {
     plan,
+    iaDesactivadaPorFamilia,
     vinculosComoSupervisado: planesResponsables.map((p) => ({ responsable: { plan: p } })),
   };
 }
@@ -51,6 +56,13 @@ describe('PlanesService', () => {
       expect(await servicio.origenIa('sofia')).toBe('FAMILIA');
     });
 
+    it('si la familia la ha apagado, no hay IA aunque el plan la incluya', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(usuario('GRATUITO', ['PAGO'], true));
+      expect(await servicio.origenIa('sofia')).toBeNull();
+      await expect(servicio.comprobarUsoIa('sofia')).rejects.toThrow('Tu familia ha desactivado la ayuda de la IA');
+      expect(await servicio.estadoIa('sofia')).toMatchObject({ incluida: false, desactivadaPorFamilia: true });
+    });
+
     it('cuenta que no existe: sin IA', async () => {
       prismaFalso.usuario.findUnique.mockResolvedValue(null);
       expect(await servicio.tieneIa('nadie')).toBe(false);
@@ -87,7 +99,13 @@ describe('PlanesService', () => {
     prismaFalso.usuario.findUnique.mockResolvedValue(usuario('GRATUITO', ['PAGO']));
     prismaFalso.usoIa.count.mockResolvedValue(7);
 
-    expect(await servicio.estadoIa('sofia')).toEqual({ incluida: true, origen: 'FAMILIA', usados: 7, limite: 100 });
+    expect(await servicio.estadoIa('sofia')).toEqual({
+      incluida: true,
+      origen: 'FAMILIA',
+      desactivadaPorFamilia: false,
+      usados: 7,
+      limite: 100,
+    });
   });
 
   it('registrarUsoIa guarda el uso con su tipo', async () => {

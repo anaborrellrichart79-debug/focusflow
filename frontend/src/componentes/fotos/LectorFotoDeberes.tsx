@@ -99,7 +99,9 @@ export function LectorFotoDeberes({ sinClase }: { sinClase: PeriodoSinClase[] })
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         {!estadoIa.incluida ? (
-          <p className="text-muted-foreground">{intl.formatMessage({ id: 'fotos.soloPlus' })}</p>
+          <p className="text-muted-foreground">
+            {intl.formatMessage({ id: estadoIa.desactivadaPorFamilia ? 'ia.desactivadaFamilia' : 'fotos.soloPlus' })}
+          </p>
         ) : (
           <>
             {!propuestas && (

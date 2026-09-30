@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { GuardaConsentimientoConfirmado } from '../autenticacion/guardias/consen
 import type { UsuarioPeticion } from '../autenticacion/interfaces/carga-util-jwt.interface.js';
 import {
   AsignarTareaDto,
+  CambiarIaSupervisadoDto,
   RevisarTareaDto,
   VincularDto,
 } from './dto/familia.dto.js';
@@ -65,6 +67,16 @@ export class FamiliaController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.familia.listarTareasSupervisado(usuario.id, id);
+  }
+
+  @Patch('supervisados/:id/ia')
+  @UseGuards(GuardaConsentimientoConfirmado)
+  cambiarIa(
+    @UsuarioActual() usuario: UsuarioPeticion,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() datos: CambiarIaSupervisadoDto,
+  ) {
+    return this.familia.cambiarIaSupervisado(usuario.id, id, datos.permitida);
   }
 
   @Post('supervisados/:id/tareas')

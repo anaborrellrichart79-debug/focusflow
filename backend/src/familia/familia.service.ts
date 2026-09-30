@@ -41,7 +41,10 @@ export class FamiliaService {
         codigoVinculo: true,
         codigoVinculoExpiraEn: true,
         vinculosComoResponsable: {
-          select: { id: true, supervisado: { select: DATOS_PERSONA } },
+          select: {
+            id: true,
+            supervisado: { select: { ...DATOS_PERSONA, iaDesactivadaPorFamilia: true } },
+          },
         },
         vinculosComoSupervisado: {
           select: { id: true, responsable: { select: DATOS_PERSONA } },
@@ -60,10 +63,13 @@ export class FamiliaService {
             expiraEn: usuario.codigoVinculoExpiraEn,
           }
         : null,
-      supervisados: usuario.vinculosComoResponsable.map((v) => ({
-        vinculoId: v.id,
-        ...v.supervisado,
-      })),
+      supervisados: usuario.vinculosComoResponsable.map(
+        ({ id, supervisado: { iaDesactivadaPorFamilia, ...persona } }) => ({
+          vinculoId: id,
+          ...persona,
+          iaPermitida: !iaDesactivadaPorFamilia,
+        }),
+      ),
       responsables: usuario.vinculosComoSupervisado.map((v) => ({
         vinculoId: v.id,
         ...v.responsable,
@@ -107,6 +113,7 @@ export class FamiliaService {
         ...DATOS_PERSONA,
         codigoVinculoExpiraEn: true,
         consentimientoConfirmado: true,
+        iaDesactivadaPorFamilia: true,
       },
     });
     if (
@@ -171,6 +178,7 @@ export class FamiliaService {
       id: supervisado.id,
       nombre: supervisado.nombre,
       correo: supervisado.correo,
+      iaPermitida: !supervisado.iaDesactivadaPorFamilia,
       consentimientoConcedido: concedeConsentimiento,
     };
   }
@@ -208,6 +216,18 @@ export class FamiliaService {
     });
     if (!vinculo)
       throw new NotFoundException('Esa persona no está vinculada contigo');
+  }
+
+  // Cualquier adulto vinculado puede apagarla o volver a encenderla; si la
+  // apaga, la persona supervisada no puede usar la IA aunque su plan (o el de
+  // la familia) la incluya.
+  async cambiarIaSupervisado(responsableId: string, supervisadoId: string, permitida: boolean) {
+    await this.comprobarVinculo(responsableId, supervisadoId);
+    await this.prisma.usuario.update({
+      where: { id: supervisadoId },
+      data: { iaDesactivadaPorFamilia: !permitida },
+    });
+    return { iaPermitida: permitida };
   }
 
   async listarTareasSupervisado(responsableId: string, supervisadoId: string) {

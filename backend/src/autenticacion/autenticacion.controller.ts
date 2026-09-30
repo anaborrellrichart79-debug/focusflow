@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -13,6 +14,7 @@ import { AutenticacionService } from './autenticacion.service.js';
 import { UsuarioActual } from './decoradores/usuario-actual.decorator.js';
 import { ActualizarPreferenciasDto } from './dto/actualizar-preferencias.dto.js';
 import { ConfirmarConsentimientoDto } from './dto/confirmar-consentimiento.dto.js';
+import { EliminarCuentaDto } from './dto/eliminar-cuenta.dto.js';
 import { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
 import { RegistrarUsuarioDto } from './dto/registrar-usuario.dto.js';
 import type { UsuarioPeticion } from './interfaces/carga-util-jwt.interface.js';
@@ -68,6 +70,13 @@ export class AutenticacionController {
   @HttpCode(HttpStatus.OK)
   reenviarVerificacion(@UsuarioActual() usuario: UsuarioPeticion) {
     return this.autenticacionService.reenviarVerificacion(usuario.id);
+  }
+
+  @Delete('cuenta')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.NO_CONTENT)
+  eliminarCuenta(@UsuarioActual() usuario: UsuarioPeticion, @Body() datos: EliminarCuentaDto) {
+    return this.autenticacionService.eliminarCuenta(usuario.id, datos.contrasena);
   }
 
   @Patch('preferencias')

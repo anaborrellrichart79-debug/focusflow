@@ -66,6 +66,9 @@ model Usuario {
   // familiar, para los menores de un adulto que lo tenga). De momento se
   // cambia a mano; el cobro (Stripe) llegará después.
   plan                       PlanUsuario              @default(GRATUITO)
+  // Un adulto vinculado (padre, madre, tutor) puede apagar la IA de esta
+  // cuenta desde su página Familia, aunque su plan la incluya.
+  iaDesactivadaPorFamilia    Boolean                  @default(false)
   usosIa                     UsoIa[]
   notas                      Nota[]
   // Modo emergencia: alarma cuando una tarea pendiente lleva emergenciaDias

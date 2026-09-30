@@ -201,6 +201,30 @@ export class AutenticacionService {
     });
   }
 
+  // Borra la cuenta y todo lo suyo (tareas, notas, horarios, avisos, vínculos
+  // familiares, suscripciones push...: todo cuelga del usuario con borrado en
+  // cascada). Antes le pide a Google que retire el permiso concedido a
+  // FocusFlow; si Google no responde, se borra igual.
+  async eliminarCuenta(usuarioId: string, contrasena: string) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: usuarioId },
+      select: { contrasena: true, googleRefreshToken: true, googleAccessToken: true },
+    });
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    // 400 y no 401: no es que la sesión haya caducado, es que la contraseña
+    // tecleada para confirmar no es la buena.
+    if (!(await bcrypt.compare(contrasena, usuario.contrasena))) {
+      throw new BadRequestException('La contraseña no es correcta');
+    }
+
+    const tokenGoogle = usuario.googleRefreshToken ?? usuario.googleAccessToken;
+    if (tokenGoogle) await revocarPermisoGoogle(tokenGoogle);
+
+    await this.prisma.usuario.delete({ where: { id: usuarioId } });
+  }
+
   async actualizarPreferencias(
     usuarioId: string,
     datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[]; idioma?: Idioma; bienvenidaCompletada?: true },
@@ -278,4 +302,17 @@ export class AutenticacionService {
 
 function reenviadoHacePoco(fecha: Date | null) {
   return fecha !== null && Date.now() - fecha.getTime() < MINUTOS_ENTRE_REENVIOS * 60_000;
+}
+
+async function revocarPermisoGoogle(token: string) {
+  try {
+    await fetch('https://oauth2.googleapis.com/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ token }),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch {
+    console.warn('No se pudo retirar el permiso de Google al eliminar una cuenta');
+  }
 }
