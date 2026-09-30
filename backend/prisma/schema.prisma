@@ -45,6 +45,12 @@ model Usuario {
   correoTutor                String?
   consentimientoConfirmado   Boolean                  @default(true)
   consentimientoReenviadoEn  DateTime?
+  // Verificación del correo de la propia cuenta. Por defecto true para no
+  // pedírsela a las cuentas que ya existían; el registro la pone a false y
+  // envía el enlace. Sin verificar se puede usar la app, pero no se le
+  // mandan correos de avisos.
+  correoVerificado           Boolean                  @default(true)
+  verificacionReenviadaEn    DateTime?
   modoEscolarActivo          Boolean                  @default(false)
   // Asistente de bienvenida (perfil, modo escolar, horario). Por defecto true
   // para no enseñárselo a las cuentas que ya existían; el registro lo pone a

@@ -44,6 +44,7 @@ describe('GeneradorAvisosService', () => {
   const usuarioBase = {
     idioma: 'es',
     correo: 'ana@example.com',
+    correoVerificado: true,
     emergenciaActiva: false,
     emergenciaDias: 3,
     emergenciaPorCorreo: false,
@@ -481,6 +482,23 @@ describe('GeneradorAvisosService', () => {
     it('sin SMTP configurado no intenta enviar', async () => {
       correoFalso.estaConfigurado.mockReturnValue(false);
       usuarioCon({
+        recordatorios: [
+          recordatorio({
+            tipo: 'REVISION_SEMANAL',
+            diaSemana: 3,
+            hora: '09:00',
+            porCorreo: true,
+          }),
+        ],
+      });
+
+      expect(await servicio.procesarUsuario('usuario-1', AHORA)).toBe(1);
+      expect(correoFalso.enviarAviso).not.toHaveBeenCalled();
+    });
+
+    it('a un correo sin verificar no le envía avisos (pero el aviso se crea)', async () => {
+      usuarioCon({
+        correoVerificado: false,
         recordatorios: [
           recordatorio({
             tipo: 'REVISION_SEMANAL',

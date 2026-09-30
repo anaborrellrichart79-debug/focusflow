@@ -22,6 +22,8 @@ function crearUsuarioFalso(datos: Partial<Usuario> = {}): Usuario {
     correoTutor: null,
     consentimientoConfirmado: true,
     consentimientoReenviadoEn: null,
+    correoVerificado: true,
+    verificacionReenviadaEn: null,
     modoEscolarActivo: false,
     creadoEn: new Date('2026-01-01T00:00:00.000Z'),
     actualizadoEn: new Date('2026-01-01T00:00:00.000Z'),
@@ -36,6 +38,7 @@ describe('AutenticacionService', () => {
       findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
   };
   const jwtServiceFalso = {
@@ -47,6 +50,7 @@ describe('AutenticacionService', () => {
   };
   const correoServiceFalso = {
     enviarCorreoConfirmacionConsentimiento: vi.fn(),
+    enviarCorreoVerificacion: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -57,6 +61,7 @@ describe('AutenticacionService', () => {
     // este reset explícito, un test que hace fallar este mock "contaminaría" el
     // comportamiento por defecto de los tests siguientes.
     correoServiceFalso.enviarCorreoConfirmacionConsentimiento.mockResolvedValue(undefined);
+    correoServiceFalso.enviarCorreoVerificacion.mockResolvedValue(undefined);
 
     const modulo: TestingModule = await Test.createTestingModule({
       providers: [
@@ -109,6 +114,7 @@ describe('AutenticacionService', () => {
         correo: 'nueva@example.com',
         nombre: 'Nueva',
         consentimientoConfirmado: true,
+        correoVerificado: false,
         modoEscolarActivo: false,
         perfiles: [],
         idioma: 'es',
@@ -117,7 +123,7 @@ describe('AutenticacionService', () => {
       });
     });
 
-    it('a un adulto le deja consentimientoConfirmado en true y no envía ningún correo', async () => {
+    it('a un adulto le deja consentimientoConfirmado en true y no envía el correo al tutor', async () => {
       prismaFalso.usuario.findUnique.mockResolvedValue(null);
       prismaFalso.usuario.create.mockImplementation(({ data }: { data: Partial<Usuario> }) =>
         crearUsuarioFalso(data),
@@ -173,6 +179,49 @@ describe('AutenticacionService', () => {
           contrasena: 'Abcdefg1',
           fechaNacimiento: FECHA_NACIMIENTO_MENOR,
           correoTutor: 'tutor2@example.com',
+        }),
+      ).resolves.toBeDefined();
+    });
+
+    it('deja el correo sin verificar y envía el enlace de verificación a la propia cuenta', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(null);
+      prismaFalso.usuario.create.mockImplementation(({ data }: { data: Partial<Usuario> }) =>
+        crearUsuarioFalso(data),
+      );
+
+      const resultado = await servicio.registrar({
+        correo: 'nueva@example.com',
+        contrasena: 'Abcdefg1',
+        fechaNacimiento: FECHA_NACIMIENTO_ADULTA,
+        idioma: 'va',
+      });
+
+      expect(prismaFalso.usuario.create.mock.calls[0][0].data.correoVerificado).toBe(false);
+      expect(resultado.usuario.correoVerificado).toBe(false);
+      expect(jwtServiceFalso.sign).toHaveBeenCalledWith(
+        { sub: 'usuario-1', tipo: 'verificacion-correo', correo: 'nueva@example.com' },
+        { expiresIn: '7d' },
+      );
+      expect(correoServiceFalso.enviarCorreoVerificacion).toHaveBeenCalledWith(
+        'nueva@example.com',
+        'http://localhost:5173/verificar-correo?token=token-firmado',
+        'va',
+      );
+    });
+
+    it('no rompe el registro si el proveedor de correo falla', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(null);
+      prismaFalso.usuario.create.mockImplementation(({ data }: { data: Partial<Usuario> }) =>
+        crearUsuarioFalso(data),
+      );
+      correoServiceFalso.enviarCorreoVerificacion.mockRejectedValue(new Error('Connection timeout'));
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await expect(
+        servicio.registrar({
+          correo: 'otra@example.com',
+          contrasena: 'Abcdefg1',
+          fechaNacimiento: FECHA_NACIMIENTO_ADULTA,
         }),
       ).resolves.toBeDefined();
     });
@@ -233,6 +282,7 @@ describe('AutenticacionService', () => {
         correo: 'ana@example.com',
         nombre: 'Ana',
         consentimientoConfirmado: true,
+        correoVerificado: true,
         modoEscolarActivo: false,
         perfiles: [],
         idioma: 'es',
@@ -329,6 +379,88 @@ describe('AutenticacionService', () => {
       await expect(servicio.reenviarConfirmacion('usuario-1')).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('verificarCorreo', () => {
+    it('marca el correo como verificado si el token es de verificación y el correo coincide', async () => {
+      jwtServiceFalso.verify.mockReturnValue({ sub: 'usuario-1', tipo: 'verificacion-correo', correo: 'ana@example.com' });
+      prismaFalso.usuario.updateMany.mockResolvedValue({ count: 1 });
+
+      await servicio.verificarCorreo('token-valido');
+
+      expect(prismaFalso.usuario.updateMany).toHaveBeenCalledWith({
+        where: { id: 'usuario-1', correo: 'ana@example.com' },
+        data: { correoVerificado: true },
+      });
+    });
+
+    it('rechaza un token caducado o manipulado', async () => {
+      jwtServiceFalso.verify.mockImplementation(() => {
+        throw new Error('jwt expired');
+      });
+
+      await expect(servicio.verificarCorreo('token-caducado')).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(prismaFalso.usuario.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rechaza un token de consentimiento (otro propósito)', async () => {
+      jwtServiceFalso.verify.mockReturnValue({ sub: 'usuario-1', tipo: 'confirmacion-consentimiento' });
+
+      await expect(servicio.verificarCorreo('token-otro')).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(prismaFalso.usuario.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rechaza el enlace si la cuenta ya no tiene ese correo', async () => {
+      jwtServiceFalso.verify.mockReturnValue({ sub: 'usuario-1', tipo: 'verificacion-correo', correo: 'vieja@example.com' });
+      prismaFalso.usuario.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(servicio.verificarCorreo('token-viejo')).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+  });
+
+  describe('reenviarVerificacion', () => {
+    it('reenvía el enlace y guarda la hora del reenvío', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(crearUsuarioFalso({ correoVerificado: false }));
+
+      await servicio.reenviarVerificacion('usuario-1');
+
+      expect(correoServiceFalso.enviarCorreoVerificacion).toHaveBeenCalledWith(
+        'ana@example.com',
+        expect.stringContaining('/verificar-correo?token='),
+        'es',
+      );
+      expect(prismaFalso.usuario.update).toHaveBeenCalledWith({
+        where: { id: 'usuario-1' },
+        data: { verificacionReenviadaEn: expect.any(Date) },
+      });
+    });
+
+    it('no envía nada si el correo ya está verificado', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(crearUsuarioFalso({ correoVerificado: true }));
+
+      await servicio.reenviarVerificacion('usuario-1');
+
+      expect(correoServiceFalso.enviarCorreoVerificacion).not.toHaveBeenCalled();
+    });
+
+    it('rechaza reenviar antes de que pasen 5 minutos', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(
+        crearUsuarioFalso({ correoVerificado: false, verificacionReenviadaEn: new Date(Date.now() - 60_000) }),
+      );
+
+      await expect(servicio.reenviarVerificacion('usuario-1')).rejects.toBeInstanceOf(BadRequestException);
+      expect(correoServiceFalso.enviarCorreoVerificacion).not.toHaveBeenCalled();
+    });
+
+    it('deja pasar el error de "correo no configurado" al que llama', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(crearUsuarioFalso({ correoVerificado: false }));
+      correoServiceFalso.enviarCorreoVerificacion.mockRejectedValue(
+        new BadRequestException('El envío de correo no está configurado en el servidor'),
+      );
+
+      await expect(servicio.reenviarVerificacion('usuario-1')).rejects.toBeInstanceOf(BadRequestException);
+      expect(prismaFalso.usuario.update).not.toHaveBeenCalled();
     });
   });
 

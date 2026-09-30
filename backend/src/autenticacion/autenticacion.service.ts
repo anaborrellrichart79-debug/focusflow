@@ -19,6 +19,7 @@ import type { RegistrarUsuarioDto } from './dto/registrar-usuario.dto.js';
 
 const RONDAS_HASH_CONTRASENA = 10;
 const TIPO_TOKEN_CONSENTIMIENTO = 'confirmacion-consentimiento';
+const TIPO_TOKEN_VERIFICACION = 'verificacion-correo';
 const MINUTOS_ENTRE_REENVIOS = 5;
 
 @Injectable()
@@ -56,21 +57,22 @@ export class AutenticacionService {
         idioma: datos.idioma ?? 'es',
         bienvenidaCompletada: false,
         consentimientoConfirmado: !esMenorDeEdad,
+        correoVerificado: false,
       },
     });
+    const idioma = comoIdioma(usuario.idioma);
 
+    // La falta de SMTP configurado no debe impedir que el registro se
+    // complete: los dos correos se pueden reenviar más adelante (ver
+    // reenviarConfirmacion y reenviarVerificacion).
+    await this.enviarSinBloquearRegistro(usuario.id, 'verificación', () =>
+      this.enviarCorreoVerificacion(usuario.id, usuario.correo, idioma),
+    );
     if (esMenorDeEdad && datos.correoTutor) {
-      // La falta de SMTP configurado no debe impedir que el registro se
-      // complete: el correo se puede reenviar más adelante desde la pantalla
-      // de "cuenta pendiente de confirmación" (ver reenviarConfirmacion).
-      try {
-        await this.enviarCorreoConsentimiento(usuario.id, datos.correoTutor, comoIdioma(usuario.idioma));
-      } catch (error) {
-        if (!(error instanceof BadRequestException)) throw error;
-        console.warn(
-          `No se pudo enviar el correo de consentimiento para ${usuario.id}: envío de correo no configurado`,
-        );
-      }
+      const correoTutor = datos.correoTutor;
+      await this.enviarSinBloquearRegistro(usuario.id, 'consentimiento', () =>
+        this.enviarCorreoConsentimiento(usuario.id, correoTutor, idioma),
+      );
     }
 
     return this.generarRespuestaAutenticacion(usuario);
@@ -136,13 +138,8 @@ export class AutenticacionService {
       throw new BadRequestException('Esta cuenta no tiene un correo de tutor registrado');
     }
 
-    if (
-      usuario.consentimientoReenviadoEn &&
-      Date.now() - usuario.consentimientoReenviadoEn.getTime() < MINUTOS_ENTRE_REENVIOS * 60_000
-    ) {
-      throw new BadRequestException(
-        `Espera unos minutos antes de volver a pedir el correo de confirmación`,
-      );
+    if (reenviadoHacePoco(usuario.consentimientoReenviadoEn)) {
+      throw new BadRequestException('Espera unos minutos antes de volver a pedir el correo');
     }
 
     // A diferencia del envío automático en registrar(), aquí el usuario ha
@@ -154,6 +151,53 @@ export class AutenticacionService {
     await this.prisma.usuario.update({
       where: { id: usuarioId },
       data: { consentimientoReenviadoEn: new Date() },
+    });
+  }
+
+  async verificarCorreo(token: string) {
+    let carga: { sub: string; tipo: string; correo?: string };
+    try {
+      carga = this.jwtService.verify(token);
+    } catch {
+      throw new UnauthorizedException('Enlace de verificación caducado o inválido');
+    }
+
+    if (carga.tipo !== TIPO_TOKEN_VERIFICACION) {
+      throw new UnauthorizedException('Enlace de verificación caducado o inválido');
+    }
+
+    // El token lleva el correo al que se envió: si la cuenta ya no existe o
+    // su correo es otro, el enlace no sirve.
+    const { count } = await this.prisma.usuario.updateMany({
+      where: { id: carga.sub, correo: carga.correo },
+      data: { correoVerificado: true },
+    });
+    if (count === 0) {
+      throw new UnauthorizedException('Enlace de verificación caducado o inválido');
+    }
+  }
+
+  async reenviarVerificacion(usuarioId: string) {
+    const usuario = await this.prisma.usuario.findUnique({ where: { id: usuarioId } });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Ya verificado: no hay nada que enviar (p. ej. dos pestañas abiertas).
+    if (usuario.correoVerificado) return;
+
+    if (reenviadoHacePoco(usuario.verificacionReenviadaEn)) {
+      throw new BadRequestException('Espera unos minutos antes de volver a pedir el correo');
+    }
+
+    // Igual que reenviarConfirmacion: pedido a mano, así que si el SMTP no
+    // está configurado el error llega al frontend.
+    await this.enviarCorreoVerificacion(usuario.id, usuario.correo, comoIdioma(usuario.idioma));
+
+    await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { verificacionReenviadaEn: new Date() },
     });
   }
 
@@ -185,12 +229,36 @@ export class AutenticacionService {
     await this.correoService.enviarCorreoConfirmacionConsentimiento(correoTutor, enlaceConfirmacion, idioma);
   }
 
+  private async enviarCorreoVerificacion(usuarioId: string, correo: string, idioma: Idioma) {
+    const token = this.jwtService.sign(
+      { sub: usuarioId, tipo: TIPO_TOKEN_VERIFICACION, correo },
+      { expiresIn: '7d' },
+    );
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+    const enlaceVerificacion = `${frontendUrl}/verificar-correo?token=${token}`;
+
+    await this.correoService.enviarCorreoVerificacion(correo, enlaceVerificacion, idioma);
+  }
+
+  private async enviarSinBloquearRegistro(usuarioId: string, tipo: string, enviar: () => Promise<void>) {
+    // Cualquier fallo (SMTP sin configurar o el proveedor caído): la cuenta ya
+    // está creada, así que el registro no debe responder con error.
+    try {
+      await enviar();
+    } catch (error) {
+      const motivo =
+        error instanceof BadRequestException ? 'envío de correo no configurado' : (error as Error).message;
+      console.warn(`No se pudo enviar el correo de ${tipo} para ${usuarioId}: ${motivo}`);
+    }
+  }
+
   private aDatosPublicos(usuario: Usuario) {
     return {
       id: usuario.id,
       correo: usuario.correo,
       nombre: usuario.nombre,
       consentimientoConfirmado: usuario.consentimientoConfirmado,
+      correoVerificado: usuario.correoVerificado,
       modoEscolarActivo: usuario.modoEscolarActivo,
       perfiles: usuario.perfiles ?? [],
       idioma: comoIdioma(usuario.idioma),
@@ -206,4 +274,8 @@ export class AutenticacionService {
       usuario: this.aDatosPublicos(usuario),
     };
   }
+}
+
+function reenviadoHacePoco(fecha: Date | null) {
+  return fecha !== null && Date.now() - fecha.getTime() < MINUTOS_ENTRE_REENVIOS * 60_000;
 }

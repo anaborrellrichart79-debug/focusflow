@@ -108,6 +108,7 @@ export class GeneradorAvisosService {
       where: { id: usuarioId },
       select: {
         correo: true,
+        correoVerificado: true,
         idioma: true,
         emergenciaActiva: true,
         emergenciaDias: true,
@@ -276,8 +277,9 @@ export class GeneradorAvisosService {
     // El aviso ya existe y la app puede enseñarlo; el texto de Ollama (que
     // puede tardar un minuto) y el correo, que lo incluye, van después.
     const clavesCreadas = new Set(creados.map((aviso) => aviso.clave));
+    // A un correo sin verificar no se le mandan avisos (puede no ser suyo).
     const completar = this.completarAvisos(
-      usuario.correo,
+      usuario.correoVerificado === false ? null : usuario.correo,
       comoIdioma(usuario.idioma),
       creados,
       nuevos.filter((candidato) => clavesCreadas.has(candidato.clave)),
@@ -294,7 +296,7 @@ export class GeneradorAvisosService {
   }
 
   private async completarAvisos(
-    correo: string,
+    correo: string | null,
     idioma: Idioma,
     creados: { id: string; clave: string; tipo: TipoAviso; datos: unknown }[],
     candidatos: AvisoCandidato[],
@@ -327,7 +329,7 @@ export class GeneradorAvisosService {
     const paraCorreo = avisos.filter((aviso) =>
       clavesPorCorreo.has(aviso.clave),
     );
-    if (paraCorreo.length > 0) await this.enviarCorreo(correo, paraCorreo, idioma);
+    if (correo && paraCorreo.length > 0) await this.enviarCorreo(correo, paraCorreo, idioma);
   }
 
   private datosRevision(

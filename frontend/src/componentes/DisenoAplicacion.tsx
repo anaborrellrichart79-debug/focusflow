@@ -6,6 +6,7 @@ import { usarSelector } from '@/almacen/hooks';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AsistenteBienvenida } from './AsistenteBienvenida';
+import { AvisoVerificarCorreo } from './AvisoVerificarCorreo';
 import { BarraLateral } from './BarraLateral';
 import { BuscadorGlobal } from './BuscadorGlobal';
 import { CapturaRapida } from './CapturaRapida';
@@ -95,7 +96,10 @@ export function DisenoAplicacion({ children }: { children: ReactNode }) {
         />
       </aside>
 
-      <div className="min-w-0 flex-1 pb-20">{children}</div>
+      <div className="min-w-0 flex-1 pb-20">
+        <AvisoVerificarCorreo />
+        {children}
+      </div>
       {/* Con el cajón abierto se oculta: si no, tapa Ajustes y Cerrar sesión. */}
       {!menuAbierto && <CapturaRapida />}
       <BuscadorGlobal abierto={buscadorAbierto} alCambiarAbierto={setBuscadorAbierto} />

@@ -42,6 +42,45 @@ const TEXTOS_CONSENTIMIENTO: Record<Idioma, { asunto: string; intro: string; con
   },
 };
 
+const TEXTOS_VERIFICACION: Record<Idioma, { asunto: string; intro: string; confirmar: string; ignorar: string }> = {
+  es: {
+    asunto: 'Confirma tu correo en FocusFlow',
+    intro: 'Gracias por crear tu cuenta en FocusFlow.',
+    confirmar: 'Para confirmar que este correo es tuyo, pulsa este enlace:',
+    ignorar: 'Si no has creado ninguna cuenta, puedes ignorar este correo.',
+  },
+  en: {
+    asunto: 'Confirm your email on FocusFlow',
+    intro: 'Thank you for creating your FocusFlow account.',
+    confirmar: 'To confirm that this email address is yours, click this link:',
+    ignorar: 'If you haven’t created an account, you can ignore this email.',
+  },
+  ca: {
+    asunto: 'Confirma el teu correu a FocusFlow',
+    intro: 'Gràcies per crear el teu compte a FocusFlow.',
+    confirmar: 'Per confirmar que aquest correu és teu, fes clic en aquest enllaç:',
+    ignorar: 'Si no has creat cap compte, pots ignorar aquest correu.',
+  },
+  va: {
+    asunto: 'Confirma el teu correu en FocusFlow',
+    intro: 'Gràcies per crear el teu compte en FocusFlow.',
+    confirmar: 'Per a confirmar que este correu és teu, fes clic en este enllaç:',
+    ignorar: 'Si no has creat cap compte, pots ignorar este correu.',
+  },
+  gl: {
+    asunto: 'Confirma o teu correo en FocusFlow',
+    intro: 'Grazas por crear a túa conta en FocusFlow.',
+    confirmar: 'Para confirmar que este correo é teu, preme esta ligazón:',
+    ignorar: 'Se non creaches ningunha conta, podes ignorar este correo.',
+  },
+  eu: {
+    asunto: 'Berretsi zure helbide elektronikoa FocusFlow-en',
+    intro: 'Eskerrik asko FocusFlow-en kontua sortzeagatik.',
+    confirmar: 'Helbide elektroniko hau zurea dela berresteko, sakatu esteka hau:',
+    ignorar: 'Konturik sortu ez baduzu, mezu hau alde batera utz dezakezu.',
+  },
+};
+
 @Injectable()
 export class CorreoService {
   constructor(private readonly config: ConfigService) {}
@@ -83,6 +122,23 @@ export class CorreoService {
         <p>${t.intro}</p>
         <p>${t.confirmar}</p>
         <p><a href="${enlaceConfirmacion}">${enlaceConfirmacion}</a></p>
+        <p>${t.ignorar}</p>
+      `,
+    });
+  }
+
+  async enviarCorreoVerificacion(destinatario: string, enlaceVerificacion: string, idioma: Idioma = 'es') {
+    const transportador = this.crearTransportador();
+    const t = TEXTOS_VERIFICACION[idioma];
+
+    await transportador.sendMail({
+      from: this.config.get<string>('SMTP_FROM'),
+      to: destinatario,
+      subject: t.asunto,
+      html: `
+        <p>${t.intro}</p>
+        <p>${t.confirmar}</p>
+        <p><a href="${enlaceVerificacion}">${enlaceVerificacion}</a></p>
         <p>${t.ignorar}</p>
       `,
     });

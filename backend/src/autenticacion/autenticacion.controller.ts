@@ -54,6 +54,22 @@ export class AutenticacionController {
     return this.autenticacionService.reenviarConfirmacion(usuario.id);
   }
 
+  // Pública por lo mismo que confirmar-consentimiento: el enlace del correo
+  // se puede abrir en un navegador sin sesión (p. ej. el del móvil). El DTO
+  // es el mismo, solo lleva el token.
+  @Post('verificar-correo')
+  @HttpCode(HttpStatus.OK)
+  verificarCorreo(@Body() datos: ConfirmarConsentimientoDto) {
+    return this.autenticacionService.verificarCorreo(datos.token);
+  }
+
+  @Post('reenviar-verificacion')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  reenviarVerificacion(@UsuarioActual() usuario: UsuarioPeticion) {
+    return this.autenticacionService.reenviarVerificacion(usuario.id);
+  }
+
   @Patch('preferencias')
   @UseGuards(AuthGuard('jwt'))
   actualizarPreferencias(

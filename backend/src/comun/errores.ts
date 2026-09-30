@@ -19,6 +19,8 @@ export const MENSAJES_ERROR = {
   CONSENTIMIENTO_PENDIENTE: 'Cuenta pendiente de confirmación de un tutor legal',
   ENLACE_CONFIRMACION_NO_VALIDO: 'Enlace de confirmación caducado o inválido',
   SIN_CORREO_TUTOR: 'Esta cuenta no tiene un correo de tutor registrado',
+  ESPERA_REENVIO_CORREO: 'Espera unos minutos antes de volver a pedir el correo',
+  ENLACE_VERIFICACION_NO_VALIDO: 'Enlace de verificación caducado o inválido',
   CORREO_NO_CONFIGURADO: 'El envío de correo no está configurado en el servidor',
 
   // Tareas, objetivos, notas y etiquetas

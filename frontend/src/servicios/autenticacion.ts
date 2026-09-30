@@ -8,6 +8,9 @@ export interface UsuarioSesion {
   correo: string;
   nombre: string | null;
   consentimientoConfirmado: boolean;
+  // false en una cuenta recién creada hasta que se pulsa el enlace del correo.
+  // Opcional por lo mismo que perfiles: undefined cuenta como verificado.
+  correoVerificado?: boolean;
   modoEscolarActivo: boolean;
   // Perfiles elegidos en Ajustes; vacío = el Inicio usa los sugeridos.
   // Opcional en el tipo para no obligar a cada dato de prueba a incluirlo.
@@ -63,6 +66,20 @@ export function confirmarConsentimiento(token: string) {
 
 export function reenviarConfirmacion(tokenAcceso: string) {
   return peticionApi<void>('/autenticacion/reenviar-confirmacion', {
+    method: 'POST',
+    headers: cabeceras(tokenAcceso),
+  });
+}
+
+export function verificarCorreo(token: string) {
+  return peticionApi<void>('/autenticacion/verificar-correo', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  });
+}
+
+export function reenviarVerificacion(tokenAcceso: string) {
+  return peticionApi<void>('/autenticacion/reenviar-verificacion', {
     method: 'POST',
     headers: cabeceras(tokenAcceso),
   });
