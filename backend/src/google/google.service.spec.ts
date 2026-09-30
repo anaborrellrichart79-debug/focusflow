@@ -53,6 +53,7 @@ describe('GoogleService', () => {
     },
     eventoCalendarioGoogle: {
       create: vi.fn(),
+      update: vi.fn(),
       delete: vi.fn(),
       deleteMany: vi.fn(),
       findMany: vi.fn(),
@@ -508,6 +509,67 @@ describe('GoogleService', () => {
       expect(prismaFalso.tarea.update).not.toHaveBeenCalled();
       expect(prismaFalso.tarea.create).not.toHaveBeenCalled();
       expect(resumen.importados).toBe(0);
+    });
+    it('no vuelve a enviar a Google una tarea que no ha cambiado desde la última sincronización', async () => {
+      prismaFalso.tarea.findMany.mockResolvedValue([
+        {
+          id: 'tarea-1',
+          titulo: 'Entregar informe',
+          descripcion: null,
+          estado: 'POR_HACER',
+          fechaLimite: new Date('2026-10-05T00:00:00.000Z'),
+          actualizadoEn: new Date('2026-09-30T10:00:00.000Z'),
+          eventoGoogle: { id: 'rel-1', googleEventId: 'evento-google-1', actualizadoEn: new Date('2026-09-30T11:00:00.000Z') },
+        },
+      ]);
+
+      const resumen = await servicio.sincronizar('usuario-1');
+
+      expect(calendarFalso.events.update).not.toHaveBeenCalled();
+      expect(resumen.actualizados).toBe(0);
+    });
+
+    it('sí la envía si ha cambiado después, y apunta cuándo se sincronizó', async () => {
+      prismaFalso.tarea.findMany.mockResolvedValue([
+        {
+          id: 'tarea-1',
+          titulo: 'Entregar informe (revisado)',
+          descripcion: null,
+          estado: 'POR_HACER',
+          fechaLimite: new Date('2026-10-05T00:00:00.000Z'),
+          actualizadoEn: new Date('2026-09-30T12:00:00.000Z'),
+          eventoGoogle: { id: 'rel-1', googleEventId: 'evento-google-1', actualizadoEn: new Date('2026-09-30T11:00:00.000Z') },
+        },
+      ]);
+
+      await servicio.sincronizar('usuario-1');
+
+      expect(calendarFalso.events.update).toHaveBeenCalledTimes(1);
+      expect(prismaFalso.eventoCalendarioGoogle.update).toHaveBeenCalledWith({
+        where: { id: 'rel-1' },
+        data: { actualizadoEn: expect.any(Date) },
+      });
+    });
+
+    it('no importa como tareas las repeticiones de un evento repetido, pero sí los eventos sueltos', async () => {
+      calendarFalso.events.list.mockResolvedValue({
+        data: {
+          items: [
+            { id: 'diario_20261001', recurringEventId: 'diario', summary: 'Diario', status: 'confirmed', start: { date: '2026-10-01' } },
+            { id: 'diario_20261002', recurringEventId: 'diario', summary: 'Diario', status: 'confirmed', start: { date: '2026-10-02' } },
+            { id: 'dentista', summary: 'Cita del dentista', status: 'confirmed', start: { date: '2026-10-03' } },
+          ],
+        },
+      });
+      prismaFalso.tarea.create.mockResolvedValue({ id: 'tarea-importada-1' });
+
+      const resumen = await servicio.sincronizar('usuario-1');
+
+      expect(prismaFalso.tarea.create).toHaveBeenCalledTimes(1);
+      expect(prismaFalso.tarea.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ titulo: 'Cita del dentista' }),
+      });
+      expect(resumen.importados).toBe(1);
     });
   });
 });

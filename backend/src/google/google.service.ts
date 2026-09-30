@@ -226,11 +226,16 @@ export class GoogleService {
         const recurso = this.construirEventoDesdeTarea(tarea);
 
         if (tarea.eventoGoogle) {
+          // Solo si la tarea ha cambiado desde la última vez: reenviar todas
+          // en cada sincronización choca con el límite de peticiones de
+          // Google (pasó con 199 tareas el 30/09/2026).
+          if (!cambiadaDesdeSincronizacion(tarea, tarea.eventoGoogle)) continue;
           await calendar.events.update({
             calendarId: 'primary',
             eventId: tarea.eventoGoogle.googleEventId,
             requestBody: recurso,
           });
+          await this.marcarSincronizado(tarea.eventoGoogle.id);
           actualizados += 1;
         } else {
           const respuesta = await calendar.events.insert({
@@ -329,10 +334,18 @@ export class GoogleService {
               where: { id: tareaId },
               data: { titulo: evento.summary, fechaLimite: fechaEvento, duracionMinutos: duracionEvento },
             });
+            // El cambio viene de Google: no hay que devolvérselo.
+            if (tareaActual.eventoGoogle) await this.marcarSincronizado(tareaActual.eventoGoogle.id);
             actualizados += 1;
           }
           continue;
         }
+
+        // Cada repetición de un evento repetido (una rutina diaria, una
+        // actividad de todos los martes...) no es una tarea: se ve en Google
+        // Calendar y, importada, llenaba FocusFlow de copias (el 30/09/2026,
+        // 199 tareas de un solo calendario). Los eventos sueltos sí se traen.
+        if (evento.recurringEventId) continue;
 
         const tareaImportada = await this.prisma.tarea.create({
           data: {
@@ -358,6 +371,13 @@ export class GoogleService {
     });
 
     return { creados, actualizados, eliminados, importados, errores };
+  }
+
+  private async marcarSincronizado(eventoId: string) {
+    await this.prisma.eventoCalendarioGoogle.update({
+      where: { id: eventoId },
+      data: { actualizadoEn: new Date() },
+    });
   }
 
   private construirEventoDesdeTarea(tarea: {
@@ -404,4 +424,14 @@ export class GoogleService {
       extendedProperties: { private: { focusflow: 'true' } },
     };
   }
+}
+
+// Si la tarea se ha modificado después de la última vez que se envió (o se
+// trajo) de Google. Sin fechas que comparar, se envía por si acaso.
+function cambiadaDesdeSincronizacion(
+  tarea: { actualizadoEn?: Date | null },
+  evento: { actualizadoEn?: Date | null },
+) {
+  if (!tarea.actualizadoEn || !evento.actualizadoEn) return true;
+  return tarea.actualizadoEn > evento.actualizadoEn;
 }
