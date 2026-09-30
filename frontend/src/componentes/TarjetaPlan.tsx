@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { usarSelector } from '@/almacen/hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AvisoPrecioPlus } from '@/componentes/AvisoPrecioPlus';
 import { obtenerEstadoIa, type EstadoIa } from '@/servicios/planes';
 
 // Qué plan tiene la cuenta y, con la IA incluida, cuántos usos lleva este
@@ -53,7 +54,7 @@ export function TarjetaPlan() {
           !estado.desactivadaPorFamilia && (
             <>
               <p className="text-muted-foreground">{intl.formatMessage({ id: 'ia.plus.explicacion' })}</p>
-              <p className="text-xs text-muted-foreground">{intl.formatMessage({ id: 'ia.plus.proximamente' })}</p>
+              <AvisoPrecioPlus />
             </>
           )
         )}

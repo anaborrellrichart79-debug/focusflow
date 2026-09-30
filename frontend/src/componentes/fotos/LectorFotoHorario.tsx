@@ -5,6 +5,7 @@ import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { aplicarCuadricula } from '@/almacen/horarioSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AvisoPrecioPlus } from '@/componentes/AvisoPrecioPlus';
 import { ErrorApi } from '@/servicios/api';
 import { leerHorarioDeFoto, type FranjaLeida } from '@/servicios/fotos';
 import type { Horario } from '@/servicios/horarios';
@@ -81,9 +82,12 @@ export function LectorFotoHorario({ horario }: { horario: Horario }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         {!estadoIa.incluida ? (
-          <p className="text-muted-foreground">
-            {intl.formatMessage({ id: estadoIa.desactivadaPorFamilia ? 'ia.desactivadaFamilia' : 'fotos.soloPlus' })}
-          </p>
+          <>
+            <p className="text-muted-foreground">
+              {intl.formatMessage({ id: estadoIa.desactivadaPorFamilia ? 'ia.desactivadaFamilia' : 'fotos.soloPlus' })}
+            </p>
+            {!estadoIa.desactivadaPorFamilia && <AvisoPrecioPlus />}
+          </>
         ) : (
           <>
             {!propuesta && (

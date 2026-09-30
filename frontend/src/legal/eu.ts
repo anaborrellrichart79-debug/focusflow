@@ -156,8 +156,11 @@ export const eu: TextosLegales = {
           {
             lista: [
               'Plan doakoa: antolatzeko funtzio guztiak, AAren laguntzarik gabe.',
-              'Plus plana: AAren laguntza gehitzen du, Ezarpenetan adierazten den hileko gehieneko erabilera kopuruarekin. Plan hori duen pertsonari lotutako adingabeak ere estaltzen ditu (familia-plana), pertsona horrek AA itzaltzen ez badie.',
-              'Plus planaren prezioa, ordainketa-modua eta berritze- eta ezeztatze-baldintzak kontratatu aurretik erakutsiko dira. Aldatzen badira, aldez aurretik jakinaraziko da.',
+              'Plus plana: 3,99 € hilean edo 29,99 € urtean, BEZa barne. AAren laguntza gehitzen du, Ezarpenetan adierazten den hileko gehieneko erabilera kopuruarekin. Plan hori duen pertsonari lotutako adingabeak ere estaltzen ditu (familia-plana), pertsona horrek AA itzaltzen ez badie.',
+              'Ordainketa eta berritzea: kontratatzean ordaintzen da eta hilabete edo urtebete estaltzen du, aukeratutako modalitatearen arabera. Epe hori betetzean, egun berean berritzen da automatikoki eta zenbateko bera kobratzen da berriro.',
+              'Baja: edozein unetan eman dezakezu baja Ezarpenetatik, kontratatu zenuen erraztasun berarekin. Harpidetza ez da berrituko eta Plus mantenduko duzu ordaindutako aldiaren amaiera arte; geratzen den zatia ez da itzultzen.',
+              'Atzera egiteko eskubidea: kontratatzen duzunetik 14 egun naturaleko epea duzu atzera egiteko arrazoirik eman gabe, baja emanez edo privacidad@focusflowup.com helbidera idatziz. Epe hori amaitu aurretik Plus erabiltzen hasteko eskatu bazenuen, ordaindutakoa itzuliko zaizu, jada erabilitako denborari dagokion zatia kenduta.',
+              'Prezio-aldaketak: gutxienez 30 egun lehenago jakinaraziko dizugu eta aplikatu aurretik baja eman ahal izango duzu.',
             ],
           },
         ],

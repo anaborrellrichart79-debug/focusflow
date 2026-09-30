@@ -156,8 +156,11 @@ export const ca: TextosLegales = {
           {
             lista: [
               'Pla gratuït: totes les funcions d’organització, sense l’ajuda de la IA.',
-              'Pla Plus: afegeix l’ajuda de la IA, amb un nombre màxim d’usos al mes que s’indica a Ajustos. Cobreix també els menors vinculats a la persona que el té (pla familiar), llevat que ella els apagui la IA.',
-              'El preu, la forma de pagament i les condicions de renovació i cancel·lació del pla Plus es mostraran abans de contractar-lo. Si canvien, s’avisarà amb antelació.',
+              'Pla Plus: 3,99 € al mes o 29,99 € l’any, IVA inclòs. Afegeix l’ajuda de la IA, amb un nombre màxim d’usos al mes que s’indica a Ajustos. Cobreix també els menors vinculats a la persona que el té (pla familiar), llevat que ella els apagui la IA.',
+              'Pagament i renovació: es paga en contractar-lo i cobreix un mes o un any, segons la modalitat triada. Quan s’acaba aquest termini es renova automàticament el mateix dia i es torna a cobrar el mateix import.',
+              'Baixa: et pots donar de baixa en qualsevol moment des d’Ajustos, amb la mateixa facilitat amb què el vas contractar. La subscripció ja no es renovarà i conservaràs Plus fins al final del període pagat; no es retorna la part que queda.',
+              'Dret de desistiment: tens 14 dies naturals des de la contractació per desistir sense donar explicacions, donant-te de baixa o escrivint a privacidad@focusflowup.com. Si vas demanar començar a fer servir Plus abans que acabés aquest termini, se’t retornarà el que has pagat descomptant la part proporcional al temps ja utilitzat.',
+              'Canvis de preu: t’avisarem amb almenys 30 dies d’antelació i et podràs donar de baixa abans que s’apliquin.',
             ],
           },
         ],

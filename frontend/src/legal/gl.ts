@@ -156,8 +156,11 @@ export const gl: TextosLegales = {
           {
             lista: [
               'Plan gratuíto: todas as funcións de organización, sen a axuda da IA.',
-              'Plan Plus: engade a axuda da IA, cun número máximo de usos ao mes que se indica en Axustes. Cobre tamén os menores vinculados á persoa que o ten (plan familiar), salvo que ela lles apague a IA.',
-              'O prezo, a forma de pagamento e as condicións de renovación e cancelación do plan Plus amosaranse antes de contratalo. Se cambian, avisarase con antelación.',
+              'Plan Plus: 3,99 € ao mes ou 29,99 € ao ano, IVE incluído. Engade a axuda da IA, cun número máximo de usos ao mes que se indica en Axustes. Cobre tamén os menores vinculados á persoa que o ten (plan familiar), salvo que ela lles apague a IA.',
+              'Pagamento e renovación: págase ao contratalo e cobre un mes ou un ano, segundo a modalidade escollida. Ao cumprirse ese prazo renóvase automaticamente o mesmo día e volve cobrarse o mesmo importe.',
+              'Baixa: podes darte de baixa en calquera momento desde Axustes, coa mesma facilidade coa que o contrataches. A subscrición xa non se renovará e conservarás Plus ata o final do período pagado; non se devolve a parte que queda.',
+              'Dereito de desistencia: tes 14 días naturais desde a contratación para desistir sen dar explicacións, dándote de baixa ou escribindo a privacidad@focusflowup.com. Se pediches empezar a usar Plus antes de que rematase ese prazo, devolveráseche o pagado descontando a parte proporcional ao tempo xa usado.',
+              'Cambios de prezo: avisarémosche con polo menos 30 días de antelación e poderás darte de baixa antes de que se apliquen.',
             ],
           },
         ],

@@ -6,6 +6,7 @@ import { crearSubtareaTarea, crearTarea } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { AvisoPrecioPlus } from '@/componentes/AvisoPrecioPlus';
 import { ErrorApi } from '@/servicios/api';
 import { proponerPlanEstudio, proponerSubtareas } from '@/servicios/asistente';
 import { obtenerEstadoIa, type EstadoIa } from '@/servicios/planes';
@@ -129,7 +130,7 @@ export function AsistenteIa({ tarea }: { tarea: Tarea }) {
           {intl.formatMessage({ id: 'ia.plus.titulo' })}
         </span>
         <p className="text-muted-foreground">{intl.formatMessage({ id: 'ia.plus.explicacion' })}</p>
-        <p className="text-xs text-muted-foreground">{intl.formatMessage({ id: 'ia.plus.proximamente' })}</p>
+        <AvisoPrecioPlus />
       </div>
     );
   }

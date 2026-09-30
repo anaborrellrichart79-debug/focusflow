@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { AvisoPrecioPlus } from '@/componentes/AvisoPrecioPlus';
 import { ErrorApi } from '@/servicios/api';
 import { leerDeberesDeFoto, type DeberLeido } from '@/servicios/fotos';
 import { fechaDeHoy, proximaClase, type PeriodoSinClase } from '@/utilidades/deberes';
@@ -99,9 +100,12 @@ export function LectorFotoDeberes({ sinClase }: { sinClase: PeriodoSinClase[] })
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         {!estadoIa.incluida ? (
-          <p className="text-muted-foreground">
-            {intl.formatMessage({ id: estadoIa.desactivadaPorFamilia ? 'ia.desactivadaFamilia' : 'fotos.soloPlus' })}
-          </p>
+          <>
+            <p className="text-muted-foreground">
+              {intl.formatMessage({ id: estadoIa.desactivadaPorFamilia ? 'ia.desactivadaFamilia' : 'fotos.soloPlus' })}
+            </p>
+            {!estadoIa.desactivadaPorFamilia && <AvisoPrecioPlus />}
+          </>
         ) : (
           <>
             {!propuestas && (
