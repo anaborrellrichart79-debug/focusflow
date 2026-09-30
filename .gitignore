@@ -16,3 +16,6 @@ node_modules/
 
 # Credenciales de las cuentas para grabar demos (no se suben)
 cuentas-demo.md
+
+# Datos del servidor de producción (no se suben)
+servidor.md
