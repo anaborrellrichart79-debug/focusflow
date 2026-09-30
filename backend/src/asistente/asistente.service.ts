@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { comoIdioma, NOMBRE_IDIOMA_PARA_IA } from '../comun/idiomas.js';
 import { IaService } from '../ia/ia.service.js';
+import { PlanesService } from '../planes/planes.service.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import { sumarDias } from '../recordatorios/calendario-escolar.js';
 import { obtenerHoraLocal } from '../recordatorios/hora-local.util.js';
@@ -93,6 +94,7 @@ export class AsistenteService {
   constructor(
     private readonly prisma: ServicioPrisma,
     private readonly ia: IaService,
+    private readonly planes: PlanesService,
     private readonly config: ConfigService,
   ) {}
 
@@ -109,15 +111,18 @@ export class AsistenteService {
     return tarea;
   }
 
-  private async comprobarIa() {
+  // Primero el plan (sin IA incluida o sin usos este mes no se pregunta a
+  // nadie) y después si la IA responde.
+  private async comprobarIa(usuarioId: string) {
+    await this.planes.comprobarUsoIa(usuarioId);
     if (!(await this.ia.disponible())) {
-      throw new ServiceUnavailableException('La IA local no está disponible ahora mismo');
+      throw new ServiceUnavailableException('La IA no está disponible ahora mismo');
     }
   }
 
   async proponerSubtareas(usuarioId: string, tareaId: string) {
     const tarea = await this.tareaDelUsuario(usuarioId, tareaId);
-    await this.comprobarIa();
+    await this.comprobarIa(usuarioId);
     const existentes = tarea.subtareas.map((subtarea) => subtarea.titulo);
 
     const respuesta = await this.ia.generarJson(
@@ -133,6 +138,7 @@ export class AsistenteService {
         type: 'object',
         properties: { pasos: { type: 'array', items: { type: 'string' } } },
         required: ['pasos'],
+        additionalProperties: false,
       },
     );
 
@@ -140,6 +146,7 @@ export class AsistenteService {
     if (pasos.length === 0) {
       throw new BadGatewayException('La IA no ha dado una propuesta válida, inténtalo de nuevo');
     }
+    await this.planes.registrarUsoIa(usuarioId, 'SUBTAREAS');
     return { pasos };
   }
 
@@ -153,7 +160,7 @@ export class AsistenteService {
     if (dias.length === 0) {
       throw new BadRequestException('No quedan días para estudiar antes de la fecha límite');
     }
-    await this.comprobarIa();
+    await this.comprobarIa(usuarioId);
 
     const listaDias = dias
       .map((dia) => `${dia} (${DIAS_SEMANA[new Date(`${dia}T00:00:00Z`).getUTCDay()]})`)
@@ -182,10 +189,12 @@ export class AsistenteService {
                 minutos: { type: 'integer' },
               },
               required: ['fecha', 'titulo', 'minutos'],
+              additionalProperties: false,
             },
           },
         },
         required: ['sesiones'],
+        additionalProperties: false,
       },
     );
 
@@ -193,6 +202,7 @@ export class AsistenteService {
     if (sesiones.length === 0) {
       throw new BadGatewayException('La IA no ha dado una propuesta válida, inténtalo de nuevo');
     }
+    await this.planes.registrarUsoIa(usuarioId, 'PLAN_ESTUDIO');
     return { sesiones };
   }
 }

@@ -1,8 +1,15 @@
-import { BadGatewayException, BadRequestException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { IaService } from '../ia/ia.service.js';
+import { PlanesService } from '../planes/planes.service.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import { AsistenteService, diasParaEstudiar, limpiarPasos, limpiarPlan } from './asistente.service.js';
 
@@ -73,16 +80,19 @@ describe('AsistenteService', () => {
   let servicio: AsistenteService;
   const prismaFalso = { tarea: { findFirst: vi.fn() } };
   const iaFalsa = { disponible: vi.fn(), generarJson: vi.fn() };
+  const planesFalso = { comprobarUsoIa: vi.fn(), registrarUsoIa: vi.fn() };
 
   beforeEach(async () => {
     vi.clearAllMocks();
     prismaFalso.tarea.findFirst.mockResolvedValue(tarea());
     iaFalsa.disponible.mockResolvedValue(true);
+    planesFalso.comprobarUsoIa.mockResolvedValue(undefined);
     const modulo: TestingModule = await Test.createTestingModule({
       providers: [
         AsistenteService,
         { provide: ServicioPrisma, useValue: prismaFalso },
         { provide: IaService, useValue: iaFalsa },
+        { provide: PlanesService, useValue: planesFalso },
         { provide: ConfigService, useValue: { get: () => 'Europe/Madrid' } },
       ],
     }).compile();
@@ -106,14 +116,26 @@ describe('AsistenteService', () => {
     expect(instrucciones).toContain('Escribe en valenciano');
     expect(instrucciones).toContain('Examen de fracciones');
     expect(instrucciones).toContain('Hacer la ficha 1');
+    expect(planesFalso.registrarUsoIa).toHaveBeenCalledWith('hija', 'SUBTAREAS');
   });
 
-  it('avisa si Ollama no está o si su respuesta no sirve', async () => {
+  it('sin la IA en su plan no llega a preguntar a la IA ni gasta usos', async () => {
+    planesFalso.comprobarUsoIa.mockRejectedValue(new ForbiddenException('La ayuda de la IA está incluida en el plan Plus'));
+
+    await expect(servicio.proponerSubtareas('laura', 'examen')).rejects.toThrow(ForbiddenException);
+    await expect(servicio.proponerPlanEstudio('laura', 'examen', AHORA)).rejects.toThrow(ForbiddenException);
+    expect(iaFalsa.disponible).not.toHaveBeenCalled();
+    expect(iaFalsa.generarJson).not.toHaveBeenCalled();
+    expect(planesFalso.registrarUsoIa).not.toHaveBeenCalled();
+  });
+
+  it('avisa si la IA no está o si su respuesta no sirve (y entonces no gasta usos)', async () => {
     iaFalsa.disponible.mockResolvedValueOnce(false);
     await expect(servicio.proponerSubtareas('hija', 'examen')).rejects.toThrow(ServiceUnavailableException);
 
     iaFalsa.generarJson.mockResolvedValueOnce(null);
     await expect(servicio.proponerSubtareas('hija', 'examen')).rejects.toThrow(BadGatewayException);
+    expect(planesFalso.registrarUsoIa).not.toHaveBeenCalled();
   });
 
   it('el plan de estudio solo ofrece los días que quedan hasta el examen', async () => {
@@ -129,9 +151,10 @@ describe('AsistenteService', () => {
     expect(sesiones).toEqual([{ fecha: '2026-09-30', titulo: 'Repassar el tema 3', minutos: 40 }]);
     const instrucciones = iaFalsa.generarJson.mock.calls[0][0] as string;
     expect(instrucciones).toContain('2026-09-29 (martes), 2026-09-30 (miércoles), 2026-10-01 (jueves)');
+    expect(planesFalso.registrarUsoIa).toHaveBeenCalledWith('hija', 'PLAN_ESTUDIO');
   });
 
-  it('sin fecha límite o sin días por delante no se puede planificar (ni se llama a Ollama)', async () => {
+  it('sin fecha límite o sin días por delante no se puede planificar (ni se llama a la IA)', async () => {
     prismaFalso.tarea.findFirst.mockResolvedValueOnce(tarea({ fechaLimite: null }));
     await expect(servicio.proponerPlanEstudio('hija', 'examen', AHORA)).rejects.toThrow(BadRequestException);
 

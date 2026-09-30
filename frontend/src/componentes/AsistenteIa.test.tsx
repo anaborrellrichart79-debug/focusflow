@@ -16,7 +16,10 @@ const TAREA = {
   subtareas: [],
 } as unknown as Tarea;
 
-function simularApi(respuestas: Record<string, unknown>) {
+const CON_IA = { incluida: true, origen: 'PROPIO', usados: 3, limite: 100 };
+
+function simularApi(respuestasPropias: Record<string, unknown>) {
+  const respuestas: Record<string, unknown> = { '/planes/ia': CON_IA, ...respuestasPropias };
   const fetchFalso = vi.fn(async (url: string, opciones?: RequestInit) => {
     const ruta = Object.keys(respuestas).find((clave) => url.endsWith(clave));
     const cuerpo = ruta ? respuestas[ruta] : { id: 'nueva', ...JSON.parse((opciones?.body as string) ?? '{}') };
@@ -42,7 +45,7 @@ describe('AsistenteIa', () => {
     });
     renderizarPagina(<AsistenteIa tarea={TAREA} />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
 
-    await usuario.click(screen.getByRole('button', { name: 'Dividir en pasos' }));
+    await usuario.click(await screen.findByRole('button', { name: 'Dividir en pasos' }));
     const textos = await screen.findAllByRole('textbox', { name: 'Texto de la propuesta' });
     await usuario.clear(textos[0]);
     await usuario.type(textos[0], 'Leer el tema 3 entero');
@@ -55,6 +58,8 @@ describe('AsistenteIa', () => {
     );
     expect(titulos).toEqual(['Leer el tema 3 entero', 'Repasar errores']);
     expect(await screen.findByText('Se han añadido 2 elementos.')).toBeInTheDocument();
+    // La propuesta que ha salido bien cuenta como un uso más.
+    expect(screen.getByText('Este mes: 4 de 100 usos.')).toBeInTheDocument();
   });
 
   it('el plan de estudio crea una tarea por sesión con su fecha, asignatura y etiquetas', async () => {
@@ -64,7 +69,7 @@ describe('AsistenteIa', () => {
     });
     renderizarPagina(<AsistenteIa tarea={TAREA} />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
 
-    await usuario.click(screen.getByRole('button', { name: 'Plan de estudio hasta la fecha' }));
+    await usuario.click(await screen.findByRole('button', { name: 'Plan de estudio hasta la fecha' }));
     expect(await screen.findByText('40 min')).toBeInTheDocument();
     await usuario.click(screen.getByRole('button', { name: 'Añadir 1 sesión' }));
 
@@ -86,16 +91,25 @@ describe('AsistenteIa', () => {
       vi.fn().mockResolvedValue({
         ok: false,
         status: 503,
-        json: async () => ({ message: 'La IA local no está disponible ahora mismo', codigo: 'IA_NO_DISPONIBLE' }),
+        json: async () => ({ message: 'La IA no está disponible ahora mismo', codigo: 'IA_NO_DISPONIBLE' }),
       }),
     );
     renderizarPagina(<AsistenteIa tarea={{ ...TAREA, fechaLimite: null }} />, {
       estadoPrecargado: { sesion: SESION_AUTENTICADA },
     });
 
+    await usuario.click(await screen.findByRole('button', { name: 'Dividir en pasos' }));
     expect(screen.queryByRole('button', { name: 'Plan de estudio hasta la fecha' })).not.toBeInTheDocument();
-    await usuario.click(screen.getByRole('button', { name: 'Dividir en pasos' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('La IA local no está disponible ahora mismo');
+    expect(await screen.findByRole('alert')).toHaveTextContent('La IA no está disponible ahora mismo');
+  });
+
+  it('con el plan gratuito explica qué incluye Plus en vez de enseñar los botones', async () => {
+    const fetchFalso = simularApi({ '/planes/ia': { incluida: false, origen: null, usados: 0, limite: 100 } });
+    renderizarPagina(<AsistenteIa tarea={TAREA} />, { estadoPrecargado: { sesion: SESION_AUTENTICADA } });
+
+    expect(await screen.findByText('La ayuda de la IA está en el plan Plus')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dividir en pasos' })).not.toBeInTheDocument();
+    expect(llamadasA(fetchFalso, '/ia/subtareas')).toHaveLength(0);
   });
 });

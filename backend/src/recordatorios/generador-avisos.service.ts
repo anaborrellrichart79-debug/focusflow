@@ -5,6 +5,7 @@ import type { Prisma } from '../generated/prisma/client.js';
 import type { TipoAviso } from '../generated/prisma/enums.js';
 import { comoIdioma, NOMBRE_IDIOMA_PARA_IA, type Idioma } from '../comun/idiomas.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
+import { PlanesService } from '../planes/planes.service.js';
 import { PushService } from '../push/push.service.js';
 import { sumarDias, type PeriodoNoLectivo } from './calendario-escolar.js';
 import { CalendarioEscolarService } from './calendario-escolar.service.js';
@@ -61,6 +62,7 @@ export class GeneradorAvisosService {
     private readonly correo: CorreoService,
     private readonly config: ConfigService,
     private readonly push: PushService,
+    private readonly planes: PlanesService,
   ) {}
 
   async procesarTodos(ahora = new Date()) {
@@ -277,8 +279,11 @@ export class GeneradorAvisosService {
     // El aviso ya existe y la app puede enseñarlo; el texto de Ollama (que
     // puede tardar un minuto) y el correo, que lo incluye, van después.
     const clavesCreadas = new Set(creados.map((aviso) => aviso.clave));
+    // Solo con la IA incluida en su plan: si no, texto por reglas y gasto cero.
+    const conIa = await this.planes.tieneIa(usuarioId);
     // A un correo sin verificar no se le mandan avisos (puede no ser suyo).
     const completar = this.completarAvisos(
+      conIa,
       usuario.correoVerificado === false ? null : usuario.correo,
       comoIdioma(usuario.idioma),
       creados,
@@ -296,12 +301,15 @@ export class GeneradorAvisosService {
   }
 
   private async completarAvisos(
+    conIa: boolean,
     correo: string | null,
     idioma: Idioma,
     creados: { id: string; clave: string; tipo: TipoAviso; datos: unknown }[],
     candidatos: AvisoCandidato[],
   ) {
-    const textosIa = await this.redactarConIa(candidatos, idioma);
+    const textosIa = conIa
+      ? await this.redactarConIa(candidatos, idioma)
+      : new Map<string, string>();
     const avisos = creados.map((aviso) => ({
       ...aviso,
       mensajeIa: textosIa.get(aviso.clave) ?? null,
@@ -356,7 +364,7 @@ export class GeneradorAvisosService {
     };
   }
 
-  // Ollama solo redacta donde aporta: el resumen de la revisión semanal y un
+  // La IA solo redacta donde aporta: el resumen de la revisión semanal y un
   // único mensaje para todas las alarmas de emergencia de esta pasada. Las
   // entregas y las vacaciones ya se explican bien con el texto por reglas.
   private async redactarConIa(nuevos: AvisoCandidato[], idioma: Idioma) {

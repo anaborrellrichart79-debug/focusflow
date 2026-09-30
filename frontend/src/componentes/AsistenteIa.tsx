@@ -1,5 +1,5 @@
 import { Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { crearSubtareaTarea, crearTarea } from '@/almacen/tareasSlice';
@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ErrorApi } from '@/servicios/api';
 import { proponerPlanEstudio, proponerSubtareas } from '@/servicios/asistente';
+import { obtenerEstadoIa, type EstadoIa } from '@/servicios/planes';
 import type { Tarea } from '@/servicios/tareas';
 import { combinarFechaYHora } from '@/utilidades/fechas';
 
@@ -21,7 +22,7 @@ interface Propuesta {
 
 type Modo = 'pasos' | 'plan';
 
-// Botones de la ficha de una tarea que piden a la IA local una propuesta:
+// Botones de la ficha de una tarea que piden a la IA una propuesta:
 // dividirla en pasos (subtareas) o un plan de estudio día a día hasta su
 // fecha límite (una tarea por sesión, que sale en la Agenda). La propuesta se
 // puede retocar y desmarcar antes de añadirla; nada se guarda sin aceptar.
@@ -35,6 +36,22 @@ export function AsistenteIa({ tarea }: { tarea: Tarea }) {
   const [propuestas, setPropuestas] = useState<Propuesta[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [anadidas, setAnadidas] = useState<number | null>(null);
+  // null mientras se consulta: sin plan con IA se enseña qué incluye Plus en
+  // lugar de unos botones que solo darían error.
+  const [estadoIa, setEstadoIa] = useState<EstadoIa | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    let vigente = true;
+    obtenerEstadoIa(token)
+      .then((estado) => vigente && setEstadoIa(estado))
+      // Si no se puede consultar, se dejan los botones: la API ya responde
+      // con un error claro si el plan no incluye la IA.
+      .catch(() => vigente && setEstadoIa({ incluida: true, origen: null, usados: 0, limite: 0 }));
+    return () => {
+      vigente = false;
+    };
+  }, [token]);
 
   async function pedir(nuevoModo: Modo) {
     if (!token) return;
@@ -51,6 +68,7 @@ export function AsistenteIa({ tarea }: { tarea: Tarea }) {
         const { sesiones } = await proponerPlanEstudio(token, tarea.id);
         setPropuestas(sesiones.map((sesion) => ({ ...sesion, elegida: true })));
       }
+      setEstadoIa((estado) => (estado ? { ...estado, usados: estado.usados + 1 } : estado));
     } catch (causa) {
       setError(causa instanceof ErrorApi ? causa.message : intl.formatMessage({ id: 'ia.error' }));
       setModo(null);
@@ -92,11 +110,31 @@ export function AsistenteIa({ tarea }: { tarea: Tarea }) {
 
   const elegidas = propuestas.filter((p) => p.elegida && p.titulo.trim()).length;
 
+  if (!estadoIa) return null;
+
+  if (!estadoIa.incluida) {
+    return (
+      <div className="flex flex-col gap-1.5 rounded-md border border-dashed border-border p-3 text-sm">
+        <span className="flex items-center gap-1.5 font-medium">
+          <Sparkles aria-hidden className="size-4 text-primary" />
+          {intl.formatMessage({ id: 'ia.plus.titulo' })}
+        </span>
+        <p className="text-muted-foreground">{intl.formatMessage({ id: 'ia.plus.explicacion' })}</p>
+        <p className="text-xs text-muted-foreground">{intl.formatMessage({ id: 'ia.plus.proximamente' })}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2 rounded-md border border-dashed border-border p-3">
       <span className="flex items-center gap-1.5 text-sm font-medium">
         <Sparkles aria-hidden className="size-4 text-primary" />
         {intl.formatMessage({ id: 'ia.titulo' })}
+        {estadoIa.limite > 0 && (
+          <span className="ml-auto text-xs font-normal text-muted-foreground tabular-nums">
+            {intl.formatMessage({ id: 'ia.usos' }, { usados: estadoIa.usados, limite: estadoIa.limite })}
+          </span>
+        )}
       </span>
 
       {!modo && (

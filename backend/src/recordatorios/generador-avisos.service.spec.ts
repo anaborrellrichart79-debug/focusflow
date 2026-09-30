@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CorreoService } from '../correo/correo.service.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
+import { PlanesService } from '../planes/planes.service.js';
 import { PushService } from '../push/push.service.js';
 import { CalendarioEscolarService } from './calendario-escolar.service.js';
 import { GeneradorAvisosService } from './generador-avisos.service.js';
@@ -39,6 +40,7 @@ function tarea(datos: Record<string, unknown>) {
 
 describe('GeneradorAvisosService', () => {
   const pushFalso = { enviarAvisos: vi.fn() };
+  const planesFalso = { tieneIa: vi.fn() };
   let servicio: GeneradorAvisosService;
 
   const usuarioBase = {
@@ -91,6 +93,7 @@ describe('GeneradorAvisosService', () => {
     );
     calendarioFalso.periodosDelUsuario.mockResolvedValue([]);
     iaFalsa.redactar.mockResolvedValue(null);
+    planesFalso.tieneIa.mockResolvedValue(true);
     correoFalso.estaConfigurado.mockReturnValue(true);
     correoFalso.enviarAviso.mockResolvedValue(undefined);
 
@@ -103,6 +106,7 @@ describe('GeneradorAvisosService', () => {
         { provide: CorreoService, useValue: correoFalso },
         { provide: ConfigService, useValue: configFalso },
         { provide: PushService, useValue: pushFalso },
+        { provide: PlanesService, useValue: planesFalso },
       ],
     }).compile();
 
@@ -196,7 +200,7 @@ describe('GeneradorAvisosService', () => {
       });
     });
 
-    it('pide a Ollama el texto en el idioma del usuario', async () => {
+    it('pide a la IA el texto en el idioma del usuario', async () => {
       usuarioCon({
         idioma: 'en',
         recordatorios: [recordatorio({ tipo: 'REVISION_SEMANAL', diaSemana: 3, hora: '09:00' })],
@@ -209,7 +213,18 @@ describe('GeneradorAvisosService', () => {
       expect(instrucciones).toContain('You have 0 pending tasks');
     });
 
-    it('si Ollama falla, el aviso se crea igual sin texto de IA', async () => {
+    it('sin la IA en su plan no se le pide nada a la IA (texto por reglas)', async () => {
+      planesFalso.tieneIa.mockResolvedValue(false);
+      usuarioCon({
+        recordatorios: [recordatorio({ tipo: 'REVISION_SEMANAL', diaSemana: 3, hora: '09:00' })],
+      });
+
+      expect(await servicio.procesarUsuario('usuario-1', AHORA)).toBe(1);
+      expect(iaFalsa.redactar).not.toHaveBeenCalled();
+      expect(prismaFalso.aviso.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('si la IA falla, el aviso se crea igual sin texto de IA', async () => {
       usuarioCon({
         recordatorios: [
           recordatorio({

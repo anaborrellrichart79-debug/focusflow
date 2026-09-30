@@ -62,6 +62,11 @@ model Usuario {
   // Perfiles elegidos en Ajustes (pueden ser varios); vacío = el Inicio usa
   // los que sugiere la app según lo que se usa.
   perfiles                   PerfilUsuario[]          @default([])
+  // Plan contratado: la IA solo está en el de pago (y, a través del vínculo
+  // familiar, para los menores de un adulto que lo tenga). De momento se
+  // cambia a mano; el cobro (Stripe) llegará después.
+  plan                       PlanUsuario              @default(GRATUITO)
+  usosIa                     UsoIa[]
   notas                      Nota[]
   // Modo emergencia: alarma cuando una tarea pendiente lleva emergenciaDias
   // sin tocarse. Desactivado por defecto para no disparar de golpe alarmas
@@ -524,6 +529,30 @@ enum PerfilUsuario {
   ESTUDIANTE
   PROFESIONAL
   PADRE
+}
+
+enum PlanUsuario {
+  GRATUITO
+  PAGO
+}
+
+enum TipoUsoIa {
+  SUBTAREAS
+  PLAN_ESTUDIO
+}
+
+// Cada petición de ayuda a la IA que ha salido bien (dividir en pasos, plan de
+// estudio), para el límite mensual. Los avisos que redacta la IA no cuentan:
+// son automáticos y muy baratos.
+model UsoIa {
+  id        String    @id @default(uuid())
+  usuarioId String
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tipo      TipoUsoIa
+  creadoEn  DateTime  @default(now())
+
+  @@index([usuarioId, creadoEn])
+  @@map("usos_ia")
 }
 
 // NOTA: texto libre, con casilla opcional. TODO: elemento corto que siempre se
