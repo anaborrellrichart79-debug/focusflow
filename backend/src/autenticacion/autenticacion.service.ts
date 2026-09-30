@@ -227,7 +227,13 @@ export class AutenticacionService {
 
   async actualizarPreferencias(
     usuarioId: string,
-    datos: { modoEscolarActivo?: boolean; perfiles?: PerfilUsuario[]; idioma?: Idioma; bienvenidaCompletada?: true },
+    datos: {
+      modoEscolarActivo?: boolean;
+      perfiles?: PerfilUsuario[];
+      idioma?: Idioma;
+      bienvenidaCompletada?: true;
+      pomodoro?: { trabajo: number; descansoCorto: number; descansoLargo: number; ciclos: number } | null;
+    },
   ) {
     const usuario = await this.prisma.usuario.update({
       where: { id: usuarioId },
@@ -236,6 +242,15 @@ export class AutenticacionService {
         perfiles: datos.perfiles ? [...new Set(datos.perfiles)] : undefined,
         idioma: datos.idioma,
         bienvenidaCompletada: datos.bienvenidaCompletada,
+        // undefined = no se toca; null = volver a la que toca por edad.
+        ...(datos.pomodoro !== undefined
+          ? {
+              pomodoroTrabajoMin: datos.pomodoro?.trabajo ?? null,
+              pomodoroDescansoCortoMin: datos.pomodoro?.descansoCorto ?? null,
+              pomodoroDescansoLargoMin: datos.pomodoro?.descansoLargo ?? null,
+              pomodoroCiclos: datos.pomodoro?.ciclos ?? null,
+            }
+          : {}),
       },
     });
 
@@ -287,6 +302,17 @@ export class AutenticacionService {
       perfiles: usuario.perfiles ?? [],
       idioma: comoIdioma(usuario.idioma),
       bienvenidaCompletada: usuario.bienvenidaCompletada,
+      // Para proponer el Pomodoro que toca por edad (sin enseñar la fecha de nacimiento).
+      edad: usuario.fechaNacimiento ? calcularEdad(usuario.fechaNacimiento.toISOString()) : null,
+      pomodoro:
+        usuario.pomodoroTrabajoMin && usuario.pomodoroDescansoCortoMin && usuario.pomodoroDescansoLargoMin && usuario.pomodoroCiclos
+          ? {
+              trabajo: usuario.pomodoroTrabajoMin,
+              descansoCorto: usuario.pomodoroDescansoCortoMin,
+              descansoLargo: usuario.pomodoroDescansoLargoMin,
+              ciclos: usuario.pomodoroCiclos,
+            }
+          : null,
     };
   }
 

@@ -6,14 +6,24 @@ import {
   type FasePomodoroApi,
   type SesionPomodoro,
 } from '@/servicios/pomodoro';
+import type { ConfigPomodoro } from '@/utilidades/pomodoro';
 import type { EstadoRaiz } from './store';
 
 export type FasePomodoro = 'trabajo' | 'descansoCorto' | 'descansoLargo';
 
+// Pomodoro clásico: el de partida hasta que la página aplica el de la cuenta
+// (el de su edad o el que haya ajustado).
 export const DURACION_TRABAJO_SEGUNDOS = 25 * 60;
 export const DURACION_DESCANSO_CORTO_SEGUNDOS = 5 * 60;
 export const DURACION_DESCANSO_LARGO_SEGUNDOS = 20 * 60;
 export const CICLOS_PARA_DESCANSO_LARGO = 4;
+
+const CONFIG_CLASICA: ConfigPomodoro = {
+  trabajo: DURACION_TRABAJO_SEGUNDOS / 60,
+  descansoCorto: DURACION_DESCANSO_CORTO_SEGUNDOS / 60,
+  descansoLargo: DURACION_DESCANSO_LARGO_SEGUNDOS / 60,
+  ciclos: CICLOS_PARA_DESCANSO_LARGO,
+};
 
 const FASE_A_FASE_API: Record<FasePomodoro, FasePomodoroApi> = {
   trabajo: 'TRABAJO',
@@ -21,14 +31,14 @@ const FASE_A_FASE_API: Record<FasePomodoro, FasePomodoroApi> = {
   descansoLargo: 'DESCANSO_LARGO',
 };
 
-function duracionDeFase(fase: FasePomodoro): number {
+function duracionDeFase(fase: FasePomodoro, config: ConfigPomodoro): number {
   switch (fase) {
     case 'trabajo':
-      return DURACION_TRABAJO_SEGUNDOS;
+      return config.trabajo * 60;
     case 'descansoCorto':
-      return DURACION_DESCANSO_CORTO_SEGUNDOS;
+      return config.descansoCorto * 60;
     case 'descansoLargo':
-      return DURACION_DESCANSO_LARGO_SEGUNDOS;
+      return config.descansoLargo * 60;
   }
 }
 
@@ -83,6 +93,7 @@ interface EstadoPomodoro {
   notificacionPendiente: boolean;
   ultimaFaseCompletada: { fase: FasePomodoro; duracionSegundos: number } | null;
   historial: SesionPomodoro[];
+  config: ConfigPomodoro;
 }
 
 const estadoInicial: EstadoPomodoro = {
@@ -93,6 +104,7 @@ const estadoInicial: EstadoPomodoro = {
   notificacionPendiente: false,
   ultimaFaseCompletada: null,
   historial: [],
+  config: CONFIG_CLASICA,
 };
 
 const pomodoroSlice = createSlice({
@@ -107,7 +119,17 @@ const pomodoroSlice = createSlice({
     },
     reiniciarFase(estado) {
       estado.activo = false;
-      estado.segundosRestantes = duracionDeFase(estado.fase);
+      estado.segundosRestantes = duracionDeFase(estado.fase, estado.config);
+    },
+    // Duraciones de la cuenta. Con el temporizador parado se aplica ya a la
+    // fase actual; en marcha, desde la siguiente (no corta la que va).
+    configurar(estado, accion: { payload: ConfigPomodoro }) {
+      const anterior = estado.config;
+      estado.config = accion.payload;
+      const sinTocar = estado.segundosRestantes === duracionDeFase(estado.fase, anterior);
+      if (!estado.activo && sinTocar) {
+        estado.segundosRestantes = duracionDeFase(estado.fase, estado.config);
+      }
     },
     tick(estado) {
       if (!estado.activo) return;
@@ -122,18 +144,18 @@ const pomodoroSlice = createSlice({
       if (estado.fase === 'trabajo') {
         estado.ciclosCompletados += 1;
         estado.fase =
-          estado.ciclosCompletados % CICLOS_PARA_DESCANSO_LARGO === 0
+          estado.ciclosCompletados % estado.config.ciclos === 0
             ? 'descansoLargo'
             : 'descansoCorto';
       } else {
         estado.fase = 'trabajo';
       }
 
-      estado.segundosRestantes = duracionDeFase(estado.fase);
+      estado.segundosRestantes = duracionDeFase(estado.fase, estado.config);
       estado.notificacionPendiente = true;
       estado.ultimaFaseCompletada = {
         fase: faseCompletada,
-        duracionSegundos: duracionDeFase(faseCompletada),
+        duracionSegundos: duracionDeFase(faseCompletada, estado.config),
       };
     },
     notificacionMostrada(estado) {
@@ -151,6 +173,6 @@ const pomodoroSlice = createSlice({
   },
 });
 
-export const { iniciar, pausar, reiniciarFase, tick, notificacionMostrada } =
+export const { iniciar, pausar, reiniciarFase, tick, notificacionMostrada, configurar } =
   pomodoroSlice.actions;
 export default pomodoroSlice.reducer;

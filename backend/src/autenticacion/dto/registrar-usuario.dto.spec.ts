@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { describe, expect, it } from 'vitest';
@@ -70,5 +71,21 @@ describe('RegistrarUsuarioDto', () => {
 
     expect(await validate(instancia)).toEqual([]);
     expect(instancia.correo).toBe('ana@example.com');
+  });
+
+  it('el Pomodoro acepta desde 5 minutos de trabajo y 1 de descanso, y no menos', async () => {
+    const { ActualizarPreferenciasDto } = await import('./actualizar-preferencias.dto.js');
+    const valido = plainToInstance(ActualizarPreferenciasDto, {
+      pomodoro: { trabajo: 5, descansoCorto: 1, descansoLargo: 5, ciclos: 3 },
+    });
+    expect(await validate(valido)).toEqual([]);
+
+    const corto = plainToInstance(ActualizarPreferenciasDto, {
+      pomodoro: { trabajo: 3, descansoCorto: 0, descansoLargo: 5, ciclos: 3 },
+    });
+    expect(await validate(corto)).not.toEqual([]);
+
+    const reiniciar = plainToInstance(ActualizarPreferenciasDto, { pomodoro: null });
+    expect(await validate(reiniciar)).toEqual([]);
   });
 });

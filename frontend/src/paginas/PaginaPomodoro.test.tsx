@@ -1,9 +1,9 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { SesionPomodoro } from '@/servicios/pomodoro';
 import type { Tarea } from '@/servicios/tareas';
-import { renderizarPagina } from '@/pruebas/render';
+import { renderizarPagina, SESION_AUTENTICADA } from '@/pruebas/render';
 import { PaginaPomodoro } from './PaginaPomodoro';
 
 function crearTareaFalsa(datos: Partial<Tarea>): Tarea {
@@ -51,6 +51,7 @@ const estadoPomodoroBase = {
   ciclosCompletados: 0,
   notificacionPendiente: false,
   ultimaFaseCompletada: null,
+  config: { trabajo: 25, descansoCorto: 5, descansoLargo: 20, ciclos: 4 },
   historial: [] as SesionPomodoro[],
 };
 
@@ -114,5 +115,66 @@ describe('PaginaPomodoro', () => {
     expect(screen.getByText('25 min')).toBeInTheDocument();
     expect(screen.getByText('Descanso corto')).toBeInTheDocument();
     expect(screen.getByText('5 min')).toBeInTheDocument();
+  });
+
+  it('a un niño de 10 años le propone 10 minutos de trabajo (la duración de su edad)', () => {
+    renderizarPagina(<PaginaPomodoro />, {
+      estadoPrecargado: {
+        sesion: { ...SESION_AUTENTICADA, usuario: { ...SESION_AUTENTICADA.usuario!, edad: 10, pomodoro: null } },
+      },
+    });
+
+    expect(screen.getByText('10:00')).toBeInTheDocument();
+    expect(screen.getByText(/Ahora: 10 min de trabajo, 2 min de descanso/)).toBeInTheDocument();
+  });
+
+  it('si la cuenta ha ajustado el suyo, usa ese', () => {
+    renderizarPagina(<PaginaPomodoro />, {
+      estadoPrecargado: {
+        sesion: {
+          ...SESION_AUTENTICADA,
+          usuario: {
+            ...SESION_AUTENTICADA.usuario!,
+            edad: 10,
+            pomodoro: { trabajo: 15, descansoCorto: 3, descansoLargo: 10, ciclos: 3 },
+          },
+        },
+      },
+    });
+
+    expect(screen.getByText('15:00')).toBeInTheDocument();
+  });
+
+  it('se ajusta eligiendo una opción por edad y se guarda en la cuenta', async () => {
+    const usuario = userEvent.setup();
+    const fetchFalso = vi.fn(async (url: string, opciones?: RequestInit) => {
+      const cuerpo = url.endsWith('/autenticacion/preferencias')
+        ? {
+            ...SESION_AUTENTICADA.usuario,
+            edad: 6,
+            pomodoro: JSON.parse(opciones!.body as string).pomodoro,
+          }
+        : [];
+      return { ok: true, status: 200, json: async () => cuerpo } as Response;
+    });
+    vi.stubGlobal('fetch', fetchFalso);
+    renderizarPagina(<PaginaPomodoro />, {
+      estadoPrecargado: {
+        sesion: { ...SESION_AUTENTICADA, usuario: { ...SESION_AUTENTICADA.usuario!, edad: 6, pomodoro: null } },
+      },
+    });
+
+    await usuario.click(screen.getByRole('button', { name: 'Cambiar' }));
+    expect(screen.getByRole('button', { name: /Hasta 7 años.*Recomendado para tu edad/ })).toBeInTheDocument();
+    await usuario.click(screen.getByRole('button', { name: /De 8 a 11 años/ }));
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Guardado');
+    const llamada = fetchFalso.mock.calls.find(([url]) => (url as string).endsWith('/autenticacion/preferencias'));
+    expect(JSON.parse(llamada![1]!.body as string)).toEqual({
+      pomodoro: { trabajo: 10, descansoCorto: 2, descansoLargo: 10, ciclos: 4 },
+    });
+    expect(screen.getByText('10:00')).toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 });

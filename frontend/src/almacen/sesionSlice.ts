@@ -10,6 +10,7 @@ import {
 import type { CodigoIdioma } from '@/idiomas';
 import { ErrorApi } from '@/servicios/api';
 import { desactivarPush } from '@/servicios/push';
+import type { ConfigPomodoro } from '@/utilidades/pomodoro';
 
 const CLAVE_TOKEN_ALMACENAMIENTO = 'focusflow.tokenAcceso';
 
@@ -155,6 +156,21 @@ export const completarBienvenida = createAsyncThunk<
   }
 });
 
+// Duraciones del Pomodoro de la cuenta (null = volver a las de su edad).
+export const guardarPomodoro = createAsyncThunk<
+  UsuarioSesion,
+  ConfigPomodoro | null,
+  { state: { sesion: EstadoSesion }; rejectValue: string }
+>('sesion/guardarPomodoro', async (pomodoro, { getState, rejectWithValue }) => {
+  const tokenAcceso = getState().sesion.tokenAcceso;
+  if (!tokenAcceso) return rejectWithValue('No autenticado');
+  try {
+    return await actualizarPreferencias(tokenAcceso, { pomodoro });
+  } catch (error) {
+    return rejectWithValue(error instanceof ErrorApi ? error.message : 'No se pudo guardar la preferencia');
+  }
+});
+
 const sesionSlice = createSlice({
   name: 'sesion',
   initialState: estadoInicial,
@@ -220,6 +236,9 @@ const sesionSlice = createSlice({
         estado.usuario = accion.payload;
       })
       .addCase(completarBienvenida.fulfilled, (estado, accion) => {
+        estado.usuario = accion.payload;
+      })
+      .addCase(guardarPomodoro.fulfilled, (estado, accion) => {
         estado.usuario = accion.payload;
       })
       .addCase(restaurarSesion.rejected, (estado) => {

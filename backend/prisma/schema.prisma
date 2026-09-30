@@ -69,6 +69,13 @@ model Usuario {
   // Un adulto vinculado (padre, madre, tutor) puede apagar la IA de esta
   // cuenta desde su página Familia, aunque su plan la incluya.
   iaDesactivadaPorFamilia    Boolean                  @default(false)
+  // Temporizador Pomodoro de esta cuenta, en minutos. Vacío = el que toca por
+  // edad (lo decide el frontend: no es lo mismo un niño de 7 años que un
+  // adulto). Se guarda en la cuenta para que sea igual en todos los dispositivos.
+  pomodoroTrabajoMin         Int?
+  pomodoroDescansoCortoMin   Int?
+  pomodoroDescansoLargoMin   Int?
+  pomodoroCiclos             Int?
   usosIa                     UsoIa[]
   notas                      Nota[]
   // Modo emergencia: alarma cuando una tarea pendiente lleva emergenciaDias

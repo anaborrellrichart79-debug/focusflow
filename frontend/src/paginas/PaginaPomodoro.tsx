@@ -3,8 +3,8 @@ import { useIntl } from 'react-intl';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { seleccionarTareasDelAmbito } from '@/almacen/selectores';
 import {
-  CICLOS_PARA_DESCANSO_LARGO,
   cargarHistorialPomodoro,
+  configurar,
   iniciar,
   notificacionMostrada,
   pausar,
@@ -15,6 +15,8 @@ import {
 import { cargarTareas } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AjustesPomodoro } from '@/componentes/AjustesPomodoro';
+import { configEfectiva } from '@/utilidades/pomodoro';
 import { reproducirAvisoFasePomodoro } from '@/utilidades/sonido';
 
 const ETIQUETAS_FASE: Record<string, string> = {
@@ -53,6 +55,15 @@ export function PaginaPomodoro() {
     [tareasDelAmbito],
   );
   const [tareaAsociadaId, setTareaAsociadaId] = useState('');
+  const usuario = usarSelector((estado) => estado.sesion.usuario);
+  const config = usarSelector((estado) => estado.pomodoro.config);
+
+  // Las duraciones de esta cuenta: las que haya ajustado o las de su edad.
+  const guardada = usuario?.pomodoro ?? null;
+  const edad = usuario?.edad ?? null;
+  useEffect(() => {
+    despachar(configurar(configEfectiva(guardada, edad)));
+  }, [despachar, guardada, edad]);
 
   useEffect(() => {
     despachar(cargarTareas());
@@ -82,7 +93,7 @@ export function PaginaPomodoro() {
     despachar(notificacionMostrada());
   }, [notificacionPendiente, ultimaFaseCompletada, tareaAsociadaId, despachar]);
 
-  const cicloActual = (ciclosCompletados % CICLOS_PARA_DESCANSO_LARGO) + 1;
+  const cicloActual = (ciclosCompletados % config.ciclos) + 1;
   const colorFase = fase === 'trabajo' ? 'var(--motivador)' : 'var(--exito)';
 
   return (
@@ -105,7 +116,7 @@ export function PaginaPomodoro() {
           <span className="text-sm text-muted-foreground">
             {intl.formatMessage(
               { id: 'pomodoro.ciclo' },
-              { actual: cicloActual, total: CICLOS_PARA_DESCANSO_LARGO },
+              { actual: cicloActual, total: config.ciclos },
             )}
           </span>
 
@@ -143,6 +154,8 @@ export function PaginaPomodoro() {
           </label>
         </CardContent>
       </Card>
+
+      <AjustesPomodoro />
 
       <Card className="w-full">
         <CardHeader>

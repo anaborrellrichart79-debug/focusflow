@@ -39,6 +39,7 @@ function renderizar(modoEscolarActivo: boolean) {
         ciclosCompletados: 0,
         notificacionPendiente: false,
         ultimaFaseCompletada: null,
+        config: { trabajo: 25, descansoCorto: 5, descansoLargo: 20, ciclos: 4 },
         // 3 h de Matemáticas, 20 min sin etiqueta y 25 min sin tarea.
         historial: [
           ...Array.from({ length: 6 }, (_, i) => sesion(`m${i}`, 'examen', 30)),

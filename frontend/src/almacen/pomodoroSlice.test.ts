@@ -5,6 +5,7 @@ import reductor, {
   DURACION_DESCANSO_LARGO_SEGUNDOS,
   DURACION_TRABAJO_SEGUNDOS,
   cargarHistorialPomodoro,
+  configurar,
   iniciar,
   notificacionMostrada,
   pausar,
@@ -36,6 +37,7 @@ describe('pomodoroSlice', () => {
       ciclosCompletados: 0,
       notificacionPendiente: false,
       ultimaFaseCompletada: null,
+      config: { trabajo: 25, descansoCorto: 5, descansoLargo: 20, ciclos: 4 },
       historial: [],
     });
   });
@@ -139,5 +141,35 @@ describe('pomodoroSlice', () => {
     );
 
     expect(estado.historial).toEqual(sesiones);
+  });
+
+  describe('configurar (duraciones de la cuenta)', () => {
+    const PEQUES = { trabajo: 5, descansoCorto: 1, descansoLargo: 5, ciclos: 3 };
+
+    it('con el temporizador parado y sin empezar, se aplica ya a la fase actual', () => {
+      const estado = reductor(undefined, configurar(PEQUES));
+      expect(estado.segundosRestantes).toBe(5 * 60);
+    });
+
+    it('en marcha no corta la fase actual: se aplica desde la siguiente', () => {
+      let estado = reductor(undefined, iniciar());
+      estado = reductor(estado, tick());
+      estado = reductor(estado, configurar(PEQUES));
+      expect(estado.segundosRestantes).toBe(DURACION_TRABAJO_SEGUNDOS - 1);
+
+      estado = { ...estado, segundosRestantes: 0 };
+      estado = reductor(estado, tick());
+      expect(estado.fase).toBe('descansoCorto');
+      expect(estado.segundosRestantes).toBe(60);
+      expect(estado.ultimaFaseCompletada?.duracionSegundos).toBe(5 * 60);
+    });
+
+    it('el descanso largo llega cada tantas vueltas como diga la configuración', () => {
+      let estado = reductor(undefined, configurar(PEQUES));
+      estado = { ...estado, activo: true, ciclosCompletados: 2, segundosRestantes: 0 };
+      estado = reductor(estado, tick());
+      expect(estado.fase).toBe('descansoLargo');
+      expect(estado.segundosRestantes).toBe(5 * 60);
+    });
   });
 });

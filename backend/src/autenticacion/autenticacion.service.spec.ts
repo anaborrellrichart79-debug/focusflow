@@ -116,6 +116,8 @@ describe('AutenticacionService', () => {
         nombre: 'Nueva',
         consentimientoConfirmado: true,
         correoVerificado: false,
+        edad: expect.any(Number),
+        pomodoro: null,
         modoEscolarActivo: false,
         perfiles: [],
         idioma: 'es',
@@ -287,8 +289,11 @@ describe('AutenticacionService', () => {
         modoEscolarActivo: false,
         perfiles: [],
         idioma: 'es',
+        edad: expect.any(Number),
+        pomodoro: null,
       });
       expect(resultado).not.toHaveProperty('contrasena');
+      expect(resultado).not.toHaveProperty('fechaNacimiento');
       expect(resultado).not.toHaveProperty('correoTutor');
     });
   });
@@ -502,6 +507,53 @@ describe('AutenticacionService', () => {
       await servicio.eliminarCuenta('usuario-1', 'Correcta1');
 
       expect(prismaFalso.usuario.delete).toHaveBeenCalled();
+    });
+  });
+
+  describe('Pomodoro por cuenta', () => {
+    it('guarda las duraciones elegidas y las devuelve', async () => {
+      prismaFalso.usuario.update.mockResolvedValue(
+        crearUsuarioFalso({
+          pomodoroTrabajoMin: 5,
+          pomodoroDescansoCortoMin: 1,
+          pomodoroDescansoLargoMin: 5,
+          pomodoroCiclos: 3,
+        }),
+      );
+
+      const resultado = await servicio.actualizarPreferencias('usuario-1', {
+        pomodoro: { trabajo: 5, descansoCorto: 1, descansoLargo: 5, ciclos: 3 },
+      });
+
+      expect(prismaFalso.usuario.update.mock.calls[0][0].data).toMatchObject({
+        pomodoroTrabajoMin: 5,
+        pomodoroDescansoCortoMin: 1,
+        pomodoroDescansoLargoMin: 5,
+        pomodoroCiclos: 3,
+      });
+      expect(resultado.pomodoro).toEqual({ trabajo: 5, descansoCorto: 1, descansoLargo: 5, ciclos: 3 });
+    });
+
+    it('con null vuelve a la que toca por edad (borra la personalizada)', async () => {
+      prismaFalso.usuario.update.mockResolvedValue(crearUsuarioFalso());
+
+      await servicio.actualizarPreferencias('usuario-1', { pomodoro: null });
+
+      expect(prismaFalso.usuario.update.mock.calls[0][0].data).toMatchObject({
+        pomodoroTrabajoMin: null,
+        pomodoroDescansoCortoMin: null,
+        pomodoroDescansoLargoMin: null,
+        pomodoroCiclos: null,
+      });
+    });
+
+    it('la edad se calcula de la fecha de nacimiento', async () => {
+      const hace10Anios = new Date();
+      hace10Anios.setUTCFullYear(hace10Anios.getUTCFullYear() - 10);
+      hace10Anios.setUTCMonth(0, 1);
+      prismaFalso.usuario.findUnique.mockResolvedValue(crearUsuarioFalso({ fechaNacimiento: hace10Anios }));
+
+      expect((await servicio.obtenerUsuarioPorId('usuario-1')).edad).toBe(10);
     });
   });
 

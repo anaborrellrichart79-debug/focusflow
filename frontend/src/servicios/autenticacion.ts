@@ -1,4 +1,5 @@
 import type { CodigoIdioma } from '@/idiomas';
+import type { ConfigPomodoro } from '@/utilidades/pomodoro';
 import { peticionApi } from './api';
 
 export type PerfilUsuario = 'ESTUDIANTE' | 'PROFESIONAL' | 'PADRE';
@@ -19,6 +20,10 @@ export interface UsuarioSesion {
   idioma?: CodigoIdioma;
   // false en una cuenta recién creada: se le enseña el asistente de bienvenida.
   bienvenidaCompletada?: boolean;
+  // Para proponer el Pomodoro que toca por edad (null si no se sabe).
+  edad?: number | null;
+  // Pomodoro ajustado por la cuenta; null = el de su edad.
+  pomodoro?: ConfigPomodoro | null;
 }
 
 export interface RespuestaAutenticacion {
@@ -92,6 +97,7 @@ export function actualizarPreferencias(
     perfiles?: PerfilUsuario[];
     idioma?: CodigoIdioma;
     bienvenidaCompletada?: true;
+    pomodoro?: ConfigPomodoro | null;
   },
 ) {
   return peticionApi<UsuarioSesion>('/autenticacion/preferencias', {
