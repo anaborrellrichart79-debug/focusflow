@@ -33,6 +33,7 @@ import { PaginaPomodoro } from '@/paginas/PaginaPomodoro';
 import { PaginaRecordatorios } from '@/paginas/PaginaRecordatorios';
 import { PaginaRegistro } from '@/paginas/PaginaRegistro';
 import { PaginaRevision } from '@/paginas/PaginaRevision';
+import { PaginaLegal } from '@/paginas/PaginaLegal';
 import { PaginaVerificarCorreo } from '@/paginas/PaginaVerificarCorreo';
 
 // Cada cuánto se repite la sincronización automática con Google Calendar
@@ -129,6 +130,8 @@ export function Aplicacion() {
             />
             <Route path="/confirmar-consentimiento" element={<PaginaConfirmarConsentimiento />} />
             <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
+            <Route path="/privacidad" element={<PaginaLegal documento="privacidad" />} />
+            <Route path="/condiciones" element={<PaginaLegal documento="condiciones" />} />
             <Route path="/login" element={<PaginaLogin />} />
             <Route path="/registro" element={<PaginaRegistro />} />
             <Route

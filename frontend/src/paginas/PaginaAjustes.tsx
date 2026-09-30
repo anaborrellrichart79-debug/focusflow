@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SeccionClassroom } from '@/componentes/SeccionClassroom';
 import { TarjetaAvisosDispositivo } from '@/componentes/TarjetaAvisosDispositivo';
+import { EnlacesLegales } from '@/componentes/EnlacesLegales';
 import { TarjetaEliminarCuenta } from '@/componentes/TarjetaEliminarCuenta';
 import { TarjetaPlan } from '@/componentes/TarjetaPlan';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -231,6 +232,7 @@ export function PaginaAjustes() {
       </Card>
 
       <TarjetaEliminarCuenta />
+      <EnlacesLegales />
     </main>
   );
 }

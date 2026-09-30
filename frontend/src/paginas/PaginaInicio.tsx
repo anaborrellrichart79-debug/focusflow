@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cargarTareas } from '@/almacen/tareasSlice';
 import { Button } from '@/components/ui/button';
+import { EnlacesLegales } from '@/componentes/EnlacesLegales';
 import { InicioPersonalizado } from '@/componentes/InicioPersonalizado';
 import { SelectorIdioma } from '@/componentes/SelectorIdioma';
 import { SelectorTema } from '@/componentes/SelectorTema';
@@ -69,6 +70,7 @@ export function PaginaInicio() {
           </Button>
         </div>
       )}
+      {!usuario && <EnlacesLegales />}
     </main>
   );
 }

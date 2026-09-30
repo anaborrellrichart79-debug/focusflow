@@ -125,6 +125,23 @@ export function PaginaRegistro() {
               </div>
             )}
             {error && <p className="text-sm text-destructive">{error}</p>}
+            <p className="text-xs text-muted-foreground">
+              {intl.formatMessage(
+                { id: 'legal.aceptarRegistro' },
+                {
+                  condiciones: (texto) => (
+                    <Link to="/condiciones" target="_blank" className="text-primary hover:underline">
+                      {texto}
+                    </Link>
+                  ),
+                  privacidad: (texto) => (
+                    <Link to="/privacidad" target="_blank" className="text-primary hover:underline">
+                      {texto}
+                    </Link>
+                  ),
+                },
+              )}
+            </p>
             <Button type="submit" disabled={cargando}>
               {intl.formatMessage({ id: 'auth.registro.boton' })}
             </Button>

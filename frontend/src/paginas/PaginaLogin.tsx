@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { EnlacesLegales } from '@/componentes/EnlacesLegales';
 
 export function PaginaLogin() {
   const intl = useIntl();
@@ -75,6 +76,7 @@ export function PaginaLogin() {
           </form>
         </CardContent>
       </Card>
+      <EnlacesLegales className="mt-4" />
     </main>
   );
 }
