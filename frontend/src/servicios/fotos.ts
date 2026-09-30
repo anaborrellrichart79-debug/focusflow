@@ -36,3 +36,14 @@ export function leerHorarioDeFoto(token: string, horarioId: string, foto: Blob) 
 export function leerEntregasDeFoto(token: string, foto: Blob) {
   return subir<{ entregas: EntregaLeida[] }>(token, '/ia/fotos/entregas', foto);
 }
+
+export interface DeberLeido {
+  titulo: string;
+  // null si la agenda no dice para cuándo: se pone la próxima clase.
+  fecha: string | null;
+  asignaturaHorarioId: string | null;
+}
+
+export function leerDeberesDeFoto(token: string, foto: Blob) {
+  return subir<{ deberes: DeberLeido[] }>(token, '/ia/fotos/deberes', foto);
+}

@@ -8,34 +8,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ErrorApi } from '@/servicios/api';
-import { leerEntregasDeFoto, type EntregaLeida } from '@/servicios/fotos';
-import type { TipoEscolar } from '@/servicios/tareas';
-import { OPCIONES_ENTREGAS } from '@/utilidades/planificador';
+import { leerDeberesDeFoto, type DeberLeido } from '@/servicios/fotos';
+import { fechaDeHoy, proximaClase, type PeriodoSinClase } from '@/utilidades/deberes';
 import { reducirFoto } from '@/utilidades/reducirFoto';
 import { useEstadoIa } from '../useEstadoIa';
 import { ElegirFoto } from './ElegirFoto';
 
-interface Propuesta extends EntregaLeida {
+interface Propuesta extends DeberLeido {
+  fecha: string;
+  // La fecha venía escrita en la agenda (o la ha puesto el usuario): cambiar
+  // la asignatura ya no la recalcula.
+  fechaFija: boolean;
   elegida: boolean;
 }
 
 const CLASE_SELECT = 'h-8 rounded-md border border-input bg-background px-2 text-sm';
 
-// "Añadir desde una foto" en el Planificador: la IA lee un calendario de
-// exámenes (o la agenda, o la circular del colegio) y propone las entregas
-// con su fecha. Se revisan y se crean como tareas escolares normales, así que
-// salen en la Agenda y en los recordatorios.
-export function LectorFotoEntregas() {
+// "Añadir desde una foto de la agenda" en la pestaña Deberes: la IA saca los
+// deberes de cada asignatura de la página de la agenda escolar. Si la agenda
+// no dice para cuándo son, se propone la próxima clase de esa asignatura.
+export function LectorFotoDeberes({ sinClase }: { sinClase: PeriodoSinClase[] }) {
   const intl = useIntl();
   const despachar = usarDespachador();
   const token = usarSelector((estado) => estado.sesion.tokenAcceso);
-  const asignaturas = usarSelector((estado) => estado.horario.activo?.asignaturas ?? []);
+  const horario = usarSelector((estado) => estado.horario.activo);
   const estadoIa = useEstadoIa();
   const [leyendo, setLeyendo] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [propuestas, setPropuestas] = useState<Propuesta[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [anadidas, setAnadidas] = useState<number | null>(null);
+  const [anadidos, setAnadidos] = useState<number | null>(null);
 
   if (!estadoIa) return null;
 
@@ -43,11 +45,19 @@ export function LectorFotoEntregas() {
     if (!token) return;
     setLeyendo(true);
     setError(null);
-    setAnadidas(null);
+    setAnadidos(null);
     setPropuestas(null);
     try {
-      const { entregas } = await leerEntregasDeFoto(token, await reducirFoto(foto));
-      setPropuestas(entregas.map((entrega) => ({ ...entrega, elegida: true })));
+      const { deberes } = await leerDeberesDeFoto(token, await reducirFoto(foto));
+      const hoy = fechaDeHoy();
+      setPropuestas(
+        deberes.map((deber) => ({
+          ...deber,
+          fecha: deber.fecha ?? proximaClase(horario, deber.asignaturaHorarioId, hoy, sinClase),
+          fechaFija: deber.fecha !== null,
+          elegida: true,
+        })),
+      );
     } catch (causa) {
       setError(causa instanceof ErrorApi ? causa.message : intl.formatMessage({ id: 'fotos.error' }));
     } finally {
@@ -63,19 +73,19 @@ export function LectorFotoEntregas() {
 
   async function anadir() {
     setGuardando(true);
-    for (const entrega of elegidas) {
+    for (const deber of elegidas) {
       await despachar(
         crearTarea({
-          titulo: entrega.titulo.trim(),
-          fechaLimite: entrega.fecha,
+          titulo: deber.titulo.trim(),
+          fechaLimite: deber.fecha,
           ambito: 'ESCOLAR',
-          tipoEscolar: entrega.tipo,
-          asignaturaHorarioId: entrega.asignaturaHorarioId ?? undefined,
+          tipoEscolar: 'DEBERES',
+          asignaturaHorarioId: deber.asignaturaHorarioId ?? undefined,
         }),
       );
     }
     setGuardando(false);
-    setAnadidas(elegidas.length);
+    setAnadidos(elegidas.length);
     setPropuestas(null);
   }
 
@@ -84,7 +94,7 @@ export function LectorFotoEntregas() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Sparkles aria-hidden className="size-4 text-primary" />
-          {intl.formatMessage({ id: 'fotos.entregas.boton' })}
+          {intl.formatMessage({ id: 'fotos.deberes.boton' })}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
@@ -94,7 +104,7 @@ export function LectorFotoEntregas() {
           <>
             {!propuestas && (
               <>
-                <p className="text-muted-foreground">{intl.formatMessage({ id: 'fotos.entregas.ayuda' })}</p>
+                <p className="text-muted-foreground">{intl.formatMessage({ id: 'fotos.deberes.ayuda' })}</p>
                 <div>
                   <ElegirFoto
                     texto={intl.formatMessage({ id: 'fotos.elegir' })}
@@ -114,15 +124,15 @@ export function LectorFotoEntregas() {
                 {error}
               </p>
             )}
-            {anadidas !== null && (
+            {anadidos !== null && (
               <p role="status" className="text-primary">
-                {intl.formatMessage({ id: 'fotos.entregas.anadidas' }, { cantidad: anadidas })}
+                {intl.formatMessage({ id: 'fotos.deberes.anadidos' }, { cantidad: anadidos })}
               </p>
             )}
 
             {propuestas && (
               <>
-                <p className="text-xs text-muted-foreground">{intl.formatMessage({ id: 'fotos.entregas.revisa' })}</p>
+                <p className="text-xs text-muted-foreground">{intl.formatMessage({ id: 'fotos.deberes.revisa' })}</p>
                 <ul className="flex flex-col gap-3">
                   {propuestas.map((propuesta, indice) => (
                     <li key={indice} className="flex flex-wrap items-center gap-2 border-b border-border pb-3 last:border-0">
@@ -131,50 +141,47 @@ export function LectorFotoEntregas() {
                         aria-label={intl.formatMessage({ id: 'fotos.entregas.incluir' }, { titulo: propuesta.titulo })}
                         onCheckedChange={(marcada) => cambiar(indice, { elegida: marcada === true })}
                       />
-                      <Input
-                        type="date"
-                        value={propuesta.fecha}
-                        onChange={(evento) => cambiar(indice, { fecha: evento.target.value })}
-                        aria-label={intl.formatMessage({ id: 'fotos.entregas.fecha' })}
-                        className="h-8 w-40 text-sm"
-                      />
-                      <Input
-                        value={propuesta.titulo}
-                        onChange={(evento) => cambiar(indice, { titulo: evento.target.value })}
-                        aria-label={intl.formatMessage({ id: 'fotos.entregas.titulo' })}
-                        className="h-8 min-w-48 flex-1 text-sm"
-                      />
-                      <select
-                        value={propuesta.tipo}
-                        onChange={(evento) => cambiar(indice, { tipo: evento.target.value as TipoEscolar })}
-                        aria-label={intl.formatMessage({ id: 'fotos.entregas.tipo' })}
-                        className={CLASE_SELECT}
-                      >
-                        {OPCIONES_ENTREGAS.map((opcion) => (
-                          <option key={opcion.valor} value={opcion.valor}>
-                            {opcion.icono} {intl.formatMessage({ id: opcion.clave })}
-                          </option>
-                        ))}
-                      </select>
                       <select
                         value={propuesta.asignaturaHorarioId ?? ''}
-                        onChange={(evento) => cambiar(indice, { asignaturaHorarioId: evento.target.value || null })}
-                        aria-label={intl.formatMessage({ id: 'fotos.entregas.asignatura' })}
+                        onChange={(evento) => {
+                          const asignaturaHorarioId = evento.target.value || null;
+                          // Otra asignatura, otra "próxima clase" (salvo fecha fija).
+                          cambiar(indice, {
+                            asignaturaHorarioId,
+                            ...(propuesta.fechaFija
+                              ? {}
+                              : { fecha: proximaClase(horario, asignaturaHorarioId, fechaDeHoy(), sinClase) }),
+                          });
+                        }}
+                        aria-label={intl.formatMessage({ id: 'deberes.nuevo.asignatura' })}
                         className={CLASE_SELECT}
                       >
                         <option value="">{intl.formatMessage({ id: 'fotos.sinAsignatura' })}</option>
-                        {asignaturas.map((elegida) => (
+                        {(horario?.asignaturas ?? []).map((elegida) => (
                           <option key={elegida.id} value={elegida.id}>
                             {elegida.asignatura.nombre}
                           </option>
                         ))}
                       </select>
+                      <Input
+                        value={propuesta.titulo}
+                        onChange={(evento) => cambiar(indice, { titulo: evento.target.value })}
+                        aria-label={intl.formatMessage({ id: 'deberes.nuevo.que' })}
+                        className="h-8 min-w-48 flex-1 text-sm"
+                      />
+                      <Input
+                        type="date"
+                        value={propuesta.fecha}
+                        onChange={(evento) => cambiar(indice, { fecha: evento.target.value, fechaFija: true })}
+                        aria-label={intl.formatMessage({ id: 'deberes.nuevo.fecha' })}
+                        className="h-8 w-40 text-sm"
+                      />
                     </li>
                   ))}
                 </ul>
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" onClick={anadir} disabled={guardando || elegidas.length === 0}>
-                    {intl.formatMessage({ id: 'fotos.entregas.anadir' }, { cantidad: elegidas.length })}
+                    {intl.formatMessage({ id: 'fotos.deberes.anadir' }, { cantidad: elegidas.length })}
                   </Button>
                   <ElegirFoto
                     texto={intl.formatMessage({ id: 'fotos.otraFoto' })}

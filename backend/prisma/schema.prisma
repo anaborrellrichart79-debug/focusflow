@@ -147,6 +147,9 @@ enum TipoEscolar {
   EXAMEN
   TRABAJO
   PRESENTACION
+  // Los deberes de cada día (de la agenda escolar): pestaña propia en el
+  // Planificador, para que no se mezclen con los exámenes y trabajos.
+  DEBERES
 }
 
 model Tarea {
@@ -541,6 +544,7 @@ enum TipoUsoIa {
   PLAN_ESTUDIO
   FOTO_HORARIO
   FOTO_EXAMENES
+  FOTO_DEBERES
 }
 
 // Cada petición de ayuda a la IA que ha salido bien (dividir en pasos, plan de

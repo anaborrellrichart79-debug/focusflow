@@ -5,7 +5,12 @@ export const OPCIONES_TIPO_ESCOLAR: { valor: TipoEscolar; clave: string; icono: 
   { valor: 'EXAMEN', clave: 'tipoEscolar.examen', icono: '📝' },
   { valor: 'TRABAJO', clave: 'tipoEscolar.trabajo', icono: '📚' },
   { valor: 'PRESENTACION', clave: 'tipoEscolar.presentacion', icono: '🎤' },
+  { valor: 'DEBERES', clave: 'tipoEscolar.deberes', icono: '✏️' },
 ];
+
+// Exámenes, trabajos y presentaciones: la pestaña "Exámenes y trabajos" del
+// Planificador. Los deberes van en su propia pestaña.
+export const OPCIONES_ENTREGAS = OPCIONES_TIPO_ESCOLAR.filter((opcion) => opcion.valor !== 'DEBERES');
 
 // Ventana de "esta semana" del planificador: hoy y los 7 días siguientes,
 // igual que el widget "Próximos 7 días" de Inicio.
@@ -19,7 +24,7 @@ export interface EntregasAgrupadas {
 }
 
 // Una "entrega escolar" es una tarea escolar pendiente con tipo (examen,
-// trabajo o presentación). Las tareas escolares sin tipo (p. ej. "repasar
+// trabajo o presentación; los deberes van aparte, ver deberes.ts). Las tareas escolares sin tipo (p. ej. "repasar
 // apuntes") siguen viéndose en Kanban/Agenda, pero no aquí.
 export function agruparEntregasEscolares(
   tareas: Tarea[],
@@ -30,6 +35,7 @@ export function agruparEntregasEscolares(
       (tarea) =>
         tarea.ambito === 'ESCOLAR' &&
         tarea.tipoEscolar !== null &&
+        tarea.tipoEscolar !== 'DEBERES' &&
         tarea.estado !== 'HECHA' &&
         tarea.estado !== 'ARCHIVADA' &&
         (tipo === 'TODOS' || tarea.tipoEscolar === tipo),

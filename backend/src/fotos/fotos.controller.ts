@@ -62,4 +62,11 @@ export class FotosController {
   leerEntregas(@UsuarioActual() usuario: UsuarioPeticion, @UploadedFile() foto: FotoSubida | undefined) {
     return this.fotos.proponerEntregas(usuario.id, comoImagen(foto));
   }
+
+  @Post('deberes')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('foto', { limits: { fileSize: 2 * TAMANO_MAXIMO } }))
+  leerDeberes(@UsuarioActual() usuario: UsuarioPeticion, @UploadedFile() foto: FotoSubida | undefined) {
+    return this.fotos.proponerDeberes(usuario.id, comoImagen(foto));
+  }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { usarDespachador, usarSelector } from '@/almacen/hooks';
 import { cargarEtiquetas } from '@/almacen/etiquetasSlice';
 import { cambiarEstadoTarea, cargarTareas, crearTarea } from '@/almacen/tareasSlice';
@@ -11,10 +11,11 @@ import { Input } from '@/components/ui/input';
 import { DetalleTarea } from '@/componentes/DetalleTarea';
 import { EtiquetaFechaLimite } from '@/componentes/EtiquetaFechaLimite';
 import { LectorFotoEntregas } from '@/componentes/fotos/LectorFotoEntregas';
+import { PestanaDeberes } from '@/componentes/PestanaDeberes';
 import { IndicadoresTarea } from '@/componentes/IndicadoresTarea';
 import type { Tarea, TipoEscolar } from '@/servicios/tareas';
 import {
-  OPCIONES_TIPO_ESCOLAR,
+  OPCIONES_ENTREGAS,
   agruparEntregasEscolares,
   type EntregasAgrupadas,
 } from '@/utilidades/planificador';
@@ -28,7 +29,7 @@ const SECCIONES: { grupo: keyof EntregasAgrupadas; clave: string; ocultarSiVacia
 
 const FILTROS: { valor: TipoEscolar | 'TODOS'; clave: string; icono: string }[] = [
   { valor: 'TODOS', clave: 'planificador.filtro.todos', icono: '' },
-  ...OPCIONES_TIPO_ESCOLAR.map((opcion) => ({ ...opcion, clave: `${opcion.clave}.plural` })),
+  ...OPCIONES_ENTREGAS.map((opcion) => ({ ...opcion, clave: `${opcion.clave}.plural` })),
 ];
 
 const CLASE_SELECT =
@@ -41,6 +42,9 @@ export function PaginaPlanificador() {
   const intl = useIntl();
   const despachar = usarDespachador();
   const tareas = usarSelector((estado) => estado.tareas.lista);
+  // Pestaña en la dirección (?pestana=deberes) para poder enlazarla.
+  const [parametros, setParametros] = useSearchParams();
+  const pestana = parametros.get('pestana') === 'deberes' ? 'deberes' : 'entregas';
   const [filtroTipo, setFiltroTipo] = useState<TipoEscolar | 'TODOS'>('TODOS');
   const [titulo, setTitulo] = useState('');
   const [tipo, setTipo] = useState<TipoEscolar>('EXAMEN');
@@ -110,122 +114,148 @@ export function PaginaPlanificador() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{intl.formatMessage({ id: 'planificador.nueva.titulo' })}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={alAnadir} className="flex flex-col gap-3">
-            <Input
-              value={titulo}
-              onChange={(evento) => setTitulo(evento.target.value)}
-              placeholder={intl.formatMessage({ id: 'planificador.nueva.tituloPlaceholder' })}
-              aria-label={intl.formatMessage({ id: 'planificador.nueva.tituloPlaceholder' })}
-            />
-            <div className="flex flex-wrap gap-3">
-              <select
-                value={tipo}
-                onChange={(evento) => setTipo(evento.target.value as TipoEscolar)}
-                aria-label={intl.formatMessage({ id: 'tarea.detalle.tipoEscolar' })}
-                className={CLASE_SELECT}
-              >
-                {OPCIONES_TIPO_ESCOLAR.map((opcion) => (
-                  <option key={opcion.valor} value={opcion.valor}>
-                    {opcion.icono} {intl.formatMessage({ id: opcion.clave })}
-                  </option>
-                ))}
-              </select>
-              <Input
-                type="date"
-                required
-                value={fecha}
-                onChange={(evento) => setFecha(evento.target.value)}
-                aria-label={intl.formatMessage({ id: 'tarea.detalle.fechaLimite' })}
-                className="w-auto"
-              />
-              {asignaturasHorario.length > 0 ? (
-                <select
-                  value={asignaturaHorarioId}
-                  onChange={(evento) => setAsignaturaHorarioId(evento.target.value)}
-                  aria-label={intl.formatMessage({ id: 'tarea.detalle.asignatura' })}
-                  className={`${CLASE_SELECT} min-w-32 flex-1`}
-                >
-                  <option value="">{intl.formatMessage({ id: 'tarea.detalle.sinAsignatura' })}</option>
-                  {asignaturasHorario.map((elegida) => (
-                    <option key={elegida.id} value={elegida.id}>
-                      {elegida.asignatura.nombre}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <Link to="/horario" className="self-center text-sm text-primary hover:underline">
-                  {intl.formatMessage({ id: 'planificador.sinHorario' })}
-                </Link>
-              )}
-            </div>
-            <Button type="submit">{intl.formatMessage({ id: 'planificador.nueva.boton' })}</Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <LectorFotoEntregas />
-
       <div
-        role="group"
-        aria-label={intl.formatMessage({ id: 'planificador.filtro' })}
-        className="flex flex-wrap gap-2"
+        role="tablist"
+        aria-label={intl.formatMessage({ id: 'planificador.titulo' })}
+        className="flex w-fit rounded-full border border-border bg-background p-0.5 shadow-sm"
       >
-        {FILTROS.map((opcion) => (
+        {(['entregas', 'deberes'] as const).map((opcion) => (
           <Button
-            key={opcion.valor}
-            type="button"
+            key={opcion}
+            role="tab"
+            aria-selected={pestana === opcion}
             size="sm"
-            variant={filtroTipo === opcion.valor ? 'default' : 'outline'}
-            aria-pressed={filtroTipo === opcion.valor}
-            onClick={() => setFiltroTipo(opcion.valor)}
+            variant={pestana === opcion ? 'default' : 'ghost'}
+            className="rounded-full"
+            onClick={() => setParametros(opcion === 'deberes' ? { pestana: 'deberes' } : {}, { replace: true })}
           >
-            {opcion.icono && <span aria-hidden>{opcion.icono}</span>}
-            {intl.formatMessage({ id: opcion.clave })}
+            {intl.formatMessage({ id: `planificador.pestana.${opcion}` })}
           </Button>
         ))}
       </div>
 
-      {!hayEntregas ? (
-        <p className="text-center text-muted-foreground">
-          {intl.formatMessage({ id: 'planificador.vacio' })}
-        </p>
+      {pestana === 'deberes' ? (
+        <PestanaDeberes />
       ) : (
-        SECCIONES.filter(
-          (seccion) => !seccion.ocultarSiVacia || grupos[seccion.grupo].length > 0,
-        ).map((seccion) => (
-          <Card key={seccion.grupo}>
+        <>
+          <Card>
             <CardHeader>
-              <CardTitle
-                className={
-                  seccion.grupo === 'vencidas'
-                    ? 'text-sm uppercase tracking-wide text-destructive'
-                    : 'text-sm uppercase tracking-wide text-muted-foreground'
-                }
-              >
-                {intl.formatMessage(
-                  { id: seccion.clave },
-                  { cantidad: grupos[seccion.grupo].length },
-                )}
-              </CardTitle>
+              <CardTitle>{intl.formatMessage({ id: 'planificador.nueva.titulo' })}</CardTitle>
             </CardHeader>
             <CardContent>
-              {grupos[seccion.grupo].length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {intl.formatMessage({ id: 'planificador.seccion.vacia' })}
-                </p>
-              ) : (
-                <ul className="flex flex-col gap-3">
-                  {grupos[seccion.grupo].map(renderizarEntrega)}
-                </ul>
-              )}
+              <form onSubmit={alAnadir} className="flex flex-col gap-3">
+                <Input
+                  value={titulo}
+                  onChange={(evento) => setTitulo(evento.target.value)}
+                  placeholder={intl.formatMessage({ id: 'planificador.nueva.tituloPlaceholder' })}
+                  aria-label={intl.formatMessage({ id: 'planificador.nueva.tituloPlaceholder' })}
+                />
+                <div className="flex flex-wrap gap-3">
+                  <select
+                    value={tipo}
+                    onChange={(evento) => setTipo(evento.target.value as TipoEscolar)}
+                    aria-label={intl.formatMessage({ id: 'tarea.detalle.tipoEscolar' })}
+                    className={CLASE_SELECT}
+                  >
+                    {OPCIONES_ENTREGAS.map((opcion) => (
+                      <option key={opcion.valor} value={opcion.valor}>
+                        {opcion.icono} {intl.formatMessage({ id: opcion.clave })}
+                      </option>
+                    ))}
+                  </select>
+                  <Input
+                    type="date"
+                    required
+                    value={fecha}
+                    onChange={(evento) => setFecha(evento.target.value)}
+                    aria-label={intl.formatMessage({ id: 'tarea.detalle.fechaLimite' })}
+                    className="w-auto"
+                  />
+                  {asignaturasHorario.length > 0 ? (
+                    <select
+                      value={asignaturaHorarioId}
+                      onChange={(evento) => setAsignaturaHorarioId(evento.target.value)}
+                      aria-label={intl.formatMessage({ id: 'tarea.detalle.asignatura' })}
+                      className={`${CLASE_SELECT} min-w-32 flex-1`}
+                    >
+                      <option value="">{intl.formatMessage({ id: 'tarea.detalle.sinAsignatura' })}</option>
+                      {asignaturasHorario.map((elegida) => (
+                        <option key={elegida.id} value={elegida.id}>
+                          {elegida.asignatura.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Link to="/horario" className="self-center text-sm text-primary hover:underline">
+                      {intl.formatMessage({ id: 'planificador.sinHorario' })}
+                    </Link>
+                  )}
+                </div>
+                <Button type="submit">{intl.formatMessage({ id: 'planificador.nueva.boton' })}</Button>
+              </form>
             </CardContent>
           </Card>
-        ))
+
+          <LectorFotoEntregas />
+
+          <div
+            role="group"
+            aria-label={intl.formatMessage({ id: 'planificador.filtro' })}
+            className="flex flex-wrap gap-2"
+          >
+            {FILTROS.map((opcion) => (
+              <Button
+                key={opcion.valor}
+                type="button"
+                size="sm"
+                variant={filtroTipo === opcion.valor ? 'default' : 'outline'}
+                aria-pressed={filtroTipo === opcion.valor}
+                onClick={() => setFiltroTipo(opcion.valor)}
+              >
+                {opcion.icono && <span aria-hidden>{opcion.icono}</span>}
+                {intl.formatMessage({ id: opcion.clave })}
+              </Button>
+            ))}
+          </div>
+
+          {!hayEntregas ? (
+            <p className="text-center text-muted-foreground">
+              {intl.formatMessage({ id: 'planificador.vacio' })}
+            </p>
+          ) : (
+            SECCIONES.filter(
+              (seccion) => !seccion.ocultarSiVacia || grupos[seccion.grupo].length > 0,
+            ).map((seccion) => (
+              <Card key={seccion.grupo}>
+                <CardHeader>
+                  <CardTitle
+                    className={
+                      seccion.grupo === 'vencidas'
+                        ? 'text-sm uppercase tracking-wide text-destructive'
+                        : 'text-sm uppercase tracking-wide text-muted-foreground'
+                    }
+                  >
+                    {intl.formatMessage(
+                      { id: seccion.clave },
+                      { cantidad: grupos[seccion.grupo].length },
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {grupos[seccion.grupo].length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {intl.formatMessage({ id: 'planificador.seccion.vacia' })}
+                    </p>
+                  ) : (
+                    <ul className="flex flex-col gap-3">
+                      {grupos[seccion.grupo].map(renderizarEntrega)}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </>
       )}
     </main>
   );

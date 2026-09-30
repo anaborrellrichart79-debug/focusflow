@@ -18,7 +18,7 @@ export interface Persona {
   nombre: string | null;
   correo: string;
 }
-export type TipoEscolar = 'EXAMEN' | 'TRABAJO' | 'PRESENTACION';
+export type TipoEscolar = 'EXAMEN' | 'TRABAJO' | 'PRESENTACION' | 'DEBERES';
 
 export interface Tarea {
   id: string;

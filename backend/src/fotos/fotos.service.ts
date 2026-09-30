@@ -11,7 +11,10 @@ import { obtenerHoraLocal } from '../recordatorios/hora-local.util.js';
 
 const MAXIMO_FRANJAS = 20;
 const MAXIMO_ENTREGAS = 40;
+// Los deberes tienen su propia lectura (una página de la agenda): aquí solo
+// exámenes, trabajos y presentaciones.
 const TIPOS_ESCOLARES: TipoEscolar[] = ['EXAMEN', 'TRABAJO', 'PRESENTACION'];
+const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
 type Imagen = { datos: Buffer; tipo: TipoImagen };
 
@@ -27,6 +30,14 @@ export interface FranjaPropuesta {
   tipo: TipoFranja;
   etiqueta: string;
   clases: ClasePropuesta[];
+}
+
+export interface DeberPropuesto {
+  titulo: string;
+  // null si la agenda no dice para cuándo: el navegador pone la próxima
+  // clase de esa asignatura según el horario.
+  fecha: string | null;
+  asignaturaHorarioId: string | null;
 }
 
 export interface EntregaPropuesta {
@@ -119,6 +130,39 @@ export class FotosService {
     return { entregas };
   }
 
+  async proponerDeberes(usuarioId: string, imagen: Imagen, ahora = new Date()) {
+    await this.comprobarIa(usuarioId);
+
+    const horario = await this.horarios.obtenerActivo(usuarioId);
+    const porNombre = new Map(
+      (horario?.asignaturas ?? []).map((elegida) => [elegida.asignatura.nombre, elegida.id] as const),
+    );
+    const hoy = obtenerHoraLocal(ahora, this.config.get<string>('ZONA_HORARIA') || 'Europe/Madrid').fecha;
+    const diaSemana = DIAS_SEMANA[new Date(`${hoy}T00:00:00Z`).getUTCDay()];
+    const idioma = NOMBRE_IDIOMA_PARA_IA[await this.idiomaDe(usuarioId)];
+
+    const respuesta = await this.ia.leerImagenJson(
+      'Esta foto es una página de la agenda escolar de un alumno, con los deberes que le han puesto. ' +
+        `Hoy es ${diaSemana} ${hoy}. ` +
+        'Saca cada deber por separado: ' +
+        'la asignatura del listado que corresponda (aunque en la agenda esté abreviada; cadena vacía si no está), ' +
+        `qué hay que hacer en ${idioma}, corto y concreto, sin repetir el nombre de la asignatura ` +
+        '(por ejemplo «Página 34, ejercicios 1 a 5»), ' +
+        'y la fecha de entrega en formato YYYY-MM-DD solo si la agenda la indica (por ejemplo «para el jueves»); ' +
+        'si no la indica, una cadena vacía. ' +
+        'No incluyas exámenes ni cosas que no sean deberes. Si la foto no tiene deberes, devuelve la lista vacía.',
+      esquemaDeberes([...porNombre.keys()]),
+      imagen,
+    );
+
+    const deberes = limpiarDeberes(respuesta, porNombre, hoy);
+    if (deberes.length === 0) {
+      throw new BadGatewayException('La IA no ha dado una propuesta válida, inténtalo de nuevo');
+    }
+    await this.planes.registrarUsoIa(usuarioId, 'FOTO_DEBERES');
+    return { deberes };
+  }
+
   private async comprobarIa(usuarioId: string) {
     await this.planes.comprobarUsoIa(usuarioId);
     if (!this.ia.leeImagenes()) {
@@ -194,6 +238,37 @@ function esquemaEntregas(nombres: string[]) {
   };
 }
 
+function esquemaDeberes(nombres: string[]) {
+  return {
+    type: 'object',
+    properties: {
+      deberes: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            asignatura: { type: 'string', enum: [...nombres, ''] },
+            titulo: { type: 'string' },
+            fecha: { type: 'string' },
+          },
+          required: ['asignatura', 'titulo', 'fecha'],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ['deberes'],
+    additionalProperties: false,
+  };
+}
+
+// Fecha real (YYYY-MM-DD) o null: 2026-13-01 no es fecha y 2026-02-30 "salta" a marzo.
+function fechaValida(valor: unknown): string | null {
+  const fecha = typeof valor === 'string' ? valor.trim() : '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+  const comoFecha = new Date(`${fecha}T00:00:00Z`);
+  return !Number.isNaN(comoFecha.getTime()) && comoFecha.toISOString().slice(0, 10) === fecha ? fecha : null;
+}
+
 // "9:00", "09.00" o "09:00" → "09:00"; null si no es una hora válida.
 function normalizarHora(valor: unknown): string | null {
   if (typeof valor !== 'string') return null;
@@ -251,12 +326,8 @@ export function limpiarEntregas(
 
   const limpias: EntregaPropuesta[] = [];
   for (const entrega of entregas as Record<string, unknown>[]) {
-    const fecha = typeof entrega?.fecha === 'string' ? entrega.fecha.trim() : '';
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) continue;
-    // Fechas imposibles: 2026-13-01 no es fecha y 2026-02-30 "salta" a marzo.
-    const comoFecha = new Date(`${fecha}T00:00:00Z`);
-    if (Number.isNaN(comoFecha.getTime()) || comoFecha.toISOString().slice(0, 10) !== fecha) continue;
-    if (fecha < hoy) continue;
+    const fecha = fechaValida(entrega?.fecha);
+    if (!fecha || fecha < hoy) continue;
     const titulo = typeof entrega.titulo === 'string' ? entrega.titulo.trim().slice(0, 120) : '';
     if (!titulo) continue;
     if (limpias.some((otra) => otra.fecha === fecha && otra.titulo === titulo)) continue;
@@ -267,4 +338,27 @@ export function limpiarEntregas(
   }
 
   return limpias.sort((a, b) => a.fecha.localeCompare(b.fecha)).slice(0, MAXIMO_ENTREGAS);
+}
+
+// Deberes con texto, sin repetidos. Una fecha que no sea real o que ya haya
+// pasado se descarta (null): el navegador pondrá la próxima clase.
+export function limpiarDeberes(
+  respuesta: unknown,
+  porNombre: Map<string, string>,
+  hoy: string,
+): DeberPropuesto[] {
+  const deberes = (respuesta as { deberes?: unknown })?.deberes;
+  if (!Array.isArray(deberes)) return [];
+
+  const limpios: DeberPropuesto[] = [];
+  for (const deber of deberes as Record<string, unknown>[]) {
+    const titulo = typeof deber?.titulo === 'string' ? deber.titulo.trim().slice(0, 120) : '';
+    if (!titulo) continue;
+    const asignaturaHorarioId =
+      typeof deber.asignatura === 'string' ? (porNombre.get(deber.asignatura) ?? null) : null;
+    if (limpios.some((otro) => otro.titulo === titulo && otro.asignaturaHorarioId === asignaturaHorarioId)) continue;
+    const fecha = fechaValida(deber.fecha);
+    limpios.push({ titulo, fecha: fecha && fecha >= hoy ? fecha : null, asignaturaHorarioId });
+  }
+  return limpios.slice(0, MAXIMO_ENTREGAS);
 }

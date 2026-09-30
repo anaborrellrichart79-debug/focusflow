@@ -7,7 +7,7 @@ import { HorariosService } from '../horarios/horarios.service.js';
 import { IaService } from '../ia/ia.service.js';
 import { PlanesService } from '../planes/planes.service.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
-import { FotosService, limpiarEntregas, limpiarHorario } from './fotos.service.js';
+import { FotosService, limpiarDeberes, limpiarEntregas, limpiarHorario } from './fotos.service.js';
 
 // 30/09/2026 a las 12:00 en Madrid.
 const AHORA = new Date('2026-09-30T10:00:00Z');
@@ -87,6 +87,35 @@ describe('limpieza de lo que lee la IA en la foto', () => {
   });
 });
 
+describe('limpieza de los deberes leídos de la agenda', () => {
+  it('con texto, sin repetidos; la fecha solo si es real y no ha pasado (si no, null)', () => {
+    const deberes = limpiarDeberes(
+      {
+        deberes: [
+          { asignatura: 'Matemáticas', titulo: ' Página 34, ejercicios 1 a 5 ', fecha: '' },
+          { asignatura: 'Matemáticas', titulo: 'Página 34, ejercicios 1 a 5', fecha: '' },
+          { asignatura: 'Valenciano', titulo: 'Llegir el conte', fecha: '2026-10-02' },
+          { asignatura: '', titulo: 'Traer la autorización firmada', fecha: '2026-09-20' },
+          { asignatura: 'Matemáticas', titulo: 'Ficha de repaso', fecha: '2026-02-30' },
+          { asignatura: 'Matemáticas', titulo: '   ', fecha: '' },
+        ],
+      },
+      new Map([
+        ['Matemáticas', 'ah-mates'],
+        ['Valenciano', 'ah-valenciano'],
+      ]),
+      '2026-09-30',
+    );
+
+    expect(deberes).toEqual([
+      { titulo: 'Página 34, ejercicios 1 a 5', fecha: null, asignaturaHorarioId: 'ah-mates' },
+      { titulo: 'Llegir el conte', fecha: '2026-10-02', asignaturaHorarioId: 'ah-valenciano' },
+      { titulo: 'Traer la autorización firmada', fecha: null, asignaturaHorarioId: null },
+      { titulo: 'Ficha de repaso', fecha: null, asignaturaHorarioId: 'ah-mates' },
+    ]);
+  });
+});
+
 describe('FotosService', () => {
   let servicio: FotosService;
   const iaFalsa = { leerImagenJson: vi.fn(), leeImagenes: vi.fn() };
@@ -161,6 +190,20 @@ describe('FotosService', () => {
     expect(instrucciones).toContain('Hoy es 2026-09-30');
     expect(instrucciones).toContain('curso escolar 2026-2027');
     expect(planesFalso.registrarUsoIa).toHaveBeenCalledWith('sofia', 'FOTO_EXAMENES');
+  });
+
+  it('deberes: le dice qué día es hoy, usa las asignaturas del horario y gasta un uso', async () => {
+    iaFalsa.leerImagenJson.mockResolvedValue({
+      deberes: [{ asignatura: 'Matemáticas', titulo: 'Pàgina 34, exercicis 1 a 5', fecha: '' }],
+    });
+
+    const { deberes } = await servicio.proponerDeberes('sofia', FOTO, AHORA);
+
+    expect(deberes).toEqual([{ titulo: 'Pàgina 34, exercicis 1 a 5', fecha: null, asignaturaHorarioId: 'ah-mates' }]);
+    const instrucciones = iaFalsa.leerImagenJson.mock.calls[0][0] as string;
+    expect(instrucciones).toContain('Hoy es miércoles 2026-09-30');
+    expect(instrucciones).toContain('valenciano');
+    expect(planesFalso.registrarUsoIa).toHaveBeenCalledWith('sofia', 'FOTO_DEBERES');
   });
 
   it('sin la IA en su plan no se envía la foto', async () => {
