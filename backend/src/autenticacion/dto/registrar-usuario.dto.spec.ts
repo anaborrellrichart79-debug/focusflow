@@ -1,6 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { describe, expect, it } from 'vitest';
+import { IniciarSesionDto } from './iniciar-sesion.dto.js';
 import { RegistrarUsuarioDto } from './registrar-usuario.dto.js';
 
 async function validarDatos(datos: Record<string, unknown>) {
@@ -49,5 +50,25 @@ describe('RegistrarUsuarioDto', () => {
 
     const errorFecha = errores.find((error) => error.property === 'fechaNacimiento');
     expect(errorFecha).toBeDefined();
+  });
+
+  it('guarda los correos sin espacios y en minúsculas (teclado del móvil)', async () => {
+    const instancia = plainToInstance(RegistrarUsuarioDto, {
+      ...DATOS_BASE,
+      correo: ' Ana.Borrell@Gmail.com ',
+      fechaNacimiento: '2015-01-01T00:00:00.000Z',
+      correoTutor: 'Tutor@Example.com ',
+    });
+
+    expect(await validate(instancia)).toEqual([]);
+    expect(instancia.correo).toBe('ana.borrell@gmail.com');
+    expect(instancia.correoTutor).toBe('tutor@example.com');
+  });
+
+  it('al iniciar sesión, el correo también se normaliza', async () => {
+    const instancia = plainToInstance(IniciarSesionDto, { correo: 'Ana@Example.com ', contrasena: 'x' });
+
+    expect(await validate(instancia)).toEqual([]);
+    expect(instancia.correo).toBe('ana@example.com');
   });
 });
