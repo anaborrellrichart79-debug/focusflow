@@ -1,4 +1,6 @@
-const CACHE_SHELL = 'focusflow-shell-v1';
+// v2: la v1 guardaba también respuestas de la API (en producción está en el
+// mismo origen); al activarse, esta versión borra esa caché.
+const CACHE_SHELL = 'focusflow-shell-v2';
 
 // En desarrollo (main.tsx lo registra con ?modo=desarrollo) solo se usa para
 // Web Push: cachear los módulos que sirve Vite rompería la recarga en caliente.
@@ -22,11 +24,14 @@ self.addEventListener('activate', (evento) => {
 });
 
 // Solo cachea peticiones GET al propio origen (assets/HTML del frontend), nunca a la API del
-// backend (otro origen), para no servir datos de usuario obsoletos ni interferir con la sesión.
+// backend, para no servir datos de usuario obsoletos ni los de otra cuenta. En desarrollo la
+// API está en otro origen, pero en producción está en el mismo, bajo /api/.
 self.addEventListener('fetch', (evento) => {
   if (EN_DESARROLLO) return;
   if (evento.request.method !== 'GET') return;
-  if (new URL(evento.request.url).origin !== self.location.origin) return;
+  const url = new URL(evento.request.url);
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/')) return;
 
   evento.respondWith(
     caches.open(CACHE_SHELL).then(async (cache) => {
