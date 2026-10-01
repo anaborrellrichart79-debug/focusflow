@@ -22,9 +22,12 @@ describe('contenidos de la ayuda', () => {
     }
   });
 
-  it('cada vídeo y su portada existen en public/ayuda', () => {
+  it('cada vídeo y su portada existen en public/media/ayuda, fuera de la ruta de la página /ayuda', () => {
     // Sin importarlos: solo la lista de ficheros que hay en la carpeta.
-    const enDisco = Object.keys(import.meta.glob('/public/ayuda/*.{webm,jpg}')).map((ruta) => ruta.replace('/public', ''));
+    const enDisco = Object.keys(import.meta.glob('/public/media/ayuda/*.{webm,jpg}')).map((ruta) =>
+      ruta.replace('/public', ''),
+    );
+    expect(Object.values(ARCHIVO_VIDEO).every((archivo) => !archivo.startsWith('/ayuda/'))).toBe(true);
     for (const video of Object.keys(ARCHIVO_VIDEO) as IdVideoAyuda[]) {
       expect(enDisco).toContain(ARCHIVO_VIDEO[video]);
       expect(enDisco).toContain(portadaDe(video));

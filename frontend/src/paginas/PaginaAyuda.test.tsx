@@ -14,7 +14,7 @@ describe('PaginaAyuda', () => {
     expect(screen.getByRole('heading', { level: 2, name: /Horario de clase/ })).toBeInTheDocument();
 
     const video = screen.getByLabelText(/Foto de un calendario de exámenes escrito a mano/);
-    expect(video).toHaveAttribute('src', '/ayuda/examenes-foto.webm');
+    expect(video).toHaveAttribute('src', '/media/ayuda/examenes-foto.webm');
   });
 
   it('marca los temas que necesitan el modo escolar', () => {

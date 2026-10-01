@@ -12,18 +12,19 @@ export type { IdTemaAyuda, IdVideoAyuda, TemaAyuda, TextosAyuda } from './tipos'
 export const TEXTOS_AYUDA: Record<CodigoIdioma, TextosAyuda> = { es, va, gl, eu, ca, en };
 
 // Los vídeos (sin sonido, grabados en castellano con cuentas de demostración)
-// están en public/ayuda.
+// están en public/media/ayuda, no en public/ayuda: en el servidor, una carpeta
+// ayuda/ taparía la página /ayuda (nginx respondía 403 al entrar directamente).
 export const ARCHIVO_VIDEO: Record<IdVideoAyuda, string> = {
-  horarioFoto: '/ayuda/horario-foto.webm',
-  examenesFoto: '/ayuda/examenes-foto.webm',
-  deberesFoto: '/ayuda/deberes-foto.webm',
-  planEstudio: '/ayuda/plan-estudio.webm',
-  agenda: '/ayuda/agenda.webm',
-  pomodoroEstadisticas: '/ayuda/pomodoro-estadisticas.webm',
-  familiaPedirRevision: '/ayuda/familia-pedir-revision.webm',
-  familiaRevisar: '/ayuda/familia-revisar.webm',
-  idiomaTema: '/ayuda/idioma-tema.webm',
-  movil: '/ayuda/movil.webm',
+  horarioFoto: '/media/ayuda/horario-foto.webm',
+  examenesFoto: '/media/ayuda/examenes-foto.webm',
+  deberesFoto: '/media/ayuda/deberes-foto.webm',
+  planEstudio: '/media/ayuda/plan-estudio.webm',
+  agenda: '/media/ayuda/agenda.webm',
+  pomodoroEstadisticas: '/media/ayuda/pomodoro-estadisticas.webm',
+  familiaPedirRevision: '/media/ayuda/familia-pedir-revision.webm',
+  familiaRevisar: '/media/ayuda/familia-revisar.webm',
+  idiomaTema: '/media/ayuda/idioma-tema.webm',
+  movil: '/media/ayuda/movil.webm',
 };
 
 // Cada vídeo tiene al lado su portada, con el mismo nombre en .jpg.
