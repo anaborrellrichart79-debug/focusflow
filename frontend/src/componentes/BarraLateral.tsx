@@ -3,6 +3,7 @@ import {
   CalendarClock,
   CalendarDays,
   ChartColumn,
+  CircleHelp,
   ClipboardCheck,
   NotebookPen,
   Tags,
@@ -161,6 +162,10 @@ export function BarraLateral({
         <NavLink to="/ajustes" end onClick={alNavegar} className={claseEnlace}>
           <Settings aria-hidden className="size-4" />
           {intl.formatMessage({ id: 'nav.ajustes' })}
+        </NavLink>
+        <NavLink to="/ayuda" end onClick={alNavegar} className={claseEnlace}>
+          <CircleHelp aria-hidden className="size-4" />
+          {intl.formatMessage({ id: 'nav.ayuda' })}
         </NavLink>
         <div className="flex items-center gap-2 px-3">
           <SelectorTema />

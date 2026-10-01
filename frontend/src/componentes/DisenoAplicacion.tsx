@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { AsistenteBienvenida } from './AsistenteBienvenida';
 import { AvisoVerificarCorreo } from './AvisoVerificarCorreo';
 import { BarraLateral } from './BarraLateral';
+import { BotonAyuda } from './BotonAyuda';
 import { BuscadorGlobal } from './BuscadorGlobal';
 import { CapturaRapida } from './CapturaRapida';
 import { PantallaConsentimientoPendiente } from './PantallaConsentimientoPendiente';
@@ -100,8 +101,9 @@ export function DisenoAplicacion({ children }: { children: ReactNode }) {
         <AvisoVerificarCorreo />
         {children}
       </div>
-      {/* Con el cajón abierto se oculta: si no, tapa Ajustes y Cerrar sesión. */}
+      {/* Con el cajón abierto se ocultan: si no, tapan Ajustes y Cerrar sesión. */}
       {!menuAbierto && <CapturaRapida />}
+      {!menuAbierto && <BotonAyuda />}
       <BuscadorGlobal abierto={buscadorAbierto} alCambiarAbierto={setBuscadorAbierto} />
     </div>
   );

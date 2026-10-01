@@ -32,6 +32,9 @@ self.addEventListener('fetch', (evento) => {
   const url = new URL(evento.request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
+  // Los vídeos de la ayuda tampoco: son grandes y el navegador los pide por
+  // trozos (respuestas 206, que la caché no admite).
+  if (url.pathname.endsWith('.webm')) return;
 
   evento.respondWith(
     caches.open(CACHE_SHELL).then(async (cache) => {

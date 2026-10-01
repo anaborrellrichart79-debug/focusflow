@@ -17,6 +17,7 @@ import { CODIGO_LOCALE_ICU, mensajesPorIdioma } from '@/idiomas';
 import { establecerIdiomaErrores } from '@/servicios/api';
 import { PaginaAgenda } from '@/paginas/PaginaAgenda';
 import { PaginaAjustes } from '@/paginas/PaginaAjustes';
+import { PaginaAyuda } from '@/paginas/PaginaAyuda';
 import { PaginaConfirmarConsentimiento } from '@/paginas/PaginaConfirmarConsentimiento';
 import { PaginaEisenhower } from '@/paginas/PaginaEisenhower';
 import { PaginaEstadisticas } from '@/paginas/PaginaEstadisticas';
@@ -245,6 +246,14 @@ export function Aplicacion() {
               element={
                 <RutaProtegida>
                   <PaginaAjustes />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="/ayuda"
+              element={
+                <RutaProtegida>
+                  <PaginaAyuda />
                 </RutaProtegida>
               }
             />
