@@ -104,8 +104,10 @@ export function PaginaKanban() {
                 {intl.formatMessage({ id: columna.clave })}
               </CardTitle>
             </CardHeader>
+            {/* flex-1 y altura mínima: una columna vacía tiene que seguir
+                siendo una zona donde soltar tareas, no medir 0 px de alto. */}
             <CardContent
-              className="flex flex-col gap-2 rounded-lg transition-colors"
+              className="flex min-h-24 flex-1 flex-col gap-2 rounded-lg transition-colors"
               style={{
                 backgroundColor:
                   columnaSobrevolada === columna.estado

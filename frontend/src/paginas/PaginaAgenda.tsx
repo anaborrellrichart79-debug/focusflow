@@ -104,9 +104,11 @@ export function PaginaAgenda() {
       <span
         className={
           compacta
-            ? // Columnas estrechas: las palabras largas ("Matemáticas") se
-              // cortan con guion en vez de salirse del recuadro de color.
-              'block rounded px-1.5 py-0.5 font-medium hyphens-auto [overflow-wrap:anywhere]'
+            ? // Columnas estrechas: letra algo menor para que quepan las palabras
+              // largas ("Matemàtiques", "Digitalización") enteras; si aun así no
+              // caben, se cortan (con guion donde el navegador sepa ponerlo) en
+              // vez de salirse del recuadro de color.
+              'block rounded px-1 py-0.5 text-[11px] font-medium tracking-tight hyphens-auto [overflow-wrap:anywhere]'
             : 'flex flex-wrap items-baseline gap-x-2 rounded-md px-2 py-1 font-medium'
         }
         style={{ backgroundColor: clase.color, color: colorTextoSobre(clase.color) }}

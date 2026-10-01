@@ -22,7 +22,10 @@ export function SelectorAmbito() {
     <div
       role="group"
       aria-label={intl.formatMessage({ id: 'ambito.selector' })}
-      className="flex w-full rounded-full border border-border bg-background p-0.5 shadow-sm"
+      // Cada botón mide lo que su texto (flex-auto): con anchos iguales, los
+      // textos largos ("Occasional", "Noizbehinkakoa") se salían y se pisaban.
+      // Si no caben en una fila (euskera), pasan a dos.
+      className="flex w-full flex-wrap gap-y-0.5 rounded-2xl border border-border bg-background p-0.5 shadow-sm"
     >
       {OPCIONES_AMBITO.filter((opcion) => modoEscolar || opcion.valor !== 'ESCOLAR').map((opcion) => (
         <Button
@@ -32,7 +35,9 @@ export function SelectorAmbito() {
           variant={ambitoActivo === opcion.valor ? 'default' : 'ghost'}
           aria-pressed={ambitoActivo === opcion.valor}
           onClick={() => despachar(cambiarAmbitoActivo(opcion.valor))}
-          className="h-7 min-w-0 flex-1 rounded-full px-1 text-xs"
+          // px-0.5: el hueco que sobra lo reparte flex-auto; con más relleno,
+          // "Todo Personal Escolar Eventual" ya no cabe en una fila.
+          className="h-7 flex-auto rounded-full px-0.5 text-xs"
         >
           {intl.formatMessage({ id: opcion.clave })}
         </Button>
