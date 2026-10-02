@@ -21,4 +21,4 @@ export interface TextosLegales {
 }
 
 // Fecha de la última versión: se enseña arriba de las dos páginas.
-export const FECHA_TEXTOS_LEGALES = '2026-09-30';
+export const FECHA_TEXTOS_LEGALES = '2026-10-02';

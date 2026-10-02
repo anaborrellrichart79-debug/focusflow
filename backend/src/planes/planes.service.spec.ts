@@ -20,7 +20,7 @@ function usuario(
 describe('PlanesService', () => {
   let servicio: PlanesService;
   const prismaFalso = {
-    usuario: { findUnique: vi.fn() },
+    usuario: { findUnique: vi.fn(), update: vi.fn() },
     usoIa: { count: vi.fn(), create: vi.fn() },
     vinculoFamiliar: { findMany: vi.fn() },
   };
@@ -110,6 +110,71 @@ describe('PlanesService', () => {
       usados: 7,
       limite: 100,
       compartidos: true,
+      cortesia: false,
+      plusHasta: null,
+      bajaAlFinalDelPeriodo: false,
+      pagoPendiente: false,
+      puedeContratar: false,
+      consejosVistos: [],
+      ofertaHasta: null,
+      ofertaCodigo: null,
+    });
+  });
+
+  describe('contratar el Plus y consejos', () => {
+    it('una adulta sin IA puede contratar; un menor no', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue({
+        ...usuario('GRATUITO'),
+        fechaNacimiento: new Date('1990-01-01'),
+        consejosPlusVistos: ['horario'],
+      });
+      expect(await servicio.estadoIa('laura')).toMatchObject({ puedeContratar: true, consejosVistos: ['horario'] });
+
+      prismaFalso.usuario.findUnique.mockResolvedValue({ ...usuario('GRATUITO'), fechaNacimiento: new Date('2016-05-01') });
+      expect(await servicio.estadoIa('sofia')).toMatchObject({ puedeContratar: false });
+    });
+
+    it('con Plus pagado da la renovación y el aviso de cobro pendiente', async () => {
+      const hasta = new Date('2026-11-02');
+      prismaFalso.usuario.findUnique.mockResolvedValue({
+        ...usuario('PAGO'),
+        plusHasta: hasta,
+        estadoSuscripcion: 'past_due',
+        bajaAlFinalDelPeriodo: false,
+      });
+      expect(await servicio.estadoIa('laura')).toMatchObject({
+        puedeContratar: false,
+        plusHasta: hasta,
+        pagoPendiente: true,
+      });
+    });
+
+    it('la oferta solo sale mientras está vigente', async () => {
+      const variables: Record<string, string> = { OFERTA_PLUS_HASTA: '2999-12-31', OFERTA_PLUS_CODIGO: 'LANZAMIENTO' };
+      configFalso.get.mockImplementation((clave: string) => variables[clave]);
+      prismaFalso.usuario.findUnique.mockResolvedValue(usuario('GRATUITO'));
+      expect(await servicio.estadoIa('laura')).toMatchObject({ ofertaHasta: '2999-12-31', ofertaCodigo: 'LANZAMIENTO' });
+
+      configFalso.get.mockImplementation((clave: string) => (clave === 'OFERTA_PLUS_HASTA' ? '2020-01-31' : undefined));
+      expect(await servicio.estadoIa('laura')).toMatchObject({ ofertaHasta: null });
+    });
+
+    it('marca un consejo como visto una sola vez', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue({ consejosPlusVistos: [] });
+      await servicio.marcarConsejoVisto('laura', 'horario');
+      expect(prismaFalso.usuario.update).toHaveBeenCalledWith({
+        where: { id: 'laura' },
+        data: { consejosPlusVistos: { push: 'horario' } },
+      });
+
+      prismaFalso.usuario.update.mockClear();
+      prismaFalso.usuario.findUnique.mockResolvedValue({ consejosPlusVistos: ['horario'] });
+      await servicio.marcarConsejoVisto('laura', 'horario');
+      expect(prismaFalso.usuario.update).not.toHaveBeenCalled();
+    });
+
+    it('un consejo que no existe: 400', async () => {
+      await expect(servicio.marcarConsejoVisto('laura', 'inventado')).rejects.toThrow('Ese consejo no existe');
     });
   });
 

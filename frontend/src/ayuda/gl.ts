@@ -63,6 +63,7 @@ export const gl: TextosAyuda = {
         'Nun exame, preme Plan de estudo ata a data: a IA reparte sesións curtas ata o día do exame, con repaso ao final. Cambia o texto ou desmarca as que non queiras e engádeas: saen na túa Axenda.',
         'Tamén le fotos do horario, do calendario de exames e da axenda (en Horario e no Planificador).',
         'O plan Plus inclúe 100 usos ao mes, compartidos coas contas dos teus fillos se as tes vinculadas. Cantos levas velo en Axustes, en O teu plan.',
+        'Para contratalo (só unha persoa adulta), vai a Axustes → O teu plan, escolle mensual ou anual e preme Pasar a Plus: pagas nunha páxina segura de Stripe. Para darte de baixa, cambiar a tarxeta ou ver as facturas, preme Xestionar subscrición no mesmo sitio.',
       ],
     },
     pomodoro: {

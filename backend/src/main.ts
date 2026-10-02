@@ -3,7 +3,8 @@ import { NestFactory } from '@nestjs/core';
 import { AplicacionModule } from './aplicacion.module.js';
 
 async function arrancar() {
-  const aplicacion = await NestFactory.create(AplicacionModule);
+  // rawBody: el webhook de Stripe comprueba la firma con el cuerpo tal cual llegó.
+  const aplicacion = await NestFactory.create(AplicacionModule, { rawBody: true });
 
   aplicacion.enableCors();
   aplicacion.useGlobalPipes(

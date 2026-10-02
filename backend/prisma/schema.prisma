@@ -63,9 +63,22 @@ model Usuario {
   // los que sugiere la app según lo que se usa.
   perfiles                   PerfilUsuario[]          @default([])
   // Plan contratado: la IA solo está en el de pago (y, a través del vínculo
-  // familiar, para los menores de un adulto que lo tenga). De momento se
-  // cambia a mano; el cobro (Stripe) llegará después.
+  // familiar, para los menores de un adulto que lo tenga). Lo cambia el
+  // webhook de Stripe según el estado de la suscripción (pagos/), salvo en
+  // las cuentas de cortesía, que tienen Plus sin pagar y Stripe no toca.
   plan                       PlanUsuario              @default(GRATUITO)
+  plusCortesia               Boolean                  @default(false)
+  stripeClienteId            String?                  @unique
+  stripeSuscripcionId        String?                  @unique
+  // Estado de la suscripción tal como lo da Stripe (active, past_due,
+  // canceled...), fin del periodo pagado y si se ha dado de baja (sigue con
+  // Plus hasta plusHasta).
+  estadoSuscripcion          String?
+  plusHasta                  DateTime?
+  bajaAlFinalDelPeriodo      Boolean                  @default(false)
+  // Consejos para contratar el Plus que ya ha visto o cerrado (cada uno sale
+  // una sola vez por cuenta, ver planes.service.ts).
+  consejosPlusVistos         String[]                 @default([])
   // Un adulto vinculado (padre, madre, tutor) puede apagar la IA de esta
   // cuenta desde su página Familia, aunque su plan la incluya.
   iaDesactivadaPorFamilia    Boolean                  @default(false)

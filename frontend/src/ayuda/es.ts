@@ -63,6 +63,7 @@ export const es: TextosAyuda = {
         'En un examen, pulsa Plan de estudio hasta la fecha: la IA reparte sesiones cortas hasta el día del examen, con repaso al final. Cambia el texto o desmarca las que no quieras y añádelas: salen en tu Agenda.',
         'También lee fotos del horario, del calendario de exámenes y de la agenda (en Horario y en el Planificador).',
         'El plan Plus incluye 100 usos al mes, compartidos con las cuentas de tus hijos si las tienes vinculadas. Cuántos llevas lo ves en Ajustes, en Tu plan.',
+        'Para contratarlo (solo una persona adulta), ve a Ajustes → Tu plan, elige mensual o anual y pulsa Pasar a Plus: pagas en una página segura de Stripe. Para darte de baja, cambiar la tarjeta o ver las facturas, pulsa Gestionar suscripción en el mismo sitio.',
       ],
     },
     pomodoro: {

@@ -15,7 +15,6 @@ export function AvisoPrecioPlus() {
           anual: formatearPrecio(PRECIO_PLUS_ANUAL_EUROS, intl.locale),
         },
       )}{' '}
-      {intl.formatMessage({ id: 'planes.proximamente' })}{' '}
       <Link to="/planes" className="text-primary hover:underline">
         {intl.formatMessage({ id: 'planes.ver' })}
       </Link>

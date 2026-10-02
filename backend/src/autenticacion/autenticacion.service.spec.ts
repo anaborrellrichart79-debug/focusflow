@@ -5,6 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import bcrypt from 'bcrypt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CorreoService } from '../correo/correo.service.js';
+import { PagosService } from '../pagos/pagos.service.js';
 import type { Usuario } from '../generated/prisma/client.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import { AutenticacionService } from './autenticacion.service.js';
@@ -49,6 +50,7 @@ describe('AutenticacionService', () => {
   const configFalso = {
     get: vi.fn(() => 'http://localhost:5173'),
   };
+  const pagosFalso = { cancelarSuscripcionAlEliminar: vi.fn() };
   const correoServiceFalso = {
     enviarCorreoConfirmacionConsentimiento: vi.fn(),
     enviarCorreoVerificacion: vi.fn(),
@@ -71,6 +73,7 @@ describe('AutenticacionService', () => {
         { provide: JwtService, useValue: jwtServiceFalso },
         { provide: ConfigService, useValue: configFalso },
         { provide: CorreoService, useValue: correoServiceFalso },
+        { provide: PagosService, useValue: pagosFalso },
       ],
     }).compile();
 
@@ -507,6 +510,17 @@ describe('AutenticacionService', () => {
       await servicio.eliminarCuenta('usuario-1', 'Correcta1');
 
       expect(prismaFalso.usuario.delete).toHaveBeenCalled();
+    });
+
+    it('cancela antes la suscripción de Stripe y, si no puede, no borra la cuenta', async () => {
+      prismaFalso.usuario.findUnique.mockResolvedValue(
+        crearUsuarioFalso({ contrasena: await bcrypt.hash('Correcta1', 4) }),
+      );
+      pagosFalso.cancelarSuscripcionAlEliminar.mockRejectedValueOnce(new Error('Stripe caído'));
+
+      await expect(servicio.eliminarCuenta('usuario-1', 'Correcta1')).rejects.toThrow();
+      expect(pagosFalso.cancelarSuscripcionAlEliminar).toHaveBeenCalledWith('usuario-1');
+      expect(prismaFalso.usuario.delete).not.toHaveBeenCalled();
     });
   });
 

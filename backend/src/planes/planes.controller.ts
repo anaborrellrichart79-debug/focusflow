@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Patch, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UsuarioActual } from '../autenticacion/decoradores/usuario-actual.decorator.js';
 import type { UsuarioPeticion } from '../autenticacion/interfaces/carga-util-jwt.interface.js';
@@ -13,5 +13,11 @@ export class PlanesController {
   @Get('ia')
   estadoIa(@UsuarioActual() usuario: UsuarioPeticion) {
     return this.planes.estadoIa(usuario.id);
+  }
+
+  @Patch('consejos/:consejo')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  marcarConsejoVisto(@UsuarioActual() usuario: UsuarioPeticion, @Param('consejo') consejo: string) {
+    return this.planes.marcarConsejoVisto(usuario.id, consejo);
   }
 }

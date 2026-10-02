@@ -1,9 +1,25 @@
-import { ForbiddenException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { calcularEdad } from '../comun/edad.util.js';
 import type { TipoUsoIa } from '../generated/prisma/enums.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 
 const LIMITE_MENSUAL_POR_DEFECTO = 100;
+
+// Consejos para contratar el Plus (ventana al iniciar sesión y avisos en el
+// momento justo). Cada uno se enseña una sola vez por cuenta.
+export const CONSEJOS_PLUS = ['oferta-inicio', 'horario', 'examenes', 'deberes', 'pasos', 'plan-estudio'] as const;
+export type ConsejoPlus = (typeof CONSEJOS_PLUS)[number];
+
+// Oferta de lanzamiento del Plus: vigente hasta OFERTA_PLUS_HASTA (AAAA-MM-DD,
+// incluido). Sin la variable, no hay oferta. Tiene que ser una oferta de
+// verdad y con fecha de fin: anunciar como oferta el precio de siempre sería
+// publicidad engañosa.
+export function ofertaPlusHasta(config: ConfigService, ahora = new Date()): string | null {
+  const hasta = config.get<string>('OFERTA_PLUS_HASTA');
+  if (!hasta || !/^\d{4}-\d{2}-\d{2}$/.test(hasta)) return null;
+  return ahora <= new Date(`${hasta}T23:59:59`) ? hasta : null;
+}
 
 // Qué incluye el plan de cada cuenta. La IA (asistente de tareas y texto de
 // los avisos) solo está en el plan de pago, o para un menor vinculado a un
@@ -83,12 +99,25 @@ export class PlanesService {
   }
 
   async estadoIa(usuarioId: string) {
-    const [usuario, origen, usados, cuentas] = await Promise.all([
+    const [usuario, origen, usados, cuentas, suscripcion] = await Promise.all([
       this.leerUsuario(usuarioId),
       this.origenIa(usuarioId),
       this.usosDelMes(usuarioId),
       this.tamanoBolsa(usuarioId),
+      this.prisma.usuario.findUnique({
+        where: { id: usuarioId },
+        select: {
+          fechaNacimiento: true,
+          plusCortesia: true,
+          estadoSuscripcion: true,
+          plusHasta: true,
+          bajaAlFinalDelPeriodo: true,
+          consejosPlusVistos: true,
+        },
+      }),
     ]);
+    // Sin fecha de nacimiento = cuenta antigua, que se trata como adulta.
+    const adulta = !suscripcion?.fechaNacimiento || calcularEdad(suscripcion.fechaNacimiento) >= 18;
     return {
       incluida: origen !== null,
       origen,
@@ -98,7 +127,35 @@ export class PlanesService {
       limite: this.limiteMensual(),
       // Si los usos se comparten con otras cuentas vinculadas (la bolsa).
       compartidos: cuentas > 1,
+      // Suscripción de Stripe (solo con Plus propio pagado).
+      cortesia: suscripcion?.plusCortesia ?? false,
+      plusHasta: suscripcion?.plusHasta ?? null,
+      bajaAlFinalDelPeriodo: suscripcion?.bajaAlFinalDelPeriodo ?? false,
+      pagoPendiente: suscripcion?.estadoSuscripcion === 'past_due',
+      // Puede pagar: adulta y sin IA por ningún lado. A los menores no se les
+      // ofrece (no pueden pagar) ni se les enseñan los consejos de venta.
+      puedeContratar: adulta && origen === null && !usuario?.iaDesactivadaPorFamilia,
+      consejosVistos: suscripcion?.consejosPlusVistos ?? [],
+      ofertaHasta: ofertaPlusHasta(this.config),
+      // El código de promoción de la oferta (creado en Stripe), para decirlo.
+      ofertaCodigo: ofertaPlusHasta(this.config) ? (this.config.get<string>('OFERTA_PLUS_CODIGO') ?? null) : null,
     };
+  }
+
+  // El consejo ya se ha enseñado (o lo han cerrado): no vuelve a salir.
+  async marcarConsejoVisto(usuarioId: string, consejo: string) {
+    if (!(CONSEJOS_PLUS as readonly string[]).includes(consejo)) {
+      throw new BadRequestException('Ese consejo no existe');
+    }
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: usuarioId },
+      select: { consejosPlusVistos: true },
+    });
+    if (!usuario || usuario.consejosPlusVistos.includes(consejo)) return;
+    await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { consejosPlusVistos: { push: consejo } },
+    });
   }
 
   // Antes de pedir nada a la IA desde el asistente: sin plan, 403; con el

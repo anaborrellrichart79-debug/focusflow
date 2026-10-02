@@ -13,6 +13,7 @@ import { calcularEdad } from '../comun/edad.util.js';
 import { CorreoService } from '../correo/correo.service.js';
 import type { Usuario } from '../generated/prisma/client.js';
 import type { PerfilUsuario } from '../generated/prisma/enums.js';
+import { PagosService } from '../pagos/pagos.service.js';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import type { IniciarSesionDto } from './dto/iniciar-sesion.dto.js';
 import type { RegistrarUsuarioDto } from './dto/registrar-usuario.dto.js';
@@ -29,6 +30,7 @@ export class AutenticacionService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly correoService: CorreoService,
+    private readonly pagos: PagosService,
   ) {}
 
   async registrar(datos: RegistrarUsuarioDto) {
@@ -218,6 +220,9 @@ export class AutenticacionService {
     if (!(await bcrypt.compare(contrasena, usuario.contrasena))) {
       throw new BadRequestException('La contraseña no es correcta');
     }
+
+    // Primero la suscripción: si no se puede cancelar, no se borra la cuenta.
+    await this.pagos.cancelarSuscripcionAlEliminar(usuarioId);
 
     const tokenGoogle = usuario.googleRefreshToken ?? usuario.googleAccessToken;
     if (tokenGoogle) await revocarPermisoGoogle(tokenGoogle);

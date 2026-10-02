@@ -12,6 +12,7 @@ import { ErrorApi } from '@/servicios/api';
 import { leerDeberesDeFoto, type DeberLeido } from '@/servicios/fotos';
 import { fechaDeHoy, proximaClase, type PeriodoSinClase } from '@/utilidades/deberes';
 import { reducirFoto } from '@/utilidades/reducirFoto';
+import { ConsejoPlus } from '../ConsejoPlus';
 import { useEstadoIa } from '../useEstadoIa';
 import { ElegirFoto } from './ElegirFoto';
 
@@ -101,6 +102,7 @@ export function LectorFotoDeberes({ sinClase }: { sinClase: PeriodoSinClase[] })
       <CardContent className="flex flex-col gap-3 text-sm">
         {!estadoIa.incluida ? (
           <>
+            <ConsejoPlus consejo="deberes" estadoIa={estadoIa} />
             <p className="text-muted-foreground">
               {intl.formatMessage({ id: estadoIa.desactivadaPorFamilia ? 'ia.desactivadaFamilia' : 'fotos.soloPlus' })}
             </p>

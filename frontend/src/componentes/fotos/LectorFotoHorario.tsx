@@ -11,6 +11,7 @@ import { leerHorarioDeFoto, type FranjaLeida } from '@/servicios/fotos';
 import type { Horario } from '@/servicios/horarios';
 import { DIAS_LECTIVOS, nombreDia } from '@/utilidades/horario';
 import { reducirFoto } from '@/utilidades/reducirFoto';
+import { ConsejoPlus } from '../ConsejoPlus';
 import { useEstadoIa } from '../useEstadoIa';
 import { ElegirFoto } from './ElegirFoto';
 
@@ -83,6 +84,7 @@ export function LectorFotoHorario({ horario }: { horario: Horario }) {
       <CardContent className="flex flex-col gap-3 text-sm">
         {!estadoIa.incluida ? (
           <>
+            <ConsejoPlus consejo="horario" estadoIa={estadoIa} />
             <p className="text-muted-foreground">
               {intl.formatMessage({ id: estadoIa.desactivadaPorFamilia ? 'ia.desactivadaFamilia' : 'fotos.soloPlus' })}
             </p>

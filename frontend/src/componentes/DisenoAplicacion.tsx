@@ -11,6 +11,7 @@ import { BarraLateral } from './BarraLateral';
 import { BotonAyuda } from './BotonAyuda';
 import { BuscadorGlobal } from './BuscadorGlobal';
 import { CapturaRapida } from './CapturaRapida';
+import { OfertaPlus } from './OfertaPlus';
 import { PantallaConsentimientoPendiente } from './PantallaConsentimientoPendiente';
 
 // Marco común de todas las páginas con sesión iniciada: barra lateral fija en
@@ -105,6 +106,7 @@ export function DisenoAplicacion({ children }: { children: ReactNode }) {
       {!menuAbierto && <CapturaRapida />}
       {!menuAbierto && <BotonAyuda />}
       <BuscadorGlobal abierto={buscadorAbierto} alCambiarAbierto={setBuscadorAbierto} />
+      <OfertaPlus />
     </div>
   );
 }

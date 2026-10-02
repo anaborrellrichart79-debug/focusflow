@@ -13,6 +13,7 @@ import { leerEntregasDeFoto, type EntregaLeida } from '@/servicios/fotos';
 import type { TipoEscolar } from '@/servicios/tareas';
 import { OPCIONES_ENTREGAS } from '@/utilidades/planificador';
 import { reducirFoto } from '@/utilidades/reducirFoto';
+import { ConsejoPlus } from '../ConsejoPlus';
 import { useEstadoIa } from '../useEstadoIa';
 import { ElegirFoto } from './ElegirFoto';
 
@@ -91,6 +92,7 @@ export function LectorFotoEntregas() {
       <CardContent className="flex flex-col gap-3 text-sm">
         {!estadoIa.incluida ? (
           <>
+            <ConsejoPlus consejo="examenes" estadoIa={estadoIa} />
             <p className="text-muted-foreground">
               {intl.formatMessage({ id: estadoIa.desactivadaPorFamilia ? 'ia.desactivadaFamilia' : 'fotos.soloPlus' })}
             </p>

@@ -1,9 +1,12 @@
 import { Check, Sparkles } from 'lucide-react';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router-dom';
+import { usarSelector } from '@/almacen/hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BotonesContratarPlus } from '@/componentes/BotonesContratarPlus';
 import { EnlacesLegales } from '@/componentes/EnlacesLegales';
 import { SelectorIdioma } from '@/componentes/SelectorIdioma';
+import { useEstadoIa } from '@/componentes/useEstadoIa';
 import { formatearPrecio, LIMITE_USOS_PLUS, PRECIO_PLUS_ANUAL_EUROS, PRECIO_PLUS_EUROS } from '@/utilidades/planes';
 
 const PUNTOS_PAGO = [
@@ -21,6 +24,8 @@ const PUNTOS_PAGO = [
 export function PaginaPlanes() {
   const intl = useIntl();
   const precio = (euros: number) => formatearPrecio(euros, intl.locale);
+  const conSesion = usarSelector((estado) => Boolean(estado.sesion.usuario));
+  const estadoIa = useEstadoIa();
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-10">
@@ -87,7 +92,42 @@ export function PaginaPlanes() {
               </li>
             ))}
           </ul>
-          <p className="font-medium">{intl.formatMessage({ id: 'planes.proximamente' })}</p>
+          {!conSesion ? (
+            <p className="font-medium">
+              {intl.formatMessage(
+                { id: 'planes.contratarSinSesion' },
+                {
+                  registro: (texto) => (
+                    <Link to="/registro" className="text-primary hover:underline">
+                      {texto}
+                    </Link>
+                  ),
+                  login: (texto) => (
+                    <Link to="/login" className="text-primary hover:underline">
+                      {texto}
+                    </Link>
+                  ),
+                },
+              )}
+            </p>
+          ) : estadoIa?.origen ? (
+            <p className="font-medium">
+              {intl.formatMessage(
+                { id: 'planes.yaTienesPlus' },
+                {
+                  ajustes: (texto) => (
+                    <Link to="/ajustes" className="text-primary hover:underline">
+                      {texto}
+                    </Link>
+                  ),
+                },
+              )}
+            </p>
+          ) : estadoIa?.puedeContratar ? (
+            <BotonesContratarPlus />
+          ) : (
+            estadoIa && <p className="font-medium">{intl.formatMessage({ id: 'pagos.pideloAFamilia' })}</p>
+          )}
           <p className="text-muted-foreground">
             {intl.formatMessage(
               { id: 'planes.verCondiciones' },

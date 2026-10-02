@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { AvisoPrecioPlus } from '@/componentes/AvisoPrecioPlus';
+import { ConsejoPlus } from '@/componentes/ConsejoPlus';
 import { ErrorApi } from '@/servicios/api';
 import { proponerPlanEstudio, proponerSubtareas } from '@/servicios/asistente';
 import { obtenerEstadoIa, type EstadoIa } from '@/servicios/planes';
@@ -125,6 +126,7 @@ export function AsistenteIa({ tarea }: { tarea: Tarea }) {
   if (!estadoIa.incluida) {
     return (
       <div className="flex flex-col gap-1.5 rounded-md border border-dashed border-border p-3 text-sm">
+        <ConsejoPlus consejo={tarea.tipoEscolar === 'EXAMEN' ? 'plan-estudio' : 'pasos'} estadoIa={estadoIa} />
         <span className="flex items-center gap-1.5 font-medium">
           <Sparkles aria-hidden className="size-4 text-primary" />
           {intl.formatMessage({ id: 'ia.plus.titulo' })}

@@ -63,6 +63,7 @@ export const en: TextosAyuda = {
         'On an exam, click Study plan up to the due date: the AI spreads short sessions up to the exam day, with revision at the end. Edit the text or untick the ones you don’t want and add them: they appear in your Agenda.',
         'It also reads photos of your timetable, exam calendar and planner (in Class timetable and School planner).',
         'The Plus plan includes 100 uses a month, shared with your children’s accounts if you’ve linked them. You can see how many you’ve used in Settings, under Your plan.',
+        'To get it (adults only), go to Settings → Your plan, choose monthly or yearly and press Upgrade to Plus: you pay on a secure Stripe page. To cancel, change your card or see your invoices, press Manage subscription in the same place.',
       ],
     },
     pomodoro: {

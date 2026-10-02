@@ -63,6 +63,7 @@ export const eu: TextosAyuda = {
         'Azterketa batean, sakatu Ikasketa-plana datara arte: AAk saio laburrak banatzen ditu azterketa-egunera arte, amaieran errepasoarekin. Aldatu testua edo desmarkatu nahi ez dituzunak eta gehitu: zure Agendan agertzen dira.',
         'Ordutegiaren, azterketa-egutegiaren eta agendaren argazkiak ere irakurtzen ditu (Ordutegian eta Planifikatzailean).',
         'Plus planak hilean 100 erabilera ditu, zure seme-alaben kontuekin partekatuak lotuta badituzu. Zenbat daramatzazun Ezarpenak atalean ikusten duzu, Zure plana txartelean.',
+        'Kontratatzeko (pertsona heldu batek bakarrik), joan Ezarpenak → Zure plana atalera, aukeratu hilekoa edo urtekoa eta sakatu Plus-era pasatu: Stripe-ren orri seguru batean ordaintzen duzu. Baja emateko, txartela aldatzeko edo fakturak ikusteko, sakatu Kudeatu harpidetza leku berean.',
       ],
     },
     pomodoro: {

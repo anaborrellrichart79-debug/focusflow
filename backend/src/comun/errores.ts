@@ -73,6 +73,16 @@ export const MENSAJES_ERROR = {
   IA_RESPUESTA_NO_VALIDA: 'La IA no ha dado una propuesta válida, inténtalo de nuevo',
   TAREA_SIN_FECHA_LIMITE: 'Ponle una fecha límite a la tarea para poder planificar el estudio',
   PLAN_SIN_DIAS: 'No quedan días para estudiar antes de la fecha límite',
+  CONSEJO_NO_VALIDO: 'Ese consejo no existe',
+
+  // Pagos (Stripe)
+  PAGOS_NO_CONFIGURADOS: 'Los pagos no están configurados en el servidor',
+  SOLO_ADULTOS_PUEDEN_PAGAR: 'Solo una persona adulta puede contratar el plan Plus',
+  VERIFICA_CORREO_PARA_PAGAR: 'Verifica tu correo antes de contratar el plan Plus',
+  YA_TIENE_PLUS: 'Ya tienes el plan Plus',
+  SIN_SUSCRIPCION: 'No tienes ninguna suscripción',
+  FIRMA_WEBHOOK_NO_VALIDA: 'La firma del aviso de Stripe no es válida',
+  NO_SE_PUDO_CANCELAR_SUSCRIPCION: 'No se ha podido cancelar tu suscripción; inténtalo de nuevo o escríbenos',
 
   // Google Calendar
   GOOGLE_NO_CONFIGURADO: 'La sincronización con Google Calendar no está configurada en el servidor',

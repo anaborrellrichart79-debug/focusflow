@@ -63,6 +63,7 @@ export const va: TextosAyuda = {
         'En un examen, prem Pla d’estudi fins a la data: la IA repartix sessions curtes fins al dia de l’examen, amb repàs al final. Canvia el text o desmarca les que no vulgues i afig-les: ixen en la teua Agenda.',
         'També llig fotos de l’horari, del calendari d’exàmens i de l’agenda (a Horari i al Planificador).',
         'El pla Plus inclou 100 usos al mes, compartits amb els comptes dels teus fills si els tens vinculats. Quants en portes ho veus a Configuració, en El teu pla.',
+        'Per a contractar-lo (només una persona adulta), ves a Configuració → El teu pla, tria mensual o anual i prem Passar a Plus: pagues en una pàgina segura d’Stripe. Per a donar-te de baixa, canviar la targeta o veure les factures, prem Gestionar subscripció en el mateix lloc.',
       ],
     },
     pomodoro: {
