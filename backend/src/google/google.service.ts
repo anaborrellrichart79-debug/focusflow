@@ -244,6 +244,13 @@ export class GoogleService {
       include: { eventoGoogle: true },
     });
 
+    // Al desconectar se olvida qué tarea va con qué evento, pero los eventos
+    // siguen en Google. Al volver a conectar, antes de crear un evento nuevo
+    // para una tarea se busca uno con el mismo título el mismo día y se
+    // vuelve a enlazar: si no, la tarea y el evento salían dos veces (pasó el
+    // 03/10/2026 al reconectar).
+    const huerfanos = await this.eventosParaReenlazar(calendar, usuarioId, tareas);
+
     for (const tarea of tareas) {
       try {
         // Una tarea archivada tampoco debe seguir ocupando el calendario.
@@ -275,6 +282,16 @@ export class GoogleService {
           await this.marcarSincronizado(tarea.eventoGoogle.id);
           actualizados += 1;
         } else {
+          const gemelo = huerfanos.find(
+            (evento) => evento.titulo === tarea.titulo && mismoDia(evento.inicio, tarea.fechaLimite!),
+          );
+          if (gemelo) {
+            huerfanos.splice(huerfanos.indexOf(gemelo), 1);
+            await this.prisma.eventoCalendarioGoogle.create({
+              data: { usuarioId, googleEventId: gemelo.id, tareaId: tarea.id },
+            });
+            continue;
+          }
           const respuesta = await calendar.events.insert({
             calendarId: 'primary',
             requestBody: recurso,
@@ -421,6 +438,39 @@ export class GoogleService {
     await this.prisma.eventoCalendarioGoogle.update({
       where: { id: eventoId },
       data: { actualizadoEn: new Date() },
+    });
+  }
+
+  // Eventos de Google (del último mes al próximo) que no están enlazados con
+  // nada, para volver a enlazarlos con su tarea. Solo se pregunta a Google
+  // si hay alguna tarea pendiente sin evento.
+  private async eventosParaReenlazar(
+    calendar: calendar_v3.Calendar,
+    usuarioId: string,
+    tareas: { estado: string; eventoGoogle: unknown }[],
+  ) {
+    const sinEvento = tareas.some(
+      (tarea) => !tarea.eventoGoogle && tarea.estado !== 'HECHA' && tarea.estado !== 'ARCHIVADA',
+    );
+    if (!sinEvento) return [];
+
+    const conocidos = await this.prisma.eventoCalendarioGoogle.findMany({
+      where: { usuarioId },
+      select: { googleEventId: true },
+    });
+    const idsConocidos = new Set(conocidos.map((evento) => evento.googleEventId));
+    const ahora = Date.now();
+    const listado = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: new Date(ahora - DIAS_VENTANA_IMPORTACION * 86_400_000).toISOString(),
+      timeMax: new Date(ahora + DIAS_VENTANA_IMPORTACION * 86_400_000).toISOString(),
+      singleEvents: true,
+    });
+    return (listado.data.items ?? []).flatMap((evento) => {
+      const inicio = evento.start?.dateTime ?? evento.start?.date;
+      if (!evento.id || !evento.summary || !inicio || evento.status === 'cancelled') return [];
+      if (evento.recurringEventId || idsConocidos.has(evento.id)) return [];
+      return [{ id: evento.id, titulo: evento.summary, inicio: new Date(inicio) }];
     });
   }
 

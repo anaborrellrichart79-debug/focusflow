@@ -324,6 +324,44 @@ describe('GoogleService', () => {
       await expect(servicio.sincronizar('usuario-1')).rejects.toThrow(BadRequestException);
     });
 
+    it('al reconectar, vuelve a enlazar la tarea con su evento de antes en vez de duplicarlo', async () => {
+      prismaFalso.tarea.findMany.mockResolvedValue([
+        {
+          id: 'tarea-1',
+          titulo: 'Pasar a Pepe al Plus',
+          descripcion: null,
+          estado: 'POR_HACER',
+          fechaLimite: new Date('2026-10-26T00:00:00.000Z'),
+          eventoGoogle: null,
+        },
+      ]);
+      calendarFalso.events.list.mockResolvedValueOnce({
+        data: {
+          items: [
+            { id: 'evento-de-antes', summary: 'Pasar a Pepe al Plus', status: 'confirmed', start: { dateTime: '2026-10-26T10:00:00+01:00' } },
+            { id: 'otro', summary: 'Otra cosa', status: 'confirmed', start: { date: '2026-10-26' } },
+          ],
+        },
+      });
+
+      const resumen = await servicio.sincronizar('usuario-1');
+
+      expect(calendarFalso.events.insert).not.toHaveBeenCalled();
+      expect(prismaFalso.eventoCalendarioGoogle.create).toHaveBeenCalledWith({
+        data: { usuarioId: 'usuario-1', googleEventId: 'evento-de-antes', tareaId: 'tarea-1' },
+      });
+      expect(resumen.creados).toBe(0);
+    });
+
+    it('no pregunta a Google por eventos que reenlazar si todas las tareas ya tienen el suyo', async () => {
+      prismaFalso.tarea.findMany.mockResolvedValue([]);
+
+      await servicio.sincronizar('usuario-1');
+
+      // Solo la lista de la importación.
+      expect(calendarFalso.events.list).toHaveBeenCalledTimes(1);
+    });
+
     it('crea un evento nuevo en Google para una tarea con fecha límite sin evento aún', async () => {
       prismaFalso.tarea.findMany.mockResolvedValue([
         {
