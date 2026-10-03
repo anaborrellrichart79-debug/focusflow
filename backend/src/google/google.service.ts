@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { google } from 'googleapis';
 import type { Auth, calendar_v3 } from 'googleapis';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
+import { revocarPermisoGoogle } from './revocar-permiso.js';
 
 const AMBITO_CALENDARIO = 'https://www.googleapis.com/auth/calendar.events';
 // Classroom, solo lectura: los cursos del alumno y sus trabajos y entregas.
@@ -172,6 +173,13 @@ export class GoogleService {
   }
 
   async desconectar(usuarioId: string) {
+    const { googleRefreshToken } = await this.prisma.usuario.findUniqueOrThrow({
+      where: { id: usuarioId },
+      select: { googleRefreshToken: true },
+    });
+    // Sin esto el permiso seguía concedido en Google: al volver a conectar,
+    // Google ya no enseñaba la lista de permisos.
+    if (googleRefreshToken) await revocarPermisoGoogle(googleRefreshToken);
     await this.prisma.usuario.update({
       where: { id: usuarioId },
       data: {
@@ -350,6 +358,13 @@ export class GoogleService {
                 ),
               )
             : undefined;
+
+        // Un evento que creó FocusFlow (lleva su marca) pero que no está entre
+        // los conocidos es de una conexión anterior (al desconectar se olvida
+        // el enlace, pero el evento sigue en Google): traerlo como tarea
+        // duplicaba las que ya hay (lo que pasó el 03/10/2026 al reconectar).
+        const deFocusFlow = evento.extendedProperties?.private?.focusflow === 'true';
+        if (deFocusFlow && !mapaConocidos.has(evento.id)) continue;
 
         if (mapaConocidos.has(evento.id)) {
           const tareaId = mapaConocidos.get(evento.id);

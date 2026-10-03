@@ -2,7 +2,7 @@ import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServicioPrisma } from '../prisma/prisma.service.js';
 import { AMBITOS_CLASSROOM, GoogleService } from './google.service.js';
 
@@ -266,7 +266,34 @@ describe('GoogleService', () => {
   });
 
   describe('desconectar', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('retira el permiso en Google antes de borrar las claves', async () => {
+      const fetchFalso = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', fetchFalso);
+
+      await servicio.desconectar('usuario-1');
+
+      expect(fetchFalso).toHaveBeenCalledWith(
+        'https://oauth2.googleapis.com/revoke',
+        expect.objectContaining({ method: 'POST', body: new URLSearchParams({ token: 'refresh-falso' }) }),
+      );
+    });
+
+    it('si Google no responde, desconecta igual', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sin red')));
+
+      await servicio.desconectar('usuario-1');
+
+      expect(prismaFalso.usuario.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ googleRefreshToken: null }) }),
+      );
+    });
+
     it('borra los tokens del usuario y todos sus eventos sincronizados', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));
       await servicio.desconectar('usuario-1');
 
       expect(prismaFalso.usuario.update).toHaveBeenCalledWith({
@@ -610,6 +637,32 @@ describe('GoogleService', () => {
             { id: 'diario_20261001', recurringEventId: 'diario', summary: 'Diario', status: 'confirmed', start: { date: '2026-10-01' } },
             { id: 'diario_20261002', recurringEventId: 'diario', summary: 'Diario', status: 'confirmed', start: { date: '2026-10-02' } },
             { id: 'dentista', summary: 'Cita del dentista', status: 'confirmed', start: { date: '2026-10-03' } },
+          ],
+        },
+      });
+      prismaFalso.tarea.create.mockResolvedValue({ id: 'tarea-importada-1' });
+
+      const resumen = await servicio.sincronizar('usuario-1');
+
+      expect(prismaFalso.tarea.create).toHaveBeenCalledTimes(1);
+      expect(prismaFalso.tarea.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ titulo: 'Cita del dentista' }),
+      });
+      expect(resumen.importados).toBe(1);
+    });
+
+    it('no importa los eventos que creó FocusFlow en una conexión anterior (duplicaban las tareas)', async () => {
+      calendarFalso.events.list.mockResolvedValue({
+        data: {
+          items: [
+            {
+              id: 'de-una-conexion-anterior',
+              summary: 'Revisión semana 2',
+              status: 'confirmed',
+              start: { date: '2026-10-04' },
+              extendedProperties: { private: { focusflow: 'true' } },
+            },
+            { id: 'dentista', summary: 'Cita del dentista', status: 'confirmed', start: { date: '2026-10-05' } },
           ],
         },
       });

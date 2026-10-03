@@ -11,6 +11,7 @@ import bcrypt from 'bcrypt';
 import { comoIdioma, type Idioma } from '../comun/idiomas.js';
 import { calcularEdad } from '../comun/edad.util.js';
 import { CorreoService } from '../correo/correo.service.js';
+import { revocarPermisoGoogle } from '../google/revocar-permiso.js';
 import type { Usuario } from '../generated/prisma/client.js';
 import type { PerfilUsuario } from '../generated/prisma/enums.js';
 import { PagosService } from '../pagos/pagos.service.js';
@@ -333,17 +334,4 @@ export class AutenticacionService {
 
 function reenviadoHacePoco(fecha: Date | null) {
   return fecha !== null && Date.now() - fecha.getTime() < MINUTOS_ENTRE_REENVIOS * 60_000;
-}
-
-async function revocarPermisoGoogle(token: string) {
-  try {
-    await fetch('https://oauth2.googleapis.com/revoke', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ token }),
-      signal: AbortSignal.timeout(5000),
-    });
-  } catch {
-    console.warn('No se pudo retirar el permiso de Google al eliminar una cuenta');
-  }
 }
