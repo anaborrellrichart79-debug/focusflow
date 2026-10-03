@@ -7,3 +7,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+// Identificador de la compilación (vite.config.ts).
+declare const __VERSION_APP__: string;

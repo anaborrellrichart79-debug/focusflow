@@ -10,6 +10,7 @@ import { cargarHorarios } from '@/almacen/horarioSlice';
 import { cargarCalendarioEscolar } from '@/almacen/recordatoriosSlice';
 import { restaurarSesion } from '@/almacen/sesionSlice';
 import { adoptarIdiomaDeCuenta, idiomaElegidoEnDispositivo } from '@/almacen/interfazSlice';
+import { AvisoVersionNueva } from '@/componentes/AvisoVersionNueva';
 import { DisenoAplicacion } from '@/componentes/DisenoAplicacion';
 import { RutaProtegida } from '@/componentes/RutaProtegida';
 import { VigilanteAvisos } from '@/componentes/VigilanteAvisos';
@@ -112,6 +113,7 @@ export function Aplicacion() {
   return (
     <IntlProvider locale={CODIGO_LOCALE_ICU[idiomaActual]} messages={mensajesPorIdioma[idiomaActual]}>
       <BrowserRouter>
+        <AvisoVersionNueva />
         {/* Un menor sin consentimiento confirmado recibe 403 de la API. */}
         {usuario?.consentimientoConfirmado && <VigilanteAvisos />}
         {restaurandoSesion ? null : (

@@ -35,7 +35,28 @@ self.addEventListener('fetch', (evento) => {
   // Los vídeos de la ayuda tampoco: son grandes y el navegador los pide por
   // trozos (respuestas 206, que la caché no admite).
   if (url.pathname.endsWith('.webm')) return;
+  // La versión publicada siempre se pregunta a la red (AvisoVersionNueva).
+  if (url.pathname === '/version.json') return;
 
+  // La página (index.html), primero de la red: así una versión recién
+  // publicada sale al abrir la app y no a la segunda vez. Sin conexión, la
+  // guardada (o la de la portada, que es la misma app).
+  if (evento.request.mode === 'navigate') {
+    evento.respondWith(
+      caches.open(CACHE_SHELL).then((cache) =>
+        fetch(evento.request)
+          .then((respuesta) => {
+            if (respuesta.ok) cache.put(evento.request, respuesta.clone());
+            return respuesta;
+          })
+          .catch(async () => (await cache.match(evento.request)) ?? (await cache.match('/')) ?? Response.error()),
+      ),
+    );
+    return;
+  }
+
+  // El resto (JS, CSS, imágenes: llevan un hash en el nombre, no cambian),
+  // primero de la caché.
   evento.respondWith(
     caches.open(CACHE_SHELL).then(async (cache) => {
       const enCache = await cache.match(evento.request);

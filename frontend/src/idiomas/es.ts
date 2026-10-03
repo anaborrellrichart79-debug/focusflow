@@ -1,6 +1,8 @@
 export const es = {
   'app.titulo': 'FocusFlow',
   'app.eslogan': 'Organiza tus objetivos, enfoca tu tiempo.',
+  'actualizacion.texto': 'Hay una versión nueva de FocusFlow.',
+  'actualizacion.boton': 'Actualizar',
   'bienvenida.mensaje': '¡Bienvenido a FocusFlow!',
   'selector.idioma.etiqueta': 'Idioma',
   'auth.registro.titulo': 'Crear cuenta',

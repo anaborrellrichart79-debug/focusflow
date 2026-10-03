@@ -1,6 +1,8 @@
 export const eu = {
   'app.titulo': 'FocusFlow',
   'app.eslogan': 'Antolatu zure helburuak, fokuratu zure denbora.',
+  'actualizacion.texto': 'FocusFlow-en bertsio berri bat dago.',
+  'actualizacion.boton': 'Eguneratu',
   'bienvenida.mensaje': 'Ongi etorri FocusFlow-ra!',
   'selector.idioma.etiqueta': 'Hizkuntza',
   'auth.registro.titulo': 'Kontua sortu',
