@@ -98,7 +98,10 @@ export class GoogleService {
       // usuario ya había autorizado la app antes (si no, en reconexiones
       // Google solo manda el access_token, y sin refresh_token no se puede
       // renovar la sesión sola).
-      prompt: 'consent',
+      // select_account: Google pregunta siempre con qué cuenta conectar, en vez
+      // de coger sin decir nada la que tenga abierta el navegador (en un
+      // ordenador compartido, la de otra persona).
+      prompt: 'consent select_account',
       scope: conClassroom ? [AMBITO_CALENDARIO, ...AMBITOS_CLASSROOM] : [AMBITO_CALENDARIO],
       include_granted_scopes: true,
       state: estado,
@@ -116,6 +119,7 @@ export class GoogleService {
 
     const cliente = this.crearClienteOAuth();
     const { tokens } = await cliente.getToken(code);
+    cliente.setCredentials(tokens);
 
     await this.prisma.usuario.update({
       where: { id: usuarioId },
@@ -124,20 +128,44 @@ export class GoogleService {
         googleRefreshToken: tokens.refresh_token ?? undefined,
         googleTokenExpiraEn: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined,
         googleAmbitos: tokens.scope ?? undefined,
+        // null y no undefined: si no se puede leer, que no quede el de una
+        // cuenta conectada antes.
+        googleCorreo: await this.leerCorreoGoogle(cliente),
       },
     });
 
     return { usuarioId };
   }
 
+  // El calendario principal de una cuenta de Google se llama como su correo:
+  // así se sabe qué cuenta es sin pedir más permisos que los de Calendar.
+  private async leerCorreoGoogle(auth: Auth.OAuth2Client) {
+    try {
+      const { data } = await google
+        .calendar({ version: 'v3', auth })
+        .events.list({ calendarId: 'primary', maxResults: 1, fields: 'summary' });
+      return data.summary?.includes('@') ? data.summary : null;
+    } catch {
+      return null;
+    }
+  }
+
   async obtenerEstado(usuarioId: string) {
     const usuario = await this.prisma.usuario.findUniqueOrThrow({
       where: { id: usuarioId },
-      select: { googleRefreshToken: true, googleUltimaSincronizacion: true, googleAmbitos: true },
+      select: { googleRefreshToken: true, googleUltimaSincronizacion: true, googleAmbitos: true, googleCorreo: true },
     });
+
+    // Conexiones de antes de guardar el correo: se averigua la primera vez.
+    let correo = usuario.googleCorreo ?? null;
+    if (usuario.googleRefreshToken && !correo) {
+      correo = await this.leerCorreoGoogle(await this.obtenerClienteAutenticado(usuarioId));
+      if (correo) await this.prisma.usuario.update({ where: { id: usuarioId }, data: { googleCorreo: correo } });
+    }
 
     return {
       conectado: Boolean(usuario.googleRefreshToken),
+      correo,
       ultimaSincronizacion: usuario.googleUltimaSincronizacion,
       classroom: Boolean(usuario.googleRefreshToken) && tieneAmbitosClassroom(usuario.googleAmbitos),
     };
@@ -152,6 +180,7 @@ export class GoogleService {
         googleTokenExpiraEn: null,
         googleUltimaSincronizacion: null,
         googleAmbitos: null,
+        googleCorreo: null,
       },
     });
     // Los trabajos de Classroom ya importados se recuerdan: al volver a

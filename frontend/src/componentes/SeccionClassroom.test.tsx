@@ -10,6 +10,7 @@ function renderizar(classroom: boolean, conectado = true) {
       sesion: SESION_AUTENTICADA,
       google: {
         conectado,
+        correo: null,
         classroom,
         ultimaSincronizacion: null,
         sincronizando: false,

@@ -18,6 +18,7 @@ describe('PaginaAjustes', () => {
         sesion: SESION_AUTENTICADA,
         google: {
           conectado: true,
+          correo: null,
           classroom: false,
           ultimaSincronizacion: '2026-09-21T18:00:00.000Z',
           sincronizando: false,
@@ -32,6 +33,27 @@ describe('PaginaAjustes', () => {
     expect(screen.getByRole('button', { name: 'Sincronizar ahora' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Desconectar' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Conectar con Google' })).not.toBeInTheDocument();
+  });
+
+  it('con cuenta conectada, dice con qué cuenta de Google se sincroniza', () => {
+    renderizarPagina(<PaginaAjustes />, {
+      estadoPrecargado: {
+        sesion: SESION_AUTENTICADA,
+        google: {
+          conectado: true,
+          correo: 'ana@gmail.com',
+          classroom: false,
+          ultimaSincronizacion: null,
+          sincronizando: false,
+          cargandoEstado: false,
+          ultimoResumen: null,
+          error: null,
+        },
+      },
+    });
+
+    expect(screen.getByText('ana@gmail.com')).toBeInTheDocument();
+    expect(screen.getByText(/Conectado como/)).toBeInTheDocument();
   });
 
   it('tras volver del callback de Google con éxito, muestra el mensaje de confirmación', () => {

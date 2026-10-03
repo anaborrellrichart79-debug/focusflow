@@ -147,6 +147,7 @@ export const es = {
   'ajustes.google.conectar': 'Conectar con Google',
   'ajustes.google.desconectar': 'Desconectar',
   'ajustes.google.conectado': 'Cuenta conectada',
+  'ajustes.google.conectadoComo': 'Conectado como {correo}. Si no es tu cuenta, desconecta y vuelve a conectar eligiendo la tuya.',
   'ajustes.google.noConectado': 'No conectado',
   'ajustes.google.ultimaSincronizacion': 'Última sincronización: {fecha}',
   'ajustes.google.nunca': 'nunca',

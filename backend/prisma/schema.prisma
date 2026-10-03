@@ -35,6 +35,9 @@ model Usuario {
   // Permisos que Google ha concedido (separados por espacios): Calendar y,
   // si se ha conectado, Classroom (solo lectura).
   googleAmbitos              String?
+  // Correo de la cuenta de Google conectada, para enseñar en Ajustes con qué
+  // cuenta se sincroniza (si el navegador tenía abierta otra, se nota).
+  googleCorreo               String?
   trabajosClassroom          TrabajoClassroom[]
   // Modo escolar (planificador de exámenes/trabajos) y consentimiento de un
   // tutor legal para menores de edad. fechaNacimiento determina si hace falta

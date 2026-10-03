@@ -147,6 +147,7 @@ export const eu = {
   'ajustes.google.conectar': 'Google-rekin konektatu',
   'ajustes.google.desconectar': 'Deskonektatu',
   'ajustes.google.conectado': 'Kontua konektatuta',
+  'ajustes.google.conectadoComo': '{correo} kontuarekin konektatuta. Zure kontua ez bada, deskonektatu eta konektatu berriro zurea aukeratuta.',
   'ajustes.google.noConectado': 'Konektatu gabe',
   'ajustes.google.ultimaSincronizacion': 'Azken sinkronizazioa: {fecha}',
   'ajustes.google.nunca': 'inoiz ez',

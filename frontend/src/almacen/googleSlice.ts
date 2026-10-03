@@ -12,6 +12,7 @@ import type { EstadoRaiz } from './store';
 
 interface EstadoGoogleSlice {
   conectado: boolean;
+  correo: string | null;
   classroom: boolean;
   ultimaSincronizacion: string | null;
   sincronizando: boolean;
@@ -22,6 +23,7 @@ interface EstadoGoogleSlice {
 
 const estadoInicial: EstadoGoogleSlice = {
   conectado: false,
+  correo: null,
   classroom: false,
   ultimaSincronizacion: null,
   sincronizando: false,
@@ -107,6 +109,7 @@ const googleSlice = createSlice({
       .addCase(cargarEstadoGoogle.fulfilled, (estado, accion) => {
         estado.cargandoEstado = false;
         estado.conectado = accion.payload.conectado;
+        estado.correo = accion.payload.correo ?? null;
         estado.classroom = accion.payload.classroom;
         estado.ultimaSincronizacion = accion.payload.ultimaSincronizacion;
       })
@@ -132,6 +135,7 @@ const googleSlice = createSlice({
       })
       .addCase(desconectarGoogle.fulfilled, (estado) => {
         estado.conectado = false;
+        estado.correo = null;
         estado.classroom = false;
         estado.ultimaSincronizacion = null;
         estado.ultimoResumen = null;

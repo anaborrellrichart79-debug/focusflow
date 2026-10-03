@@ -2,6 +2,8 @@ import { peticionApi } from './api';
 
 export interface EstadoGoogle {
   conectado: boolean;
+  // Correo de la cuenta de Google conectada (null si no se ha podido saber).
+  correo: string | null;
   ultimaSincronizacion: string | null;
   // Si Google ha concedido también los permisos de Classroom.
   classroom: boolean;

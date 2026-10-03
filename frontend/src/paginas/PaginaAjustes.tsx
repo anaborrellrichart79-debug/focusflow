@@ -25,7 +25,7 @@ export function PaginaAjustes() {
   const intl = useIntl();
   const despachar = usarDespachador();
   const [parametros] = useSearchParams();
-  const { conectado, ultimaSincronizacion, sincronizando, ultimoResumen, error } = usarSelector(
+  const { conectado, correo, ultimaSincronizacion, sincronizando, ultimoResumen, error } = usarSelector(
     (estado) => estado.google,
   );
 
@@ -157,6 +157,17 @@ export function PaginaAjustes() {
           <p className="text-sm text-muted-foreground">
             {intl.formatMessage({ id: 'ajustes.google.descripcion' })}
           </p>
+
+          {/* Si el navegador tenía abierta la cuenta de Google de otra persona,
+              aquí se ve con cuál se está sincronizando. */}
+          {conectado && correo && (
+            <p className="text-sm">
+              {intl.formatMessage(
+                { id: 'ajustes.google.conectadoComo' },
+                { correo: <span className="font-medium break-all">{correo}</span> },
+              )}
+            </p>
+          )}
 
           <p className="text-sm text-muted-foreground">
             {intl.formatMessage(

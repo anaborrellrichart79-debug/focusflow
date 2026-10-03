@@ -147,6 +147,7 @@ export const en = {
   'ajustes.google.conectar': 'Connect with Google',
   'ajustes.google.desconectar': 'Disconnect',
   'ajustes.google.conectado': 'Account connected',
+  'ajustes.google.conectadoComo': 'Connected as {correo}. If this isn’t your account, disconnect and connect again choosing yours.',
   'ajustes.google.noConectado': 'Not connected',
   'ajustes.google.ultimaSincronizacion': 'Last synced: {fecha}',
   'ajustes.google.nunca': 'never',

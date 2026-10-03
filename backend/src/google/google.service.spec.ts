@@ -124,6 +124,13 @@ describe('GoogleService', () => {
       expect(url).toBe('https://accounts.google.com/o/oauth2/auth?fake=1');
     });
 
+    it('hace que Google pregunte con qué cuenta conectar', () => {
+      servicio.generarUrlAutorizacion('usuario-1');
+
+      const opciones = (clienteOAuthFalso.generateAuthUrl.mock.calls.at(-1) as unknown[])[0] as { prompt: string };
+      expect(opciones.prompt.split(' ')).toEqual(expect.arrayContaining(['consent', 'select_account']));
+    });
+
     it('con Classroom pide además sus permisos de solo lectura, sumados a los ya concedidos', () => {
       servicio.generarUrlAutorizacion('usuario-1', true);
 
@@ -159,6 +166,8 @@ describe('GoogleService', () => {
         },
       });
 
+      calendarFalso.events.list.mockResolvedValue({ data: { summary: 'pepe@gmail.com' } });
+
       await servicio.manejarCallback('codigo', 'state-bueno');
 
       expect(prismaFalso.usuario.update).toHaveBeenCalledWith({
@@ -167,8 +176,22 @@ describe('GoogleService', () => {
           googleAccessToken: 'access-nuevo',
           googleRefreshToken: 'refresh-nuevo',
           googleTokenExpiraEn: new Date(1_800_000_000_000),
+          googleCorreo: 'pepe@gmail.com',
         },
       });
+      expect(calendarFalso.events.list).toHaveBeenCalledWith({ calendarId: 'primary', maxResults: 1, fields: 'summary' });
+    });
+
+    it('si no puede leer el correo de la cuenta, conecta igual y lo deja vacío', async () => {
+      jwtFalso.verify.mockReturnValue({ sub: 'usuario-1' });
+      clienteOAuthFalso.getToken.mockResolvedValue({ tokens: { access_token: 'a', refresh_token: 'r' } });
+      calendarFalso.events.list.mockRejectedValue(new Error('Google no responde'));
+
+      await servicio.manejarCallback('codigo', 'state-bueno');
+
+      expect(prismaFalso.usuario.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ googleRefreshToken: 'r', googleCorreo: null }) }),
+      );
     });
   });
 
@@ -202,6 +225,34 @@ describe('GoogleService', () => {
       expect((await servicio.obtenerEstado('usuario-1')).classroom).toBe(true);
     });
 
+    it('devuelve el correo guardado de la cuenta de Google sin preguntárselo a Google', async () => {
+      prismaFalso.usuario.findUniqueOrThrow.mockResolvedValue({
+        googleRefreshToken: 'refresh-falso',
+        googleUltimaSincronizacion: null,
+        googleCorreo: 'ana@gmail.com',
+      });
+
+      expect((await servicio.obtenerEstado('usuario-1')).correo).toBe('ana@gmail.com');
+      expect(calendarFalso.events.list).not.toHaveBeenCalled();
+    });
+
+    it('en una conexión de antes, averigua el correo una vez y lo guarda', async () => {
+      calendarFalso.events.list.mockResolvedValue({ data: { summary: 'ana@gmail.com' } });
+
+      expect((await servicio.obtenerEstado('usuario-1')).correo).toBe('ana@gmail.com');
+      expect(prismaFalso.usuario.update).toHaveBeenCalledWith({
+        where: { id: 'usuario-1' },
+        data: { googleCorreo: 'ana@gmail.com' },
+      });
+    });
+
+    it('sin conexión no pregunta el correo a Google', async () => {
+      prismaFalso.usuario.findUniqueOrThrow.mockResolvedValue({ googleRefreshToken: null, googleUltimaSincronizacion: null });
+
+      expect((await servicio.obtenerEstado('usuario-1')).correo).toBeNull();
+      expect(calendarFalso.events.list).not.toHaveBeenCalled();
+    });
+
     it('informa no conectado cuando no hay refresh token', async () => {
       prismaFalso.usuario.findUniqueOrThrow.mockResolvedValue({
         googleRefreshToken: null,
@@ -226,6 +277,7 @@ describe('GoogleService', () => {
           googleTokenExpiraEn: null,
           googleUltimaSincronizacion: null,
           googleAmbitos: null,
+          googleCorreo: null,
         },
       });
       expect(prismaFalso.eventoCalendarioGoogle.deleteMany).toHaveBeenCalledWith({

@@ -147,6 +147,7 @@ export const va = {
   'ajustes.google.conectar': 'Connectar amb Google',
   'ajustes.google.desconectar': 'Desconnectar',
   'ajustes.google.conectado': 'Compte connectat',
+  'ajustes.google.conectadoComo': 'Connectat com a {correo}. Si no és el teu compte, desconnecta i torna a connectar triant el teu.',
   'ajustes.google.noConectado': 'No connectat',
   'ajustes.google.ultimaSincronizacion': 'Última sincronització: {fecha}',
   'ajustes.google.nunca': 'mai',
